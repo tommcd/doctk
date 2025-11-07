@@ -1,0 +1,44 @@
+[project]
+name = "doctk"
+version = "0.1.0"
+description = "A composable toolkit for structured document manipulation"
+readme = "README.md"
+authors = [{name = "tommcd", email = "tcmcdermott@gmail.com"}]
+requires-python = ">=3.10"
+dependencies = [
+    "markdown-it-py>=3.0.0",
+    "mdit-py-plugins>=0.4.0",
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.8.0",
+]
+
+[project.scripts]
+doctk = "doctk.cli:main"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.14.4",
+]

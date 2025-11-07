@@ -1,5 +1,10 @@
 # doctk - Document Toolkit
 
+[![Tests](https://github.com/tommcd/doctk/workflows/Tests/badge.svg)](https://github.com/tommcd/doctk/actions)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+
 A composable, functional toolkit for structured document manipulation.
 
 ## Philosophy
@@ -14,19 +19,38 @@ Inspired by category theory, set theory, and the Zen of Python, `doctk` provides
 
 ## Quick Start
 
+### Installation
+
 ```bash
-# Install
+# Clone the repository
+git clone https://github.com/tommcd/doctk.git
+cd doctk
+
+# Install with uv (recommended)
+uv sync
+uv pip install -e .
+
+# Or with pip
 pip install -e .
-
-# View document outline
-doctk read guide.md | outline
-
-# Promote all level-3 headings to level-2
-doctk read doc.md | select heading | where level=3 | map promote | write
-
-# Extract a section
-doctk read docs.md | select path="/API Reference" | write api.md
 ```
+
+### Usage
+
+```bash
+# View document outline
+doctk outline README.md --headings-only
+
+# Run interactive demo
+doctk demo
+
+# See all commands
+doctk help
+```
+
+Current CLI commands (v0.1):
+- `doctk outline <file>` - View document structure
+- `doctk demo` - Interactive demonstration
+- `doctk help` - Show help
 
 ## Python API
 
@@ -85,10 +109,44 @@ doc1.intersect(doc2)  # Common elements
 doc1.diff(doc2)       # Unique to doc1
 ```
 
-## Status
+## Project Status
 
-**Alpha**: Core architecture and outliner functionality implemented.
+**Version**: 0.1.0 (Alpha - POC Complete)
+
+✅ **Implemented**:
+- Core abstractions (Document, Node, operations)
+- Markdown parser and writer
+- Document outliner with tree visualization
+- Basic operations (select, where, promote, demote)
+- Pipe operator syntax
+- CLI with demo and outline commands
+- Comprehensive test suite (12 tests passing)
+
+🚧 **In Progress** (v0.2):
+- Enhanced node types (Section, Table, Inline)
+- Structure operations (lift, lower, nest, unnest)
+- Location tracking for error reporting
+
+📋 **Planned**:
+- Path/CSS/XPath selection system
+- reStructuredText, HTML, Confluence support
+- Advanced tools (differ, validator, stats)
+- Interactive TUI
+- LSP server and VSCode extension
+
+See [docs/SPECIFICATION.md](docs/SPECIFICATION.md) for the complete roadmap.
+
+## Documentation
+
+- **[Design](docs/design/01-initial-design.md)**: Design rationale and principles
+- **[POC Summary](docs/POC-SUMMARY.md)**: Proof-of-concept validation
+- **[Specification](docs/SPECIFICATION.md)**: Complete specification and roadmap
+- **[Contributing](CONTRIBUTING.md)**: Development guidelines
+
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-MIT
+MIT - see [LICENSE](LICENSE) for details

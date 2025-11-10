@@ -150,3 +150,4 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 ## License
 
 MIT - see [LICENSE](LICENSE) for details
+

@@ -151,3 +151,5 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
 MIT - see [LICENSE](LICENSE) for details
 
+
+<!-- GPG signing test from Windows -->

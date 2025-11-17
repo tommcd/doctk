@@ -1,0 +1,2 @@
+# Test pre-commit hook verification
+This is a temporary file to test pre-commit hooks.

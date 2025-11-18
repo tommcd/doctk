@@ -45,6 +45,8 @@ def main():
         run_demo(console)
     elif command == "repl":
         run_repl()
+    elif command == "execute":
+        run_execute(console, sys.argv[2:])
     else:
         console.print(f"[red]Unknown command: {command}[/red]")
         console.print("\nRun 'doctk help' for usage information.")
@@ -63,6 +65,7 @@ def show_help(console: Console):
     [cyan]outline[/cyan] <file>           Show document structure
     [cyan]demo[/cyan]                    Run interactive demo
     [cyan]repl[/cyan]                    Start interactive REPL
+    [cyan]execute[/cyan] <script> <doc>  Execute .tk script on document
     [cyan]help[/cyan]                    Show this help message
     [cyan]version[/cyan]                 Show version information
 
@@ -84,6 +87,9 @@ def show_help(console: Console):
 
     # Show with content preview
     doctk outline article.md --content
+
+    # Execute a script file
+    doctk execute transform.tk document.md
 
 [bold]Python API:[/bold]
     from doctk import Document
@@ -247,6 +253,40 @@ def run_repl():
 
     repl = REPL()
     repl.start()
+
+
+def run_execute(console: Console, args: list[str]):
+    """Execute a script file on a document."""
+    from doctk.dsl import ExecutionError, ScriptExecutor
+
+    if len(args) < 2:
+        console.print("[red]Error: Script and document files required[/red]")
+        console.print("Usage: doctk execute <script.tk> <document.md>")
+        sys.exit(1)
+
+    script_path = Path(args[0])
+    document_path = Path(args[1])
+
+    # Execute script (file validation handled by ScriptExecutor)
+    try:
+        executor = ScriptExecutor()
+        console.print(f"[cyan]Executing {script_path.name} on {document_path.name}...[/cyan]")
+
+        result = executor.execute_file_and_save(script_path, document_path)
+
+        console.print("[green]✓ Script executed successfully[/green]")
+        console.print(f"  Transformed document saved to {document_path}")
+        console.print(f"  Document has {len(result.nodes)} nodes")
+
+    except FileNotFoundError as e:
+        console.print(f"[red]{e}[/red]")
+        sys.exit(1)
+    except ExecutionError as e:
+        console.print(f"[red]Execution failed: {e}[/red]")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"[red]Unexpected error: {e}[/red]")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

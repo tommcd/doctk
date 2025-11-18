@@ -156,38 +156,43 @@ This implementation plan breaks down the core integration layer and execution ca
     - Achieved 83.26% code coverage
     - _Requirements: 12_
 
-- [ ] 7. Implement script file execution
+- [x] 7. Implement script file execution (core functionality)
 
-  - [ ] 7.1 Create ScriptExecutor class
+  - [x] 7.1 Create ScriptExecutor class
 
     - Implement `execute_file()` method
     - Parse script file content
     - Execute operations on target document
+    - Implement `execute_file_and_save()` method
+    - Add ExecutionError exception with line/column tracking
     - _Requirements: 13.1_
 
-  - [ ] 7.2 Add progress reporting
+  - [ ] 7.2 Add progress reporting (deferred)
 
     - Report script execution progress
     - Display completion status
     - _Requirements: 13.2_
 
-  - [ ] 7.3 Add error reporting for scripts
+  - [x] 7.3 Add error reporting for scripts
 
     - Report errors with file location and line number
     - Handle execution failures gracefully
+    - Propagate lexer and parser errors with context
     - _Requirements: 13.3_
 
-  - [ ] 7.4 Add VS Code integration for script execution
+  - [ ] 7.4 Add VS Code integration for script execution (deferred)
 
     - Register command to execute .tk files
     - Display output in integrated terminal
     - _Requirements: 13.5_
 
-  - [ ] 7.5 Write tests for script execution
+  - [x] 7.5 Write tests for script execution
 
-    - Test successful script execution
-    - Test error handling
-    - Test progress reporting
+    - Test successful script execution (18 unit tests)
+    - Test error handling (5 E2E tests)
+    - Test all operations (promote, demote, move_up, move_down, nest, unnest)
+    - Test file not found errors
+    - Test syntax and execution errors
     - _Requirements: 13_
 
 - [ ] 8. Implement code block execution in Markdown

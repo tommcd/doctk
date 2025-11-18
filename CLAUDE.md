@@ -65,7 +65,7 @@
 ## Repository Structure
 
 ```
-/home/user/doctk/
+doctk/
 ├── src/doctk/                 # Main source code
 │   ├── __init__.py            # Package exports
 │   ├── core.py                # Core abstractions (Document, Node classes)
@@ -75,7 +75,7 @@
 │   ├── parsers/               # Format parsers
 │   │   └── markdown.py        # Markdown parser (markdown-it-py)
 │   ├── writers/               # Format writers
-│   │   └── markdown.md        # Markdown writer
+│   │   └── markdown.py        # Markdown writer
 │   └── tools/                 # Tool management system
 │       ├── plugin.py          # Markdown-driven plugin framework
 │       ├── registry.py        # Tool registry
@@ -161,7 +161,7 @@ This script:
 1. Installs `uv` (fast Python package manager)
 2. Verifies Python 3.10+
 3. Installs external tools (shellcheck, shfmt, lychee, markdownlint, taplo, hadolint)
-4. Installs Python dependencies with `uv sync --all-groups`
+4. Installs Python dependencies with `uv sync --group dev --group docs`
 5. Installs tox globally
 6. Sets up pre-commit hooks
 
@@ -172,7 +172,7 @@ This script:
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Install dependencies
-uv sync --all-groups
+uv sync --group dev --group docs
 
 # Install external tools
 python3 scripts/setup-external-tools.py
@@ -204,7 +204,8 @@ uv run doctk demo               # Run interactive demo
 
    ```bash
    uv run pytest                      # Unit + e2e tests (skip slow)
-   uv run pytest --run-slow           # Include slow bash tests
+   uv run pytest -m slow              # Run only slow tests
+   uv run pytest -m "slow or not slow"  # Include all tests
    uv run pytest tests/quality/       # Quality/meta tests
    ```
 
@@ -302,6 +303,12 @@ class Heading(Node):
 **Function with Docstring**:
 
 ```python
+from collections.abc import Callable
+from doctk.core import Document, Node
+
+# Type alias for operations
+Operation = Callable[[Document], Document]
+
 def select(predicate: Callable[[Node], bool]) -> Operation:
     """
     Select nodes matching predicate.
@@ -393,7 +400,8 @@ doctk uses a multi-layered testing approach:
 uv run pytest
 
 # Include slow tests
-uv run pytest --run-slow
+uv run pytest -m slow              # Run only slow tests
+uv run pytest -m "slow or not slow"  # Run all tests (including slow)
 
 # Specific categories
 uv run pytest tests/unit/

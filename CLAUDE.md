@@ -161,7 +161,7 @@ This script:
 1. Installs `uv` (fast Python package manager)
 2. Verifies Python 3.10+
 3. Installs external tools (shellcheck, shfmt, lychee, markdownlint, taplo, hadolint)
-4. Installs Python dependencies with `uv sync --group dev --group docs`
+4. Installs Python dependencies with `uv sync --all-groups` (dev and docs)
 5. Installs tox globally
 6. Sets up pre-commit hooks
 
@@ -171,8 +171,8 @@ This script:
 # Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install dependencies
-uv sync --group dev --group docs
+# Install dependencies (includes dev and docs groups)
+uv sync --all-groups
 
 # Install external tools
 python3 scripts/setup-external-tools.py

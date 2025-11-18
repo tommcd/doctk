@@ -15,7 +15,8 @@
 7. [Common Tasks](#common-tasks)
 8. [Important Patterns](#important-patterns)
 9. [External Tools System](#external-tools-system)
-10. [Quick Reference](#quick-reference)
+10. [Working with Kiro Specs](#working-with-kiro-specs)
+11. [Quick Reference](#quick-reference)
 
 ---
 
@@ -861,6 +862,92 @@ python3 scripts/validate-plugins.py
 ### Adding New Tools
 
 See "Add an External Tool" in [Common Tasks](#common-tasks).
+
+---
+
+## Working with Kiro Specs
+
+### Overview
+
+doctk uses **Kiro specs** for structured feature development. A Kiro spec formalizes the design and implementation process through a three-document structure that defines WHAT needs to be built, HOW it will be built, and the step-by-step implementation plan.
+
+This approach ensures:
+
+- Clear requirements and acceptance criteria
+- Well-documented technical design
+- Incremental, trackable progress
+- Alignment between vision and implementation
+
+### Spec Structure
+
+Each spec lives in `.kiro/specs/<spec-name>/` and consists of three documents:
+
+1. **requirements.md** - Defines WHAT needs to be built
+   - Introduction and goals
+   - Glossary of domain terms
+   - Formal requirements (WHEN/SHALL format)
+   - Acceptance criteria
+
+2. **design.md** - Defines HOW it will be built
+   - Architecture and technical approach
+   - Code structure and organization
+   - Key components and modules
+   - Design patterns and principles
+   - Integration points
+
+3. **tasks.md** - Defines the implementation plan
+   - Discrete, ordered tasks with checkboxes
+   - Sub-tasks for complex work
+   - Links to requirements
+   - Progress tracking
+
+### Basic Workflow
+
+When implementing a Kiro spec:
+
+```bash
+# 1. Read the spec documents in order
+cat .kiro/specs/<spec-name>/requirements.md
+cat .kiro/specs/<spec-name>/design.md
+cat .kiro/specs/<spec-name>/tasks.md
+
+# 2. Implement the first uncompleted task
+# 3. Verify against requirements
+# 4. Update tasks.md - mark task as complete [x]
+# 5. Test your work
+# 6. Move to next task
+```
+
+**Task marking format**:
+
+```markdown
+- [ ] 1. Not started task
+  - [x] Completed sub-task
+  - [ ] Pending sub-task
+- [x] 2. Completed task
+```
+
+### Quick Reference
+
+| Need | Location |
+|------|----------|
+| Find specs | `.kiro/specs/<spec-name>/` |
+| Read requirements | `.kiro/specs/<spec-name>/requirements.md` |
+| Read design | `.kiro/specs/<spec-name>/design.md` |
+| Track progress | `.kiro/specs/<spec-name>/tasks.md` |
+| Implementation guide | `claude-code-kiro-spec-prompt.md` |
+
+### Detailed Guide
+
+For comprehensive instructions on working with Kiro specs, including:
+
+- How to read and interpret requirements
+- Understanding design documents
+- Task execution best practices
+- Progress tracking conventions
+- Tips for successful spec implementation
+
+**See**: `claude-code-kiro-spec-prompt.md` in the repository root.
 
 ---
 

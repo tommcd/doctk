@@ -4,7 +4,7 @@ This implementation plan breaks down the feature into discrete, actionable codin
 
 ## Task List
 
-- [ ] 1. Set up project structure and core interfaces
+- [x] 1. Set up project structure and core interfaces
 
   - Create directory structure for VS Code extension (`extensions/doctk-outliner/`)
   - Create directory structure for language server (`src/doctk/lsp/`)
@@ -13,46 +13,46 @@ This implementation plan breaks down the feature into discrete, actionable codin
   - Set up build configuration (tsconfig.json, package.json for extension)
   - _Requirements: 15, 20_
 
-- [ ] 2. Implement core document manipulation API
+- [x] 2. Implement core document manipulation API
 
-  - [ ] 2.1 Create StructureOperations class with promote/demote operations
+  - [x] 2.1 Create StructureOperations class with promote/demote operations
 
     - Implement `promote()` method that decreases heading level
     - Implement `demote()` method that increases heading level
     - Add validation to ensure heading levels stay within 1-6 range
     - _Requirements: 3.2, 3.3, 20_
 
-  - [ ] 2.2 Add move operations (move_up, move_down)
+  - [x] 2.2 Add move operations (move_up, move_down)
 
     - Implement `move_up()` to reorder sections among siblings
     - Implement `move_down()` to reorder sections among siblings
     - Handle edge cases (first/last sibling)
     - _Requirements: 3.4, 3.5, 20_
 
-  - [ ] 2.3 Implement nest and unnest operations
+  - [x] 2.3 Implement nest and unnest operations
 
     - Implement `nest()` to move section under a new parent
     - Implement `unnest()` to move section up one level
     - Validate parent-child relationships
     - _Requirements: 2.2, 2.3, 20_
 
-  - [ ] 2.4 Write unit tests for structure operations
+  - [x] 2.4 Write unit tests for structure operations
 
     - Test promote/demote with various heading levels
     - Test move operations with different sibling positions
     - Test nest/unnest with complex hierarchies
     - _Requirements: 20_
 
-- [ ] 3. Create ExtensionBridge for TypeScript-Python communication
+- [x] 3. Create ExtensionBridge for TypeScript-Python communication
 
-  - [ ] 3.1 Implement JSON-RPC bridge in Python
+  - [x] 3.1 Implement JSON-RPC bridge in Python
 
     - Create `ExtensionBridge` class that accepts JSON-RPC requests
     - Implement stdin/stdout communication protocol
     - Add request/response handling with proper error serialization
     - _Requirements: 20_
 
-  - [ ] 3.2 Implement TypeScript PythonBridge client
+  - [x] 3.2 Implement TypeScript PythonBridge client
 
     - Create `PythonBridge` class that spawns Python process
     - Implement JSON-RPC request/response handling
@@ -60,16 +60,16 @@ This implementation plan breaks down the feature into discrete, actionable codin
     - Handle process lifecycle (start, stop, restart)
     - _Requirements: 18, 20_
 
-  - [ ] 3.3 Write integration tests for bridge communication
+  - [x] 3.3 Write integration tests for bridge communication
 
     - Test request/response round-trip
     - Test error handling and serialization
     - Test process restart on failure
     - _Requirements: 18_
 
-- [ ] 4. Implement tree data provider for VS Code
+- [x] 4. Implement tree data provider for VS Code
 
-  - [ ] 4.1 Create DocumentOutlineProvider class
+  - [x] 4.1 Create DocumentOutlineProvider class
 
     - Implement `TreeDataProvider<OutlineNode>` interface
     - Implement `getTreeItem()` to create tree items from nodes
@@ -77,7 +77,7 @@ This implementation plan breaks down the feature into discrete, actionable codin
     - Implement `getParent()` for navigation
     - _Requirements: 1.1, 1.2, 1.3_
 
-  - [ ] 4.2 Add document parsing to build tree structure
+  - [x] 4.2 Add document parsing to build tree structure
 
     - Parse Markdown document to extract headings
     - Build OutlineNode tree from heading hierarchy
@@ -85,14 +85,14 @@ This implementation plan breaks down the feature into discrete, actionable codin
     - Track node ranges (line/column positions)
     - _Requirements: 1.1, 1.2, 1.3_
 
-  - [ ] 4.3 Implement tree refresh and update mechanisms
+  - [x] 4.3 Implement tree refresh and update mechanisms
 
     - Add `refresh()` method to trigger tree re-render
     - Implement `updateFromDocument()` to sync with editor changes
     - Add debouncing to prevent excessive updates
     - _Requirements: 1.4, 16.1, 16.2, 16.3_
 
-  - [ ] 4.4 Write unit tests for tree provider
+  - [x] 4.4 Write unit tests for tree provider
 
     - Test tree building from various Markdown structures
     - Test node ID generation and uniqueness
@@ -641,6 +641,80 @@ This implementation plan breaks down the feature into discrete, actionable codin
     - Use vsce to package extension
     - Test installation from .vsix file
     - _Requirements: 7.1_
+
+- [ ] 22.5. Implement granular document edits (CRITICAL from PR #6 review)
+
+  - [ ] 22.5.1 Add ModifiedRange dataclass to protocols.py
+
+    - Define ModifiedRange with start_line, start_column, end_line, end_column, new_text
+    - Update OperationResult to include optional List[ModifiedRange]
+    - Maintain backward compatibility with full document field
+    - _PR #6 Issue #1 (Critical)_
+
+  - [ ] 22.5.2 Implement DiffComputer in operations.py
+
+    - Create DiffComputer class to compute modified ranges
+    - Implement `compute_ranges(original_doc, modified_doc, affected_node_ids)` method
+    - Calculate line/column positions for changed nodes
+    - Handle multi-node operations (move, nest)
+    - _PR #6 Issue #1 (Critical)_
+
+  - [ ] 22.5.3 Update all operation methods to return modified ranges
+
+    - Update promote() to compute and return modified ranges
+    - Update demote() to compute and return modified ranges
+    - Update move_up(), move_down() to return ranges for moved sections
+    - Update nest(), unnest() to return ranges for level-adjusted nodes
+    - _PR #6 Issue #1 (Critical)_
+
+  - [ ] 22.5.4 Update TypeScript extension to use granular edits
+
+    - Modify executeOperation() in extension.ts to check for modifiedRanges
+    - Create WorkspaceEdit with granular ranges when available
+    - Keep fallback to full document replacement
+    - Test cursor position preservation
+    - Test undo/redo stack preservation
+    - _PR #6 Issue #1 (Critical)_
+
+  - [ ] 22.5.5 Write tests for granular edits
+
+    - Test ModifiedRange computation for each operation type
+    - Test frontend applies granular edits correctly
+    - Test cursor position is preserved after operations
+    - Test undo/redo works with granular edits
+    - _PR #6 Issue #1 (Critical)_
+
+- [ ] 22.6. Centralize node ID generation in backend (MEDIUM from PR #6 review)
+
+  - [ ] 22.6.1 Add TreeNode dataclass and tree building method
+
+    - Define TreeNode dataclass with id, label, level, line, column, children
+    - Add `build_tree_with_ids()` method to DocumentTreeBuilder
+    - Return hierarchical tree structure with all IDs assigned
+    - _PR #6 Issue #5 (Medium)_
+
+  - [ ] 22.6.2 Add get_document_tree RPC method to bridge
+
+    - Implement `get_document_tree()` in ExtensionBridge
+    - Add tree serialization helper method
+    - Return JSON-serializable tree structure
+    - _PR #6 Issue #5 (Medium)_
+
+  - [ ] 22.6.3 Update frontend to request tree from backend
+
+    - Add `getDocumentTree()` method to PythonBridge TypeScript class
+    - Update `updateFromDocument()` in DocumentOutlineProvider to use backend tree
+    - Remove local ID generation logic from outlineProvider.ts
+    - Add tree deserialization method
+    - _PR #6 Issue #5 (Medium)_
+
+  - [ ] 22.6.4 Write tests for centralized ID generation
+
+    - Test backend tree building with various document structures
+    - Test frontend correctly deserializes backend tree
+    - Test IDs are consistent between operations
+    - Verify no duplicate ID generation logic remains
+    - _PR #6 Issue #5 (Medium)_
 
 - [ ] 23. End-to-end integration and testing
 

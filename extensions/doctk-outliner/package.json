@@ -1,0 +1,205 @@
+{
+  "name": "doctk-outliner",
+  "displayName": "doctk Document Outliner",
+  "description": "Tree-based document outliner with LSP support for doctk",
+  "version": "0.1.0",
+  "publisher": "doctk",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown",
+    "onLanguage:doctk",
+    "onView:doctkOutline"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "doctkOutline",
+          "name": "Document Outline",
+          "when": "resourceLangId == markdown"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "doctk.promote",
+        "title": "doctk: Promote Section",
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "doctk.demote",
+        "title": "doctk: Demote Section",
+        "icon": "$(arrow-down)"
+      },
+      {
+        "command": "doctk.moveUp",
+        "title": "doctk: Move Section Up",
+        "icon": "$(chevron-up)"
+      },
+      {
+        "command": "doctk.moveDown",
+        "title": "doctk: Move Section Down",
+        "icon": "$(chevron-down)"
+      },
+      {
+        "command": "doctk.refresh",
+        "title": "doctk: Refresh Outline",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "doctk.refresh",
+          "when": "view == doctkOutline",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "doctk.promote",
+          "when": "view == doctkOutline",
+          "group": "structure@1"
+        },
+        {
+          "command": "doctk.demote",
+          "when": "view == doctkOutline",
+          "group": "structure@2"
+        },
+        {
+          "command": "doctk.moveUp",
+          "when": "view == doctkOutline",
+          "group": "reorder@1"
+        },
+        {
+          "command": "doctk.moveDown",
+          "when": "view == doctkOutline",
+          "group": "reorder@2"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "doctk.promote",
+        "key": "ctrl+shift+up",
+        "mac": "cmd+shift+up",
+        "when": "focusedView == doctkOutline"
+      },
+      {
+        "command": "doctk.demote",
+        "key": "ctrl+shift+down",
+        "mac": "cmd+shift+down",
+        "when": "focusedView == doctkOutline"
+      },
+      {
+        "command": "doctk.moveUp",
+        "key": "alt+up",
+        "mac": "alt+up",
+        "when": "focusedView == doctkOutline"
+      },
+      {
+        "command": "doctk.moveDown",
+        "key": "alt+down",
+        "mac": "alt+down",
+        "when": "focusedView == doctkOutline"
+      }
+    ],
+    "languages": [
+      {
+        "id": "doctk",
+        "extensions": [
+          ".tk"
+        ],
+        "aliases": [
+          "doctk",
+          "DocTK"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "configuration": {
+      "title": "doctk Outliner",
+      "properties": {
+        "doctk.outliner.autoRefresh": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically refresh the outline when the document changes"
+        },
+        "doctk.outliner.refreshDelay": {
+          "type": "number",
+          "default": 300,
+          "description": "Delay in milliseconds before refreshing the outline"
+        },
+        "doctk.outliner.showContentPreview": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show a preview of content in the outline"
+        },
+        "doctk.outliner.maxPreviewLength": {
+          "type": "number",
+          "default": 50,
+          "description": "Maximum length of content preview"
+        },
+        "doctk.lsp.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the doctk language server"
+        },
+        "doctk.lsp.trace": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Trace LSP communication for debugging"
+        },
+        "doctk.lsp.maxCompletionItems": {
+          "type": "number",
+          "default": 50,
+          "description": "Maximum number of completion items to show"
+        },
+        "doctk.lsp.pythonCommand": {
+          "type": "string",
+          "default": "python3",
+          "description": "Python command or path to Python executable (e.g., 'python3', 'python', or '/path/to/python')"
+        },
+        "doctk.performance.largeDocumentThreshold": {
+          "type": "number",
+          "default": 1000,
+          "description": "Number of headings to consider a document 'large'"
+        },
+        "doctk.performance.enableVirtualization": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable virtualization for large documents"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.45.0",
+    "typescript": "^5.1.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
+  }
+}

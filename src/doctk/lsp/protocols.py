@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Optional, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
     from doctk.core import Document, Node
@@ -15,7 +15,7 @@ class ValidationResult:
     """Result of validating an operation."""
 
     valid: bool
-    error: Optional[str] = None
+    error: str | None = None
 
 
 @dataclass
@@ -23,15 +23,15 @@ class OperationResult:
     """Result of executing a document operation."""
 
     success: bool
-    document: Optional[str] = None
-    modified_ranges: Optional[list[tuple[int, int, int, int]]] = None
-    error: Optional[str] = None
+    document: str | None = None
+    modified_ranges: list[tuple[int, int, int, int]] | None = None
+    error: str | None = None
 
 
 class DocumentOperation(Protocol):
     """Protocol for all document operations."""
 
-    def execute(self, doc: "Document", target: "Node") -> "Document":
+    def execute(self, doc: Document, target: Node) -> Document:
         """
         Execute the operation on the document.
 
@@ -44,7 +44,7 @@ class DocumentOperation(Protocol):
         """
         ...
 
-    def validate(self, doc: "Document", target: "Node") -> ValidationResult:
+    def validate(self, doc: Document, target: Node) -> ValidationResult:
         """
         Validate that the operation can be executed.
 
@@ -72,7 +72,7 @@ class DocumentInterface(ABC):
         pass
 
     @abstractmethod
-    def get_user_selection(self) -> Optional[Any]:
+    def get_user_selection(self) -> Any | None:
         """
         Get currently selected node(s).
 
@@ -113,7 +113,7 @@ class ParameterInfo:
     type: str
     required: bool
     description: str
-    default: Optional[Any] = None
+    default: Any | None = None
 
 
 @dataclass

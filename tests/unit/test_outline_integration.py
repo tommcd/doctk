@@ -257,8 +257,9 @@ class TestOutlineOperationsIntegration:
         from doctk.lsp.operations import StructureOperations
 
         # Promote h2 to h1
-        new_doc, result = StructureOperations.promote(doc, "h2-0")
+        result = StructureOperations.promote(doc, "h2-0")
         assert result.success
+        new_doc = Document.from_string(result.document)
 
         # Build new tree
         new_builder = DocumentTreeBuilder(new_doc)
@@ -285,8 +286,9 @@ class TestOutlineOperationsIntegration:
         from doctk.lsp.operations import StructureOperations
 
         # Demote h1 to h2
-        new_doc, result = StructureOperations.demote(doc, "h1-0")
+        result = StructureOperations.demote(doc, "h1-0")
         assert result.success
+        new_doc = Document.from_string(result.document)
 
         # Build new tree
         new_builder = DocumentTreeBuilder(new_doc)
@@ -312,8 +314,9 @@ class TestOutlineOperationsIntegration:
         from doctk.lsp.operations import StructureOperations
 
         # Move third up
-        new_doc, result = StructureOperations.move_up(doc, "h1-2")
+        result = StructureOperations.move_up(doc, "h1-2")
         assert result.success
+        new_doc = Document.from_string(result.document)
 
         # Build new tree
         new_builder = DocumentTreeBuilder(new_doc)

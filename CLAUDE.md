@@ -925,6 +925,7 @@ cat .kiro/specs/<spec-name>/tasks.md
   - [x] Completed sub-task
   - [ ] Pending sub-task
 - [x] 2. Completed task
+- [ ]* 3. Optional task
 ```
 
 ### Quick Reference

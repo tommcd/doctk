@@ -124,10 +124,8 @@ class Lexer:
 
             # Skip comments (# to end of line)
             if self.peek() == "#":
-                char = self.peek()
-                while char is not None and char != "\n":
+                while self.peek() is not None and self.peek() != "\n":
                     self.advance()
-                    char = self.peek()
                 # Continue loop to skip the newline after the comment
             else:
                 # No more whitespace or comments
@@ -259,6 +257,7 @@ class Lexer:
             if op_char_token is None:
                 raise LexerError(f"Unexpected end of input after '{char}'", line, column)
             self.advance()  # =
+            # S105: False positive - comparing operator character, not a password
             op_type = TokenType.GREATER_EQUAL if op_char_token == ">" else TokenType.LESS_EQUAL  # noqa: S105
             return Token(op_type, op_char_token + "=", line, column)
 

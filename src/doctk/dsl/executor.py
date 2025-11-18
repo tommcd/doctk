@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -46,6 +47,16 @@ class Executor:
         self.document = document
         self.variables: dict[str, Document[Any]] = {"doc": document}
         self.operations = StructureOperations()
+
+        # Dispatch table for operations with their required argument counts
+        self._operation_dispatch: dict[str, tuple[Callable[..., Document[Any]], int]] = {
+            "promote": (self._exec_promote, 1),
+            "demote": (self._exec_demote, 1),
+            "move_up": (self._exec_move_up, 1),
+            "move_down": (self._exec_move_down, 1),
+            "nest": (self._exec_nest, 2),
+            "unnest": (self._exec_unnest, 1),
+        }
 
     def execute(self, ast: list[ASTNode]) -> Document[Any]:
         """
@@ -112,92 +123,88 @@ class Executor:
             operation: Operation to execute
 
         Returns:
-            Resulting document
+            Resulting document (operates directly on Document objects, no re-parsing)
 
         Raises:
             ExecutionError: If operation execution fails
         """
         op_name = operation.name
 
-        # Map operation names to StructureOperations methods
-        # Note: This is a simplified implementation focusing on structure operations
-        # A full implementation would include select, where, and other filtering operations
-
-        if op_name == "promote":
-            # promote <node_id>
-            if len(operation.args) < 1:
-                raise ExecutionError("promote requires node_id argument")
-            node_id = str(operation.args[0])
-            result = self.operations.promote(doc, node_id)
-            if not result.success:
-                raise ExecutionError(f"promote failed: {result.error}")
-            if result.document is None:
-                raise ExecutionError("promote returned no document")
-            return Document.from_string(result.document)
-
-        elif op_name == "demote":
-            # demote <node_id>
-            if len(operation.args) < 1:
-                raise ExecutionError("demote requires node_id argument")
-            node_id = str(operation.args[0])
-            result = self.operations.demote(doc, node_id)
-            if not result.success:
-                raise ExecutionError(f"demote failed: {result.error}")
-            if result.document is None:
-                raise ExecutionError("demote returned no document")
-            return Document.from_string(result.document)
-
-        elif op_name == "move_up":
-            # move_up <node_id>
-            if len(operation.args) < 1:
-                raise ExecutionError("move_up requires node_id argument")
-            node_id = str(operation.args[0])
-            result = self.operations.move_up(doc, node_id)
-            if not result.success:
-                raise ExecutionError(f"move_up failed: {result.error}")
-            if result.document is None:
-                raise ExecutionError("move_up returned no document")
-            return Document.from_string(result.document)
-
-        elif op_name == "move_down":
-            # move_down <node_id>
-            if len(operation.args) < 1:
-                raise ExecutionError("move_down requires node_id argument")
-            node_id = str(operation.args[0])
-            result = self.operations.move_down(doc, node_id)
-            if not result.success:
-                raise ExecutionError(f"move_down failed: {result.error}")
-            if result.document is None:
-                raise ExecutionError("move_down returned no document")
-            return Document.from_string(result.document)
-
-        elif op_name == "nest":
-            # nest <node_id> <parent_id>
-            if len(operation.args) < 2:
-                raise ExecutionError("nest requires node_id and parent_id arguments")
-            node_id = str(operation.args[0])
-            parent_id = str(operation.args[1])
-            result = self.operations.nest(doc, node_id, parent_id)
-            if not result.success:
-                raise ExecutionError(f"nest failed: {result.error}")
-            if result.document is None:
-                raise ExecutionError("nest returned no document")
-            return Document.from_string(result.document)
-
-        elif op_name == "unnest":
-            # unnest <node_id>
-            if len(operation.args) < 1:
-                raise ExecutionError("unnest requires node_id argument")
-            node_id = str(operation.args[0])
-            result = self.operations.unnest(doc, node_id)
-            if not result.success:
-                raise ExecutionError(f"unnest failed: {result.error}")
-            if result.document is None:
-                raise ExecutionError("unnest returned no document")
-            return Document.from_string(result.document)
-
-        else:
+        # Look up operation in dispatch table
+        if op_name not in self._operation_dispatch:
             raise ExecutionError(f"Unknown operation: {op_name}")
+
+        handler, required_args = self._operation_dispatch[op_name]
+
+        # Validate argument count
+        if len(operation.args) < required_args:
+            arg_word = "argument" if required_args == 1 else "arguments"
+            raise ExecutionError(f"{op_name} requires {required_args} {arg_word}")
+
+        # Execute operation directly on Document object
+        return handler(doc, *operation.args)
+
+    def _exec_promote(self, doc: Document[Any], node_id: Any) -> Document[Any]:
+        """Execute promote operation directly on Document object."""
+        node_id_str = str(node_id)
+        result = self.operations.promote(doc, node_id_str)
+        if not result.success:
+            raise ExecutionError(f"promote failed: {result.error}")
+        if result.document is None:
+            raise ExecutionError("promote returned no document")
+        # Parse once and return - this is the only place we parse
+        return Document.from_string(result.document)
+
+    def _exec_demote(self, doc: Document[Any], node_id: Any) -> Document[Any]:
+        """Execute demote operation directly on Document object."""
+        node_id_str = str(node_id)
+        result = self.operations.demote(doc, node_id_str)
+        if not result.success:
+            raise ExecutionError(f"demote failed: {result.error}")
+        if result.document is None:
+            raise ExecutionError("demote returned no document")
+        return Document.from_string(result.document)
+
+    def _exec_move_up(self, doc: Document[Any], node_id: Any) -> Document[Any]:
+        """Execute move_up operation directly on Document object."""
+        node_id_str = str(node_id)
+        result = self.operations.move_up(doc, node_id_str)
+        if not result.success:
+            raise ExecutionError(f"move_up failed: {result.error}")
+        if result.document is None:
+            raise ExecutionError("move_up returned no document")
+        return Document.from_string(result.document)
+
+    def _exec_move_down(self, doc: Document[Any], node_id: Any) -> Document[Any]:
+        """Execute move_down operation directly on Document object."""
+        node_id_str = str(node_id)
+        result = self.operations.move_down(doc, node_id_str)
+        if not result.success:
+            raise ExecutionError(f"move_down failed: {result.error}")
+        if result.document is None:
+            raise ExecutionError("move_down returned no document")
+        return Document.from_string(result.document)
+
+    def _exec_nest(self, doc: Document[Any], node_id: Any, parent_id: Any) -> Document[Any]:
+        """Execute nest operation directly on Document object."""
+        node_id_str = str(node_id)
+        parent_id_str = str(parent_id)
+        result = self.operations.nest(doc, node_id_str, parent_id_str)
+        if not result.success:
+            raise ExecutionError(f"nest failed: {result.error}")
+        if result.document is None:
+            raise ExecutionError("nest returned no document")
+        return Document.from_string(result.document)
+
+    def _exec_unnest(self, doc: Document[Any], node_id: Any) -> Document[Any]:
+        """Execute unnest operation directly on Document object."""
+        node_id_str = str(node_id)
+        result = self.operations.unnest(doc, node_id_str)
+        if not result.success:
+            raise ExecutionError(f"unnest failed: {result.error}")
+        if result.document is None:
+            raise ExecutionError("unnest returned no document")
+        return Document.from_string(result.document)
 
 
 class ScriptExecutor:
@@ -205,7 +212,8 @@ class ScriptExecutor:
 
     def __init__(self):
         """Initialize script executor."""
-        self.operations = StructureOperations()
+        # No instance variables needed - Executor creates its own StructureOperations
+        pass
 
     def execute_file(self, script_path: str | Path, document_path: str | Path) -> Document[Any]:
         """
@@ -227,16 +235,16 @@ class ScriptExecutor:
         script_path = Path(script_path)
         document_path = Path(document_path)
 
-        # Read script file
+        # Read script file with explicit encoding
         if not script_path.exists():
             raise FileNotFoundError(f"Script file not found: {script_path}")
 
         try:
-            script_content = script_path.read_text()
+            script_content = script_path.read_text(encoding="utf-8")
         except OSError as e:
             raise ExecutionError(f"Error reading script file: {e}") from e
 
-        # Read document file
+        # Read document file with explicit encoding
         if not document_path.exists():
             raise FileNotFoundError(f"Document file not found: {document_path}")
 
@@ -297,7 +305,7 @@ class ScriptExecutor:
         """
         result = self.execute_file(script_path, document_path)
 
-        # Save result back to document file
+        # Save result back to document file with explicit encoding
         try:
             result.to_file(str(document_path))
         except Exception as e:

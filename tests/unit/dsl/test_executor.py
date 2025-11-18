@@ -182,7 +182,7 @@ class TestExecutor:
 
         executor = Executor(sample_document)
 
-        with pytest.raises(ExecutionError, match="requires node_id argument"):
+        with pytest.raises(ExecutionError, match="requires 1 argument"):
             executor.execute(ast)
 
 

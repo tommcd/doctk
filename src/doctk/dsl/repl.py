@@ -1,13 +1,20 @@
 """DSL REPL - Interactive Read-Eval-Print Loop for doctk."""
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from rich.console import Console
 from rich.table import Table
 
-from doctk.core import Document
+from doctk.core import Document, Heading
 from doctk.lsp.operations import DocumentTreeBuilder, StructureOperations
+
+if TYPE_CHECKING:
+    from rich.tree import Tree
+
+    from doctk.lsp.protocols import TreeNode
 
 console = Console()
 
@@ -95,12 +102,12 @@ class REPL:
         Args:
             file_path: Path to the document file
         """
-        try:
-            path = Path(file_path)
-            if not path.exists():
-                console.print(f"[red]Error: File not found: {file_path}[/red]")
-                return
+        path = Path(file_path)
+        if not path.exists():
+            console.print(f"[red]Error: File not found: {file_path}[/red]")
+            return
 
+        try:
             self.document = Document.from_file(str(path))
             self.document_path = path
             self.tree_builder = DocumentTreeBuilder(self.document)
@@ -108,8 +115,10 @@ class REPL:
             console.print(f"[green]✓ Loaded {path.name}[/green]")
             console.print(f"  {len(self.document.nodes)} nodes")
 
-        except Exception as e:
-            console.print(f"[red]Error loading document: {e}[/red]")
+        except OSError as e:
+            console.print(f"[red]Error reading file: {e}[/red]")
+        except ValueError as e:
+            console.print(f"[red]Error parsing document: {e}[/red]")
 
     def save_document(self) -> None:
         """Save the current document to file."""
@@ -143,7 +152,7 @@ class REPL:
         except Exception as e:
             console.print(f"[red]Error displaying tree: {e}[/red]")
 
-    def _add_tree_nodes(self, rich_tree: Any, nodes: list[Any]) -> None:
+    def _add_tree_nodes(self, rich_tree: Tree, nodes: list[TreeNode]) -> None:
         """
         Recursively add nodes to rich tree.
 
@@ -158,7 +167,7 @@ class REPL:
                 self._add_tree_nodes(branch, node.children)
 
     def list_nodes(self) -> None:
-        """List all nodes with their IDs."""
+        """List all heading nodes with their IDs."""
         if not self.document or not self.tree_builder:
             console.print("[yellow]No document loaded[/yellow]")
             return
@@ -169,8 +178,6 @@ class REPL:
         table.add_column("Content", style="white")
 
         for node_id, node in self.tree_builder.node_map.items():
-            from doctk.core import Heading
-
             if isinstance(node, Heading):
                 content = f"{'#' * node.level} {node.text}"
                 table.add_row(node_id, "Heading", content)
@@ -236,21 +243,32 @@ class REPL:
                 console.print(f"[red]Operation failed: {error_msg}[/red]")
                 return
 
-            # Update document
-            self.document = Document.from_string(result.document)
-            self.tree_builder = DocumentTreeBuilder(self.document)
+            # Update document - parse from the result string
+            # Note: This is necessary because StructureOperations returns OperationResult
+            # with a string document (designed for JSON-RPC bridge communication).
+            # The performance impact is acceptable for interactive REPL use.
+            if result.document:
+                self.document = Document.from_string(result.document)
+                self.tree_builder = DocumentTreeBuilder(self.document)
 
-            console.print(f"[green]✓ {operation} completed[/green]")
+                console.print(f"[green]✓ {operation} completed[/green]")
 
-            # Show modified ranges if available
-            if result.modified_ranges:
-                console.print(f"  Modified {len(result.modified_ranges)} range(s)")
+                # Show modified ranges if available
+                if result.modified_ranges:
+                    console.print(f"  Modified {len(result.modified_ranges)} range(s)")
 
-            # Add to history
-            self.history.append(command)
+                # Add to history
+                self.history.append(command)
+            else:
+                console.print("[red]Operation returned no document[/red]")
 
+        except ValueError as e:
+            console.print(f"[red]Error parsing result: {e}[/red]")
+        except OSError as e:
+            console.print(f"[red]I/O error: {e}[/red]")
         except Exception as e:
-            console.print(f"[red]Error executing operation: {e}[/red]")
+            # Catch-all for unexpected errors to prevent REPL crash
+            console.print(f"[red]Unexpected error executing operation: {e}[/red]")
 
     def show_help(self) -> None:
         """Display help message."""

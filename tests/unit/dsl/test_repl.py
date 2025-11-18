@@ -169,12 +169,27 @@ class TestREPLOperations:
         """Test promote operation."""
         repl_instance.load_document(temp_markdown_file)
 
+        # Get the original heading level
+        from doctk.lsp.operations import DocumentTreeBuilder
+        original_builder = DocumentTreeBuilder(repl_instance.document)
+        original_node = original_builder.find_node("h2-0")
+        assert original_node is not None
+        assert isinstance(original_node, Heading)
+        original_level = original_node.level
+
         with patch("doctk.dsl.repl.console"):
             repl_instance.execute_command("promote h2-0")
 
         # Verify document was updated
         assert repl_instance.document is not None
         assert "promote h2-0" in repl_instance.history
+
+        # Verify the heading level actually decreased
+        new_builder = DocumentTreeBuilder(repl_instance.document)
+        new_node = new_builder.find_node("h1-0")  # After promotion, h2-0 becomes h1-0
+        assert new_node is not None
+        assert isinstance(new_node, Heading)
+        assert new_node.level == original_level - 1
 
     def test_operation_demote(self, repl_instance, temp_markdown_file):
         """Test demote operation."""

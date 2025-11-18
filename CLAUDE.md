@@ -7,18 +7,18 @@
 ## Table of Contents
 
 1. [Project Overview](#project-overview)
-2. [Repository Structure](#repository-structure)
-3. [Development Workflow](#development-workflow)
-4. [Code Conventions](#code-conventions)
-5. [Testing Strategy](#testing-strategy)
-6. [Key Technologies](#key-technologies)
-7. [Common Tasks](#common-tasks)
-8. [Important Patterns](#important-patterns)
-9. [External Tools System](#external-tools-system)
-10. [Working with Kiro Specs](#working-with-kiro-specs)
-11. [Quick Reference](#quick-reference)
+1. [Repository Structure](#repository-structure)
+1. [Development Workflow](#development-workflow)
+1. [Code Conventions](#code-conventions)
+1. [Testing Strategy](#testing-strategy)
+1. [Key Technologies](#key-technologies)
+1. [Common Tasks](#common-tasks)
+1. [Important Patterns](#important-patterns)
+1. [External Tools System](#external-tools-system)
+1. [Working with Kiro Specs](#working-with-kiro-specs)
+1. [Quick Reference](#quick-reference)
 
----
+______________________________________________________________________
 
 ## Project Overview
 
@@ -61,7 +61,7 @@
 - 📋 Interactive TUI
 - 📋 LSP server and VSCode extension
 
----
+______________________________________________________________________
 
 ## Repository Structure
 
@@ -145,7 +145,7 @@ doctk/
 | `parsers/markdown.py` | 148 | Markdown parsing |
 | `writers/markdown.py` | 104 | Markdown generation |
 
----
+______________________________________________________________________
 
 ## Development Workflow
 
@@ -160,11 +160,11 @@ doctk/
 This script:
 
 1. Installs `uv` (fast Python package manager)
-2. Verifies Python 3.12+
-3. Installs external tools (shellcheck, shfmt, lychee, markdownlint, taplo, hadolint)
-4. Installs Python dependencies with `uv sync --all-groups` (dev and docs)
-5. Installs tox globally
-6. Sets up pre-commit hooks
+1. Verifies Python 3.12+
+1. Installs external tools (shellcheck, shfmt, lychee, markdownlint, taplo, hadolint)
+1. Installs Python dependencies with `uv sync --all-groups` (dev and docs)
+1. Installs tox globally
+1. Sets up pre-commit hooks
 
 **Manual**:
 
@@ -197,11 +197,11 @@ uv run doctk demo               # Run interactive demo
    git checkout -b feature/your-feature-name
    ```
 
-2. **Make changes** following code conventions (see below)
+1. **Make changes** following code conventions (see below)
 
-3. **Add tests** for new functionality
+1. **Add tests** for new functionality
 
-4. **Run tests locally**:
+1. **Run tests locally**:
 
    ```bash
    uv run pytest                      # Unit + e2e tests (skip slow)
@@ -210,7 +210,7 @@ uv run doctk demo               # Run interactive demo
    uv run pytest tests/quality/       # Quality/meta tests
    ```
 
-5. **Run quality checks**:
+1. **Run quality checks**:
 
    ```bash
    tox                    # All checks
@@ -220,7 +220,7 @@ uv run doctk demo               # Run interactive demo
    tox -e shellcheck      # Shell script linting
    ```
 
-6. **Commit changes** using conventional commit format:
+1. **Commit changes** using conventional commit format:
 
    ```
    type(scope): description
@@ -232,7 +232,7 @@ uv run doctk demo               # Run interactive demo
 
    Example: `feat(operations): add lift/lower sibling operations`
 
-7. **Pre-commit hooks** run automatically on commit
+1. **Pre-commit hooks** run automatically on commit
 
 ### CI/CD
 
@@ -243,7 +243,7 @@ GitHub Actions runs tests on:
 
 **Total**: 3 jobs (optimized for speed - Windows dropped due to slow builds)
 
----
+______________________________________________________________________
 
 ## Code Conventions
 
@@ -380,7 +380,7 @@ function install_tool() {
 - Alphabetically sorted keys
 - Consistent spacing
 
----
+______________________________________________________________________
 
 ## Testing Strategy
 
@@ -458,7 +458,7 @@ def test_promote_heading_at_minimum_level():
     assert result.level == 1
 ```
 
----
+______________________________________________________________________
 
 ## Key Technologies
 
@@ -470,7 +470,7 @@ def test_promote_heading_at_minimum_level():
 | `mdit-py-plugins` | >=0.4.0 | Markdown parser extensions |
 | `rich` | >=13.0.0 | Terminal formatting & rich output |
 | `pyyaml` | >=6.0 | YAML parsing (tool metadata) |
-| `tomli` | >=2.0.0 | TOML parsing (Python <3.11) |
+| `tomli` | >=2.0.0 | TOML parsing (Python \<3.11) |
 
 ### Development Dependencies
 
@@ -503,7 +503,7 @@ def test_promote_heading_at_minimum_level():
 - **Package manager**: uv (recommended) or pip
 - **Python versions**: 3.12, 3.13, 3.14 (actively maintained only)
 
----
+______________________________________________________________________
 
 ## Common Tasks
 
@@ -532,7 +532,7 @@ def test_promote_heading_at_minimum_level():
            }
    ```
 
-2. **Update the visitor** in `src/doctk/core.py`:
+1. **Update the visitor** in `src/doctk/core.py`:
 
    ```python
    class NodeVisitor(ABC):
@@ -541,11 +541,11 @@ def test_promote_heading_at_minimum_level():
            pass
    ```
 
-3. **Add parser support** in `src/doctk/parsers/markdown.py`
+1. **Add parser support** in `src/doctk/parsers/markdown.py`
 
-4. **Add writer support** in `src/doctk/writers/markdown.py`
+1. **Add writer support** in `src/doctk/writers/markdown.py`
 
-5. **Write tests** in `tests/unit/test_nodes.py`
+1. **Write tests** in `tests/unit/test_nodes.py`
 
 ### Add a New Operation
 
@@ -571,15 +571,15 @@ def test_promote_heading_at_minimum_level():
        return transform
    ```
 
-2. **Export from `__init__.py`**:
+1. **Export from `__init__.py`**:
 
    ```python
    from doctk.operations import wrap
    ```
 
-3. **Write tests** in `tests/unit/test_operations.py`
+1. **Write tests** in `tests/unit/test_operations.py`
 
-4. **Update documentation** in `docs/` if needed
+1. **Update documentation** in `docs/` if needed
 
 ### Add an External Tool
 
@@ -618,14 +618,14 @@ def test_promote_heading_at_minimum_level():
    ```
    ````
 
-2. **Add version to `pyproject.toml`**:
+1. **Add version to `pyproject.toml`**:
 
    ```toml
    [tool.external-tools]
    toolname = "1.0.0"
    ```
 
-3. **Add tox environment** in `tox.ini`:
+1. **Add tox environment** in `tox.ini`:
 
    ```ini
    [testenv:toolname]
@@ -633,7 +633,7 @@ def test_promote_heading_at_minimum_level():
    commands = toolname check .
    ```
 
-4. **Run setup**:
+1. **Run setup**:
 
    ```bash
    python3 scripts/setup-external-tools.py
@@ -658,9 +658,9 @@ def test_promote_heading_at_minimum_level():
            raise typer.Exit(1)
    ```
 
-2. **Write E2E tests** in `tests/e2e/test_cli.py`
+1. **Write E2E tests** in `tests/e2e/test_cli.py`
 
-3. **Update documentation** in `README.md` and `docs/`
+1. **Update documentation** in `README.md` and `docs/`
 
 ### Run Documentation Site Locally
 
@@ -674,7 +674,7 @@ tox -e docs-serve
 tox -e docs-build
 ```
 
----
+______________________________________________________________________
 
 ## Important Patterns
 
@@ -785,7 +785,7 @@ node.accept(visitor)
 - ✅ Use named constants
 - ✅ Keep functions small and focused
 
----
+______________________________________________________________________
 
 ## External Tools System
 
@@ -796,9 +796,9 @@ doctk uses a **unique Markdown-driven tool management system** where tool defini
 ### How It Works
 
 1. **Tool definition**: Each tool has a `.md` file in `scripts/tools/`
-2. **YAML frontmatter**: Contains metadata (version, install method)
-3. **Labeled code blocks**: Contain executable commands
-4. **Single source of truth**: Markdown is both docs and automation
+1. **YAML frontmatter**: Contains metadata (version, install method)
+1. **Labeled code blocks**: Contain executable commands
+1. **Single source of truth**: Markdown is both docs and automation
 
 ### Example Tool Plugin (`scripts/tools/shellcheck.md`)
 
@@ -863,7 +863,7 @@ python3 scripts/validate-plugins.py
 
 See "Add an External Tool" in [Common Tasks](#common-tasks).
 
----
+______________________________________________________________________
 
 ## Working with Kiro Specs
 
@@ -883,19 +883,22 @@ This approach ensures:
 Each spec lives in `.kiro/specs/<spec-name>/` and consists of three documents:
 
 1. **requirements.md** - Defines WHAT needs to be built
+
    - Introduction and goals
    - Glossary of domain terms
    - Formal requirements (WHEN/SHALL format)
    - Acceptance criteria
 
-2. **design.md** - Defines HOW it will be built
+1. **design.md** - Defines HOW it will be built
+
    - Architecture and technical approach
    - Code structure and organization
    - Key components and modules
    - Design patterns and principles
    - Integration points
 
-3. **tasks.md** - Defines the implementation plan
+1. **tasks.md** - Defines the implementation plan
+
    - Discrete, ordered tasks with checkboxes
    - Sub-tasks for complex work
    - Links to requirements
@@ -950,7 +953,7 @@ For comprehensive instructions on working with Kiro specs, including:
 
 **See**: `claude-code-kiro-spec-prompt.md` in the repository root.
 
----
+______________________________________________________________________
 
 ## Quick Reference
 
@@ -1048,43 +1051,43 @@ process = compose(select(heading), where(level=3), promote())
 result = process(doc)
 ```
 
----
+______________________________________________________________________
 
 ## When Working on This Project
 
 ### Before Starting Work
 
 1. ✅ Run `./scripts/check-environment.sh` to verify setup
-2. ✅ Read `docs/SPECIFICATION.md` for context on planned features
-3. ✅ Check `docs/POC-SUMMARY.md` for lessons learned
-4. ✅ Review existing tests to understand patterns
+1. ✅ Read `docs/SPECIFICATION.md` for context on planned features
+1. ✅ Check `docs/POC-SUMMARY.md` for lessons learned
+1. ✅ Review existing tests to understand patterns
 
 ### While Working
 
 1. ✅ Follow the immutability pattern (no mutations)
-2. ✅ Add type annotations to all functions
-3. ✅ Write docstrings with examples
-4. ✅ Write tests as you develop (TDD preferred)
-5. ✅ Run `uv run pytest` frequently
-6. ✅ Keep functions small and focused
+1. ✅ Add type annotations to all functions
+1. ✅ Write docstrings with examples
+1. ✅ Write tests as you develop (TDD preferred)
+1. ✅ Run `uv run pytest` frequently
+1. ✅ Keep functions small and focused
 
 ### Before Committing
 
 1. ✅ Run `tox` to verify all checks pass
-2. ✅ Ensure tests cover new code
-3. ✅ Update documentation if needed
-4. ✅ Use conventional commit messages
-5. ✅ Let pre-commit hooks run (don't skip)
+1. ✅ Ensure tests cover new code
+1. ✅ Update documentation if needed
+1. ✅ Use conventional commit messages
+1. ✅ Let pre-commit hooks run (don't skip)
 
 ### Design Principles to Remember
 
 1. **Composability**: Build complex from simple primitives
-2. **Purity**: Transformations, not mutations
-3. **Type Safety**: Well-typed operations
-4. **Readability**: Self-documenting code
-5. **Testing**: Comprehensive coverage
+1. **Purity**: Transformations, not mutations
+1. **Type Safety**: Well-typed operations
+1. **Readability**: Self-documenting code
+1. **Testing**: Comprehensive coverage
 
----
+______________________________________________________________________
 
 ## Additional Resources
 
@@ -1094,6 +1097,6 @@ result = process(doc)
 - **Discussions**: https://github.com/tommcd/doctk/discussions
 - **License**: MIT
 
----
+______________________________________________________________________
 
 **Note to AI Assistants**: This project values code quality, testing, and documentation. Always run quality checks before suggesting changes are complete. When implementing new features, prioritize composability and immutability. Consult `docs/SPECIFICATION.md` for planned architecture before proposing major changes.

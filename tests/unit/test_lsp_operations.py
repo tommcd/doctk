@@ -279,6 +279,136 @@ class TestDocumentTreeBuilder:
         assert set(tree_ids) == node_map_ids
         assert len(tree_ids) == len(node_map_ids)  # No duplicates
 
+    def test_build_tree_with_ids_line_numbers_simple(self):
+        """Test that line numbers are calculated correctly for simple document."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="First"),
+                Heading(level=1, text="Second"),
+                Heading(level=1, text="Third"),
+            ]
+        )
+        builder = DocumentTreeBuilder(doc)
+
+        tree = builder.build_tree_with_ids()
+
+        # First heading should be at line 0
+        assert tree.children[0].line == 0
+        # Second heading should be at line 2 (0: "# First", 1: blank, 2: "# Second")
+        assert tree.children[1].line == 2
+        # Third heading should be at line 4 (4: "# Third")
+        assert tree.children[2].line == 4
+
+    def test_build_tree_with_ids_line_numbers_with_paragraphs(self):
+        """Test line numbers with paragraphs between headings."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Title"),
+                Paragraph(content="Introduction paragraph."),
+                Heading(level=2, text="Section"),
+                Paragraph(content="Section content."),
+            ]
+        )
+        builder = DocumentTreeBuilder(doc)
+
+        tree = builder.build_tree_with_ids()
+
+        # Title should be at line 0
+        assert tree.children[0].line == 0
+        # Section should be at line 4 (0: "# Title", 1: blank, 2: "Introduction...", 3: blank, 4: "## Section")
+        assert tree.children[0].children[0].line == 4
+
+    def test_build_tree_with_ids_line_numbers_complex_document(self):
+        """Test line numbers in complex document with mixed content."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Chapter 1"),
+                Paragraph(content="Chapter intro."),
+                Heading(level=2, text="Section 1.1"),
+                Paragraph(content="Section content."),
+                Heading(level=2, text="Section 1.2"),
+                Heading(level=1, text="Chapter 2"),
+            ]
+        )
+        builder = DocumentTreeBuilder(doc)
+
+        tree = builder.build_tree_with_ids()
+
+        # Verify the document structure
+        doc_text = doc.to_string()
+        lines = doc_text.split("\n")
+
+        # Chapter 1 should be at line 0
+        chapter1 = tree.children[0]
+        assert chapter1.line == 0
+        assert lines[chapter1.line].startswith("# Chapter 1")
+
+        # Section 1.1 should be after Chapter intro paragraph
+        section11 = chapter1.children[0]
+        assert lines[section11.line].startswith("## Section 1.1")
+
+        # Section 1.2 should be after Section content paragraph
+        section12 = chapter1.children[1]
+        assert lines[section12.line].startswith("## Section 1.2")
+
+        # Chapter 2 should be after Section 1.2
+        chapter2 = tree.children[1]
+        assert lines[chapter2.line].startswith("# Chapter 2")
+
+    def test_build_tree_with_ids_line_numbers_nested(self):
+        """Test line numbers with nested heading structure."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Title"),
+                Heading(level=2, text="Section"),
+                Heading(level=3, text="Subsection"),
+                Heading(level=4, text="Sub-subsection"),
+            ]
+        )
+        builder = DocumentTreeBuilder(doc)
+
+        tree = builder.build_tree_with_ids()
+
+        # Get document text to verify
+        doc_text = doc.to_string()
+        lines = doc_text.split("\n")
+
+        # Verify each heading's line number matches its actual position
+        title = tree.children[0]
+        assert lines[title.line].startswith("# Title")
+
+        section = title.children[0]
+        assert lines[section.line].startswith("## Section")
+
+        subsection = section.children[0]
+        assert lines[subsection.line].startswith("### Subsection")
+
+        sub_subsection = subsection.children[0]
+        assert lines[sub_subsection.line].startswith("#### Sub-subsection")
+
+    def test_build_tree_with_ids_column_is_zero(self):
+        """Test that column is always 0 (headings start at column 0)."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Title"),
+                Heading(level=2, text="Section"),
+            ]
+        )
+        builder = DocumentTreeBuilder(doc)
+
+        tree = builder.build_tree_with_ids()
+
+        # Root should have column 0
+        assert tree.column == 0
+
+        # All headings should have column 0
+        def check_column(node: TreeNode) -> None:
+            assert node.column == 0
+            for child in node.children:
+                check_column(child)
+
+        check_column(tree)
+
 
 class TestPromote:
     """Tests for promote operation."""

@@ -631,3 +631,93 @@ class TestGetDocumentTree:
 
         root = response["result"]["root"]
         check_node_structure(root)
+
+    def test_get_document_tree_line_numbers_simple(self):
+        """Test that line numbers are correct for simple document."""
+        doc_text = "# First\n\n# Second\n\n# Third\n"
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "get_document_tree",
+            "params": {"document": doc_text},
+        }
+
+        response = self.bridge.handle_request(request)
+
+        root = response["result"]["root"]
+        # First heading at line 0
+        assert root["children"][0]["line"] == 0
+        # Second heading at line 2
+        assert root["children"][1]["line"] == 2
+        # Third heading at line 4
+        assert root["children"][2]["line"] == 4
+
+    def test_get_document_tree_line_numbers_with_content(self):
+        """Test line numbers with paragraphs between headings."""
+        doc_text = """# Title
+
+Introduction paragraph.
+
+## Section
+
+Section content.
+"""
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "get_document_tree",
+            "params": {"document": doc_text},
+        }
+
+        response = self.bridge.handle_request(request)
+
+        root = response["result"]["root"]
+        lines = doc_text.split("\n")
+
+        # Title at line 0
+        title = root["children"][0]
+        assert title["line"] == 0
+        assert lines[title["line"]].startswith("# Title")
+
+        # Section should be after the paragraph
+        section = title["children"][0]
+        assert lines[section["line"]].startswith("## Section")
+
+    def test_get_document_tree_line_numbers_complex(self):
+        """Test line numbers in complex nested document."""
+        doc_text = """# Chapter 1
+
+Chapter intro.
+
+## Section 1.1
+
+Section content.
+
+## Section 1.2
+
+# Chapter 2
+"""
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "get_document_tree",
+            "params": {"document": doc_text},
+        }
+
+        response = self.bridge.handle_request(request)
+
+        root = response["result"]["root"]
+        lines = doc_text.split("\n")
+
+        # Verify each heading's line matches its position in the text
+        chapter1 = root["children"][0]
+        assert lines[chapter1["line"]].startswith("# Chapter 1")
+
+        section11 = chapter1["children"][0]
+        assert lines[section11["line"]].startswith("## Section 1.1")
+
+        section12 = chapter1["children"][1]
+        assert lines[section12["line"]].startswith("## Section 1.2")
+
+        chapter2 = root["children"][1]
+        assert lines[chapter2["line"]].startswith("# Chapter 2")

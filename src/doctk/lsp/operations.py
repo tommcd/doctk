@@ -59,19 +59,30 @@ class DocumentTreeBuilder:
         # Counter for generating node IDs
         heading_counter: dict[int, int] = {}
 
+        # Calculate line numbers for each node
+        # Convert document to string and split into lines for line number tracking
+        doc_text = self.document.to_string()
+        lines = doc_text.split("\n")
+
         # Build the tree by iterating through all nodes
+        current_line = 0  # Track current line in document
         for node_index, node in enumerate(self.document.nodes):
             if isinstance(node, Heading):
                 level = node.level
                 heading_counter[level] = heading_counter.get(level, 0) + 1
                 node_id = f"h{level}-{heading_counter[level] - 1}"
 
+                # Calculate actual line number for this node
+                # Use the same logic as _get_node_line_range to find line numbers
+                node_line_range = self._calculate_node_line(node_index, lines)
+                node_line = node_line_range if node_line_range is not None else current_line
+
                 # Create TreeNode for this heading
                 tree_node = TreeNode(
                     id=node_id,
                     label=node.text,
                     level=level,
-                    line=node_index,  # Use node index as line for now
+                    line=node_line,
                     column=0,
                     children=[],
                 )
@@ -89,6 +100,51 @@ class DocumentTreeBuilder:
                 level_stack.append(tree_node)
 
         return root
+
+    def _calculate_node_line(self, node_index: int, lines: list[str]) -> int | None:
+        """
+        Calculate the line number where a node starts.
+
+        Args:
+            node_index: Index of the node in the document
+            lines: Lines of the document text
+
+        Returns:
+            Line number (0-indexed) or None if not found
+        """
+        # Track current line as we iterate through nodes
+        current_line = 0
+
+        for i in range(node_index + 1):
+            # Get the text for node i
+            temp_doc_i = Document([self.document.nodes[i]])
+            search_text = temp_doc_i.to_string().strip()
+
+            # Find this text in the remaining lines
+            found = False
+            for line_idx in range(current_line, len(lines)):
+                line_content = lines[line_idx].rstrip("\n")
+                # Check if this line starts the node
+                if search_text.startswith(line_content) or line_content.startswith(
+                    search_text.split("\n")[0]
+                ):
+                    # Found the start of this node
+                    if i == node_index:
+                        # This is the node we're looking for
+                        return line_idx
+                    else:
+                        # Skip past this node
+                        num_node_lines = search_text.count("\n") + 1
+                        current_line = line_idx + num_node_lines
+                        # Skip any blank lines after this node
+                        while current_line < len(lines) and lines[current_line].strip() == "":
+                            current_line += 1
+                        found = True
+                        break
+            if not found:
+                return None
+
+        return None
 
     def find_node(self, node_id: str) -> Node | None:
         """

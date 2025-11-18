@@ -185,6 +185,51 @@ class TestExecutor:
         with pytest.raises(ExecutionError, match="requires 1 argument"):
             executor.execute(ast)
 
+    def test_node_id_remapping_in_pipeline(self, sample_document):
+        """
+        Test that node IDs are NOT stable across pipeline operations.
+
+        This documents a known limitation: re-parsing causes DocumentTreeBuilder
+        to reassign heading IDs. Multi-step operations on the same node ID will
+        operate on the wrong node.
+
+        See: P1 issue from Codex review - Node Identity Preservation
+        Future enhancement: Maintain stable node identifiers across operations
+        """
+        # Parse: doc | promote h2-0 | demote h2-0
+        # After promote, the node that was h2-0 becomes h1-0
+        # The demote h2-0 will operate on what is NOW at h2-0 (different node!)
+        lexer = Lexer("doc | promote h2-0 | demote h2-0")
+        tokens = lexer.tokenize()
+        parser = Parser(tokens)
+        ast = parser.parse()
+
+        executor = Executor(sample_document)
+        result = executor.execute(ast)
+
+        # Verify that demote operated on the node that is NOW at h2-0,
+        # not the originally promoted node
+        assert isinstance(result, Document)
+
+        # After promote h2-0 (Section 1 becomes h1), the structure is:
+        #   h1-0: Title
+        #   h1-1: Section 1 (promoted from h2)
+        #   h2-0: Subsection 1.1 (was h3-0, now at different ID)
+        #   h2-1: Section 2 (was h2-1)
+        #
+        # Then demote h2-0 operates on "Subsection 1.1" (NOT Section 1!)
+        # and demotes it from h2 to h3
+
+        # Verify Section 1 stayed at h1 (not demoted back)
+        section_1 = [n for n in result.nodes if isinstance(n, Heading) and n.text == "Section 1"]
+        assert len(section_1) == 1
+        assert section_1[0].level == 1  # Still promoted
+
+        # Verify Subsection 1.1 was demoted (it was at h2-0 after first operation)
+        subsection = [n for n in result.nodes if isinstance(n, Heading) and n.text == "Subsection 1.1"]
+        assert len(subsection) == 1
+        assert subsection[0].level == 3  # Demoted from h2 back to h3
+
 
 class TestScriptExecutor:
     """Test the ScriptExecutor class."""
@@ -230,7 +275,7 @@ class TestScriptExecutor:
         try:
             # Execute script and save
             executor = ScriptExecutor()
-            result = executor.execute_file_and_save(script_path, doc_path)
+            executor.execute_file_and_save(script_path, doc_path)
 
             # Verify result was saved
             saved_doc = Document.from_file(doc_path)

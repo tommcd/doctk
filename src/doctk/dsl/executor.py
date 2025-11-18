@@ -125,9 +125,26 @@ class Executor:
         Returns:
             Resulting document
 
+        Warning:
+            Node IDs are NOT stable across pipeline operations. Re-parsing causes
+            DocumentTreeBuilder to reassign heading IDs (h1-0, h2-0, etc.) based on
+            position in the new structure. Multi-step operations on the same node ID
+            will fail or operate on the wrong node.
+
+            Example problematic usage:
+                doc | promote h2-0 | demote h2-0  # demote operates on WRONG node!
+
+            Workaround: Use separate statements instead of pipelines:
+                result1 = doc | promote h2-0
+                result2 = result1 | demote h2-1  # Use updated ID
+
         Note:
             Currently re-parses document after each operation due to StructureOperations
             returning serialized strings (required for JSON-RPC bridge compatibility).
+
+            Future architectural improvement: Refactor StructureOperations to return
+            Document objects with stable node identifiers, avoiding re-parsing overhead
+            and ID remapping issues.
 
         Raises:
             ExecutionError: If operation execution fails

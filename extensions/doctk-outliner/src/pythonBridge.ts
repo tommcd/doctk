@@ -4,6 +4,7 @@
 
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
+import { OperationResult, ValidationResult } from './types';
 
 interface JsonRpcRequest {
   jsonrpc: '2.0';
@@ -139,7 +140,7 @@ export class PythonBridge {
    * @param params - Method parameters
    * @returns Promise that resolves with the result
    */
-  async call(method: string, params: Record<string, any> = {}): Promise<any> {
+  async call<T = any>(method: string, params: Record<string, any> = {}): Promise<T> {
     if (!this.process) {
       throw new Error('Bridge not started');
     }
@@ -180,57 +181,57 @@ export class PythonBridge {
   /**
    * Execute a promote operation.
    */
-  async promote(document: string, nodeId: string): Promise<any> {
-    return this.call('promote', { document, node_id: nodeId });
+  async promote(document: string, nodeId: string): Promise<OperationResult> {
+    return this.call<OperationResult>('promote', { document, node_id: nodeId });
   }
 
   /**
    * Execute a demote operation.
    */
-  async demote(document: string, nodeId: string): Promise<any> {
-    return this.call('demote', { document, node_id: nodeId });
+  async demote(document: string, nodeId: string): Promise<OperationResult> {
+    return this.call<OperationResult>('demote', { document, node_id: nodeId });
   }
 
   /**
    * Execute a move_up operation.
    */
-  async moveUp(document: string, nodeId: string): Promise<any> {
-    return this.call('move_up', { document, node_id: nodeId });
+  async moveUp(document: string, nodeId: string): Promise<OperationResult> {
+    return this.call<OperationResult>('move_up', { document, node_id: nodeId });
   }
 
   /**
    * Execute a move_down operation.
    */
-  async moveDown(document: string, nodeId: string): Promise<any> {
-    return this.call('move_down', { document, node_id: nodeId });
+  async moveDown(document: string, nodeId: string): Promise<OperationResult> {
+    return this.call<OperationResult>('move_down', { document, node_id: nodeId });
   }
 
   /**
    * Execute a nest operation.
    */
-  async nest(document: string, nodeId: string, parentId: string): Promise<any> {
-    return this.call('nest', { document, node_id: nodeId, parent_id: parentId });
+  async nest(document: string, nodeId: string, parentId: string): Promise<OperationResult> {
+    return this.call<OperationResult>('nest', { document, node_id: nodeId, parent_id: parentId });
   }
 
   /**
    * Execute an unnest operation.
    */
-  async unnest(document: string, nodeId: string): Promise<any> {
-    return this.call('unnest', { document, node_id: nodeId });
+  async unnest(document: string, nodeId: string): Promise<OperationResult> {
+    return this.call<OperationResult>('unnest', { document, node_id: nodeId });
   }
 
   /**
    * Validate a promote operation.
    */
-  async validatePromote(document: string, nodeId: string): Promise<any> {
-    return this.call('validate_promote', { document, node_id: nodeId });
+  async validatePromote(document: string, nodeId: string): Promise<ValidationResult> {
+    return this.call<ValidationResult>('validate_promote', { document, node_id: nodeId });
   }
 
   /**
    * Validate a demote operation.
    */
-  async validateDemote(document: string, nodeId: string): Promise<any> {
-    return this.call('validate_demote', { document, node_id: nodeId });
+  async validateDemote(document: string, nodeId: string): Promise<ValidationResult> {
+    return this.call<ValidationResult>('validate_demote', { document, node_id: nodeId });
   }
 
   /**
@@ -345,9 +346,23 @@ export class PythonBridge {
    * Wait for the process to be ready.
    */
   private async waitForReady(): Promise<void> {
-    // For now, just wait a bit for the process to start
-    // In the future, we could send a ping request to verify
-    return new Promise((resolve) => setTimeout(resolve, 100));
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Bridge process failed to start within timeout'));
+      }, 5000); // 5 second timeout
+
+      const onData = (data: Buffer) => {
+        const output = data.toString();
+        if (output.includes('BRIDGE_READY')) {
+          clearTimeout(timeout);
+          // Remove the data listener since we got the ready signal
+          this.process!.stdout!.removeListener('data', onData);
+          resolve();
+        }
+      };
+
+      this.process!.stdout!.on('data', onData);
+    });
   }
 
   /**

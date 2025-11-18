@@ -72,7 +72,8 @@ class TestPromote:
         """Test promoting h2 to h1."""
         doc = Document(nodes=[Heading(level=2, text="Section")])
 
-        new_doc, result = StructureOperations.promote(doc, "h2-0")
+        result = StructureOperations.promote(doc, "h2-0")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
 
         assert result.success is True
         assert len(new_doc.nodes) == 1
@@ -83,7 +84,8 @@ class TestPromote:
         """Test that promoting h1 stays at h1 (identity)."""
         doc = Document(nodes=[Heading(level=1, text="Title")])
 
-        new_doc, result = StructureOperations.promote(doc, "h1-0")
+        result = StructureOperations.promote(doc, "h1-0")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
 
         assert result.success is True
         assert len(new_doc.nodes) == 1
@@ -93,7 +95,7 @@ class TestPromote:
         """Test promoting with invalid node ID."""
         doc = Document(nodes=[Heading(level=2, text="Section")])
 
-        new_doc, result = StructureOperations.promote(doc, "h99-0")
+        result = StructureOperations.promote(doc, "h99-0")
 
         assert result.success is False
         assert "not found" in result.error.lower()
@@ -109,7 +111,7 @@ class TestPromote:
 
         # Attempting to promote a paragraph (which wouldn't have an ID)
         # would fail during node_map building, so this tests error handling
-        new_doc, result = StructureOperations.promote(doc, "p-0")
+        result = StructureOperations.promote(doc, "p-0")
 
         assert result.success is False
 
@@ -118,7 +120,8 @@ class TestPromote:
         original_heading = Heading(level=2, text="Section")
         doc = Document(nodes=[original_heading])
 
-        new_doc, _result = StructureOperations.promote(doc, "h2-0")
+        result = StructureOperations.promote(doc, "h2-0")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
 
         # Original should be unchanged
         assert original_heading.level == 2
@@ -144,7 +147,8 @@ class TestDemote:
         """Test demoting h1 to h2."""
         doc = Document(nodes=[Heading(level=1, text="Title")])
 
-        new_doc, result = StructureOperations.demote(doc, "h1-0")
+        result = StructureOperations.demote(doc, "h1-0")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
 
         assert result.success is True
         assert len(new_doc.nodes) == 1
@@ -155,7 +159,8 @@ class TestDemote:
         """Test that demoting h6 stays at h6 (identity)."""
         doc = Document(nodes=[Heading(level=6, text="Deepest")])
 
-        new_doc, result = StructureOperations.demote(doc, "h6-0")
+        result = StructureOperations.demote(doc, "h6-0")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
 
         assert result.success is True
         assert len(new_doc.nodes) == 1
@@ -165,7 +170,7 @@ class TestDemote:
         """Test demoting with invalid node ID."""
         doc = Document(nodes=[Heading(level=2, text="Section")])
 
-        new_doc, result = StructureOperations.demote(doc, "h99-0")
+        result = StructureOperations.demote(doc, "h99-0")
 
         assert result.success is False
         assert "not found" in result.error.lower()
@@ -192,7 +197,8 @@ class TestMoveUp:
             ]
         )
 
-        new_doc, result = StructureOperations.move_up(doc, "h2-1")
+        result = StructureOperations.move_up(doc, "h2-1")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
 
         assert result.success is True
         assert new_doc.nodes[0].text == "Section 2"
@@ -207,7 +213,8 @@ class TestMoveUp:
             ]
         )
 
-        new_doc, result = StructureOperations.move_up(doc, "h1-0")
+        result = StructureOperations.move_up(doc, "h1-0")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
 
         assert result.success is True
         assert new_doc.nodes[0].text == "First"
@@ -216,7 +223,7 @@ class TestMoveUp:
         """Test move_up with invalid node ID."""
         doc = Document(nodes=[Heading(level=1, text="Title")])
 
-        new_doc, result = StructureOperations.move_up(doc, "h99-0")
+        result = StructureOperations.move_up(doc, "h99-0")
 
         assert result.success is False
 
@@ -246,7 +253,8 @@ class TestMoveDown:
             ]
         )
 
-        new_doc, result = StructureOperations.move_down(doc, "h2-0")
+        result = StructureOperations.move_down(doc, "h2-0")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
 
         assert result.success is True
         assert new_doc.nodes[0].text == "Section 2"
@@ -261,7 +269,8 @@ class TestMoveDown:
             ]
         )
 
-        new_doc, result = StructureOperations.move_down(doc, "h1-1")
+        result = StructureOperations.move_down(doc, "h1-1")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
 
         assert result.success is True
         assert new_doc.nodes[1].text == "Last"
@@ -292,7 +301,8 @@ class TestNest:
             ]
         )
 
-        new_doc, result = StructureOperations.nest(doc, "h1-1", "h1-0")
+        result = StructureOperations.nest(doc, "h1-1", "h1-0")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
 
         assert result.success is True
         # Child should now be h2 (parent.level + 1)
@@ -310,7 +320,8 @@ class TestNest:
             ]
         )
 
-        new_doc, result = StructureOperations.nest(doc, "h1-0", "h2-0")
+        result = StructureOperations.nest(doc, "h1-0", "h2-0")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
 
         assert result.success is True
         # Child should become h3 (parent.level + 1)
@@ -325,7 +336,8 @@ class TestNest:
             ]
         )
 
-        new_doc, result = StructureOperations.nest(doc, "h1-0", "h6-0")
+        result = StructureOperations.nest(doc, "h1-0", "h6-0")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
 
         assert result.success is True
         # Child should be capped at level 6
@@ -340,7 +352,7 @@ class TestNest:
             ]
         )
 
-        new_doc, result = StructureOperations.nest(doc, "h1-1", "h99-0")
+        result = StructureOperations.nest(doc, "h1-1", "h99-0")
 
         assert result.success is False
         assert "not found" in result.error.lower()
@@ -379,7 +391,8 @@ class TestUnnest:
         """Test that unnest decreases heading level by 1."""
         doc = Document(nodes=[Heading(level=3, text="Nested")])
 
-        new_doc, result = StructureOperations.unnest(doc, "h3-0")
+        result = StructureOperations.unnest(doc, "h3-0")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
 
         assert result.success is True
         assert new_doc.nodes[0].level == 2
@@ -389,7 +402,8 @@ class TestUnnest:
         """Test that unnesting h1 stays at h1 (identity)."""
         doc = Document(nodes=[Heading(level=1, text="Top")])
 
-        new_doc, result = StructureOperations.unnest(doc, "h1-0")
+        result = StructureOperations.unnest(doc, "h1-0")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
 
         assert result.success is True
         assert new_doc.nodes[0].level == 1
@@ -398,7 +412,7 @@ class TestUnnest:
         """Test unnest with invalid node ID."""
         doc = Document(nodes=[Heading(level=2, text="Section")])
 
-        new_doc, result = StructureOperations.unnest(doc, "h99-0")
+        result = StructureOperations.unnest(doc, "h99-0")
 
         assert result.success is False
 
@@ -420,19 +434,22 @@ class TestOperationImmutability:
         doc = Document(nodes=[original_heading])
 
         # Test promote
-        new_doc, _ = StructureOperations.promote(doc, "h2-0")
+        result = StructureOperations.promote(doc, "h2-0")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
         assert original_heading.level == 2
         assert doc.nodes[0].level == 2
         assert new_doc.nodes[0].level == 1
 
         # Test demote
-        new_doc, _ = StructureOperations.demote(doc, "h2-0")
+        result = StructureOperations.demote(doc, "h2-0")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
         assert original_heading.level == 2
         assert doc.nodes[0].level == 2
         assert new_doc.nodes[0].level == 3
 
         # Test unnest
-        new_doc, _ = StructureOperations.unnest(doc, "h2-0")
+        result = StructureOperations.unnest(doc, "h2-0")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
         assert original_heading.level == 2
         assert doc.nodes[0].level == 2
         assert new_doc.nodes[0].level == 1
@@ -454,7 +471,8 @@ class TestComplexScenarios:
         )
 
         # Promote second h2
-        new_doc, result = StructureOperations.promote(doc, "h2-1")
+        result = StructureOperations.promote(doc, "h2-1")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
 
         assert result.success is True
         # Find the promoted heading (should be at index 4, level 1)
@@ -472,7 +490,8 @@ class TestComplexScenarios:
             ]
         )
 
-        new_doc, result = StructureOperations.move_down(doc, "h1-0")
+        result = StructureOperations.move_down(doc, "h1-0")
+        new_doc = Document.from_string(result.document) if result.success and result.document else doc
 
         assert result.success is True
         # Verify the headings were swapped

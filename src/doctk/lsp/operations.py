@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Optional
 
 from doctk.core import Document, Heading, Node
-
-if TYPE_CHECKING:
-    from doctk.lsp.protocols import OperationResult, ValidationResult
+from doctk.lsp.protocols import OperationResult, ValidationResult
 
 
 class DocumentTreeBuilder:
@@ -67,12 +65,44 @@ class DocumentTreeBuilder:
         except ValueError:
             return None
 
+    def get_section_range(self, node_id: str) -> Optional[tuple[int, int]]:
+        """
+        Get the range of indices for a complete section.
+
+        A section includes the heading and all nodes until the next heading
+        of the same or lower level.
+
+        Args:
+            node_id: The ID of the heading node
+
+        Returns:
+            Tuple of (start_index, end_index) inclusive, or None if not found
+        """
+        node = self.find_node(node_id)
+        if node is None or not isinstance(node, Heading):
+            return None
+
+        start_index = self.get_node_index(node_id)
+        if start_index is None:
+            return None
+
+        # Find the end of this section (next heading of same or lower level)
+        end_index = start_index
+        for i in range(start_index + 1, len(self.document.nodes)):
+            next_node = self.document.nodes[i]
+            if isinstance(next_node, Heading) and next_node.level <= node.level:
+                # Found the start of the next section at the same or higher level
+                break
+            end_index = i
+
+        return (start_index, end_index)
+
 
 class StructureOperations:
     """High-level operations for document structure manipulation."""
 
     @staticmethod
-    def promote(document: Document[Node], node_id: str) -> tuple[Document[Node], OperationResult]:
+    def promote(document: Document[Node], node_id: str) -> OperationResult:
         """
         Decrease heading level by one (e.g., h3 -> h2).
 
@@ -81,26 +111,24 @@ class StructureOperations:
             node_id: The ID of the node to promote
 
         Returns:
-            Tuple of (modified document, operation result)
+            Operation result
         """
-        from doctk.lsp.protocols import OperationResult
-
         tree_builder = DocumentTreeBuilder(document)
         node = tree_builder.find_node(node_id)
 
         if node is None:
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Node not found: {node_id}"
             )
 
         if not isinstance(node, Heading):
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Node {node_id} is not a heading"
             )
 
         # Validate: already at minimum level?
         if node.level <= 1:
-            return document, OperationResult(
+            return OperationResult(
                 success=True,
                 document=document.to_string(),
                 error=None,
@@ -109,7 +137,7 @@ class StructureOperations:
         # Get the index of the node
         node_index = tree_builder.get_node_index(node_id)
         if node_index is None:
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Could not find index for node: {node_id}"
             )
 
@@ -121,12 +149,12 @@ class StructureOperations:
         new_nodes[node_index] = promoted_node
         new_document = Document(new_nodes)
 
-        return new_document, OperationResult(
+        return OperationResult(
             success=True, document=new_document.to_string()
         )
 
     @staticmethod
-    def demote(document: Document[Node], node_id: str) -> tuple[Document[Node], OperationResult]:
+    def demote(document: Document[Node], node_id: str) -> OperationResult:
         """
         Increase heading level by one (e.g., h2 -> h3).
 
@@ -135,26 +163,24 @@ class StructureOperations:
             node_id: The ID of the node to demote
 
         Returns:
-            Tuple of (modified document, operation result)
+            Operation result
         """
-        from doctk.lsp.protocols import OperationResult
-
         tree_builder = DocumentTreeBuilder(document)
         node = tree_builder.find_node(node_id)
 
         if node is None:
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Node not found: {node_id}"
             )
 
         if not isinstance(node, Heading):
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Node {node_id} is not a heading"
             )
 
         # Validate: already at maximum level?
         if node.level >= 6:
-            return document, OperationResult(
+            return OperationResult(
                 success=True,
                 document=document.to_string(),
                 error=None,
@@ -163,7 +189,7 @@ class StructureOperations:
         # Get the index of the node
         node_index = tree_builder.get_node_index(node_id)
         if node_index is None:
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Could not find index for node: {node_id}"
             )
 
@@ -175,7 +201,7 @@ class StructureOperations:
         new_nodes[node_index] = demoted_node
         new_document = Document(new_nodes)
 
-        return new_document, OperationResult(
+        return OperationResult(
             success=True, document=new_document.to_string()
         )
 
@@ -191,8 +217,6 @@ class StructureOperations:
         Returns:
             ValidationResult indicating whether the operation is valid
         """
-        from doctk.lsp.protocols import ValidationResult
-
         tree_builder = DocumentTreeBuilder(document)
         node = tree_builder.find_node(node_id)
 
@@ -217,8 +241,6 @@ class StructureOperations:
         Returns:
             ValidationResult indicating whether the operation is valid
         """
-        from doctk.lsp.protocols import ValidationResult
-
         tree_builder = DocumentTreeBuilder(document)
         node = tree_builder.find_node(node_id)
 
@@ -232,7 +254,7 @@ class StructureOperations:
         return ValidationResult(valid=True)
 
     @staticmethod
-    def move_up(document: Document[Node], node_id: str) -> tuple[Document[Node], OperationResult]:
+    def move_up(document: Document[Node], node_id: str) -> OperationResult:
         """
         Move a node up in the sibling order.
 
@@ -241,72 +263,89 @@ class StructureOperations:
             node_id: The ID of the node to move up
 
         Returns:
-            Tuple of (modified document, operation result)
+            Operation result
         """
-        from doctk.lsp.protocols import OperationResult
-
         tree_builder = DocumentTreeBuilder(document)
         node = tree_builder.find_node(node_id)
 
         if node is None:
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Node not found: {node_id}"
             )
 
         if not isinstance(node, Heading):
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Node {node_id} is not a heading"
             )
 
-        # Get the index of the node
-        node_index = tree_builder.get_node_index(node_id)
-        if node_index is None:
-            return document, OperationResult(
-                success=False, error=f"Could not find index for node: {node_id}"
+        # Get the section range for the current node
+        section_range = tree_builder.get_section_range(node_id)
+        if section_range is None:
+            return OperationResult(
+                success=False, error=f"Could not find section for node: {node_id}"
             )
 
-        # Check if already at the top (first sibling of its level)
-        if node_index == 0:
-            return document, OperationResult(
+        section_start, section_end = section_range
+
+        # Check if already at the top
+        if section_start == 0:
+            return OperationResult(
                 success=True,
                 document=document.to_string(),
                 error=None,
             )
 
-        # Find the previous sibling (same level or higher)
-        prev_index = node_index - 1
-        while prev_index >= 0:
-            prev_node = document.nodes[prev_index]
-            if isinstance(prev_node, Heading):
-                # Found a heading - check if it's a valid swap target
-                if prev_node.level <= node.level:
-                    break
-            prev_index -= 1
+        # Find the previous sibling heading (same level or higher)
+        prev_heading_index = section_start - 1
+        while prev_heading_index >= 0:
+            prev_node = document.nodes[prev_heading_index]
+            if isinstance(prev_node, Heading) and prev_node.level <= node.level:
+                break
+            prev_heading_index -= 1
 
         # If we can't find a valid previous sibling, stay in place
-        if prev_index < 0:
-            return document, OperationResult(
+        if prev_heading_index < 0:
+            return OperationResult(
                 success=True,
                 document=document.to_string(),
                 error=None,
             )
 
-        # Swap the nodes
+        # Get the section range for the previous sibling
+        prev_node_id = None
+        for nid, n in tree_builder.node_map.items():
+            if n is document.nodes[prev_heading_index]:
+                prev_node_id = nid
+                break
+
+        if prev_node_id is None:
+            return OperationResult(
+                success=False, error="Could not find previous section ID"
+            )
+
+        prev_section_range = tree_builder.get_section_range(prev_node_id)
+        if prev_section_range is None:
+            return OperationResult(
+                success=False, error="Could not find previous section range"
+            )
+
+        prev_section_start, prev_section_end = prev_section_range
+
+        # Move the entire current section to before the previous section
         new_nodes = list(document.nodes)
-        new_nodes[prev_index], new_nodes[node_index] = (
-            new_nodes[node_index],
-            new_nodes[prev_index],
-        )
+        current_section = new_nodes[section_start : section_end + 1]
+        # Remove current section
+        del new_nodes[section_start : section_end + 1]
+        # Insert current section before previous section
+        new_nodes[prev_section_start:prev_section_start] = current_section
         new_document = Document(new_nodes)
 
-        return new_document, OperationResult(
+        return OperationResult(
             success=True, document=new_document.to_string()
         )
 
     @staticmethod
-    def move_down(
-        document: Document[Node], node_id: str
-    ) -> tuple[Document[Node], OperationResult]:
+    def move_down(document: Document[Node], node_id: str) -> OperationResult:
         """
         Move a node down in the sibling order.
 
@@ -315,65 +354,86 @@ class StructureOperations:
             node_id: The ID of the node to move down
 
         Returns:
-            Tuple of (modified document, operation result)
+            Operation result
         """
-        from doctk.lsp.protocols import OperationResult
-
         tree_builder = DocumentTreeBuilder(document)
         node = tree_builder.find_node(node_id)
 
         if node is None:
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Node not found: {node_id}"
             )
 
         if not isinstance(node, Heading):
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Node {node_id} is not a heading"
             )
 
-        # Get the index of the node
-        node_index = tree_builder.get_node_index(node_id)
-        if node_index is None:
-            return document, OperationResult(
-                success=False, error=f"Could not find index for node: {node_id}"
+        # Get the section range for the current node
+        section_range = tree_builder.get_section_range(node_id)
+        if section_range is None:
+            return OperationResult(
+                success=False, error=f"Could not find section for node: {node_id}"
             )
 
-        # Check if already at the bottom (last sibling of its level)
-        if node_index >= len(document.nodes) - 1:
-            return document, OperationResult(
+        section_start, section_end = section_range
+
+        # Check if already at the bottom
+        if section_end >= len(document.nodes) - 1:
+            return OperationResult(
                 success=True,
                 document=document.to_string(),
                 error=None,
             )
 
-        # Find the next sibling (same level or higher)
-        next_index = node_index + 1
-        while next_index < len(document.nodes):
-            next_node = document.nodes[next_index]
-            if isinstance(next_node, Heading):
-                # Found a heading - check if it's a valid swap target
-                if next_node.level <= node.level:
-                    break
-            next_index += 1
+        # Find the next sibling heading (same level or higher)
+        next_heading_index = section_end + 1
+        while next_heading_index < len(document.nodes):
+            next_node = document.nodes[next_heading_index]
+            if isinstance(next_node, Heading) and next_node.level <= node.level:
+                break
+            next_heading_index += 1
 
         # If we can't find a valid next sibling, stay in place
-        if next_index >= len(document.nodes):
-            return document, OperationResult(
+        if next_heading_index >= len(document.nodes):
+            return OperationResult(
                 success=True,
                 document=document.to_string(),
                 error=None,
             )
 
-        # Swap the nodes
+        # Get the section range for the next sibling
+        next_node_id = None
+        for nid, n in tree_builder.node_map.items():
+            if n is document.nodes[next_heading_index]:
+                next_node_id = nid
+                break
+
+        if next_node_id is None:
+            return OperationResult(
+                success=False, error="Could not find next section ID"
+            )
+
+        next_section_range = tree_builder.get_section_range(next_node_id)
+        if next_section_range is None:
+            return OperationResult(
+                success=False, error="Could not find next section range"
+            )
+
+        next_section_start, next_section_end = next_section_range
+
+        # Move the entire current section to after the next section
         new_nodes = list(document.nodes)
-        new_nodes[next_index], new_nodes[node_index] = (
-            new_nodes[node_index],
-            new_nodes[next_index],
-        )
+        current_section = new_nodes[section_start : section_end + 1]
+        # Remove current section
+        del new_nodes[section_start : section_end + 1]
+        # Calculate new insertion position (after removing current section)
+        insert_pos = next_section_end - (section_end - section_start)
+        # Insert current section after next section
+        new_nodes[insert_pos:insert_pos] = current_section
         new_document = Document(new_nodes)
 
-        return new_document, OperationResult(
+        return OperationResult(
             success=True, document=new_document.to_string()
         )
 
@@ -389,8 +449,6 @@ class StructureOperations:
         Returns:
             ValidationResult indicating whether the operation is valid
         """
-        from doctk.lsp.protocols import ValidationResult
-
         tree_builder = DocumentTreeBuilder(document)
         node = tree_builder.find_node(node_id)
 
@@ -415,8 +473,6 @@ class StructureOperations:
         Returns:
             ValidationResult indicating whether the operation is valid
         """
-        from doctk.lsp.protocols import ValidationResult
-
         tree_builder = DocumentTreeBuilder(document)
         node = tree_builder.find_node(node_id)
 
@@ -432,7 +488,7 @@ class StructureOperations:
     @staticmethod
     def nest(
         document: Document[Node], node_id: str, parent_id: str
-    ) -> tuple[Document[Node], OperationResult]:
+    ) -> OperationResult:
         """
         Nest a node under a new parent (make it a child of the parent).
 
@@ -445,75 +501,90 @@ class StructureOperations:
             parent_id: The ID of the parent node
 
         Returns:
-            Tuple of (modified document, operation result)
+            Operation result
         """
-        from doctk.lsp.protocols import OperationResult
-
         tree_builder = DocumentTreeBuilder(document)
         node = tree_builder.find_node(node_id)
         parent = tree_builder.find_node(parent_id)
 
         if node is None:
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Node not found: {node_id}"
             )
 
         if parent is None:
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Parent node not found: {parent_id}"
             )
 
         if not isinstance(node, Heading):
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Node {node_id} is not a heading"
             )
 
         if not isinstance(parent, Heading):
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Parent node {parent_id} is not a heading"
             )
 
-        # Get indices
-        node_index = tree_builder.get_node_index(node_id)
-        parent_index = tree_builder.get_node_index(parent_id)
+        # Get section ranges
+        section_range = tree_builder.get_section_range(node_id)
+        parent_section_range = tree_builder.get_section_range(parent_id)
 
-        if node_index is None or parent_index is None:
-            return document, OperationResult(
-                success=False, error="Could not find node indices"
+        if section_range is None:
+            return OperationResult(
+                success=False, error=f"Could not find section for node: {node_id}"
             )
 
-        # Calculate new level for the node
-        new_level = min(6, parent.level + 1)
+        if parent_section_range is None:
+            return OperationResult(
+                success=False, error=f"Could not find section for parent: {parent_id}"
+            )
 
-        # Create new node with adjusted level
-        nested_node = Heading(
-            level=new_level,
-            text=node.text,
-            children=node.children,
-            metadata=node.metadata,
-        )
+        section_start, section_end = section_range
+        parent_section_start, parent_section_end = parent_section_range
 
-        # Create new node list with the node moved after parent
+        # Calculate level adjustment (difference between parent+1 and current level)
+        level_adjustment = (parent.level + 1) - node.level
+
+        # Extract the section and adjust all heading levels
         new_nodes = list(document.nodes)
+        section_nodes = new_nodes[section_start : section_end + 1]
+        adjusted_section = []
 
-        # Remove node from current position
-        new_nodes.pop(node_index)
+        for section_node in section_nodes:
+            if isinstance(section_node, Heading):
+                # Adjust level, capping at 6
+                adjusted_level = min(6, section_node.level + level_adjustment)
+                adjusted_node = Heading(
+                    level=adjusted_level,
+                    text=section_node.text,
+                    children=section_node.children,
+                    metadata=section_node.metadata,
+                )
+                adjusted_section.append(adjusted_node)
+            else:
+                # Non-heading nodes are kept as-is
+                adjusted_section.append(section_node)
 
-        # Adjust parent index if node was before parent
-        if node_index < parent_index:
-            parent_index -= 1
+        # Remove section from current position
+        del new_nodes[section_start : section_end + 1]
 
-        # Insert node after parent
-        new_nodes.insert(parent_index + 1, nested_node)
+        # Adjust parent section end if section was before parent
+        if section_start < parent_section_start:
+            parent_section_end -= section_end - section_start + 1
+
+        # Insert adjusted section after parent section
+        new_nodes[parent_section_end + 1 : parent_section_end + 1] = adjusted_section
 
         new_document = Document(new_nodes)
 
-        return new_document, OperationResult(
+        return OperationResult(
             success=True, document=new_document.to_string()
         )
 
     @staticmethod
-    def unnest(document: Document[Node], node_id: str) -> tuple[Document[Node], OperationResult]:
+    def unnest(document: Document[Node], node_id: str) -> OperationResult:
         """
         Move a node up one level in the hierarchy (decrease level by 1).
 
@@ -525,26 +596,24 @@ class StructureOperations:
             node_id: The ID of the node to unnest
 
         Returns:
-            Tuple of (modified document, operation result)
+            Operation result
         """
-        from doctk.lsp.protocols import OperationResult
-
         tree_builder = DocumentTreeBuilder(document)
         node = tree_builder.find_node(node_id)
 
         if node is None:
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Node not found: {node_id}"
             )
 
         if not isinstance(node, Heading):
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Node {node_id} is not a heading"
             )
 
         # Validate: already at minimum level?
         if node.level <= 1:
-            return document, OperationResult(
+            return OperationResult(
                 success=True,
                 document=document.to_string(),
                 error=None,
@@ -553,7 +622,7 @@ class StructureOperations:
         # Get the index of the node
         node_index = tree_builder.get_node_index(node_id)
         if node_index is None:
-            return document, OperationResult(
+            return OperationResult(
                 success=False, error=f"Could not find index for node: {node_id}"
             )
 
@@ -565,7 +634,7 @@ class StructureOperations:
         new_nodes[node_index] = unnested_node
         new_document = Document(new_nodes)
 
-        return new_document, OperationResult(
+        return OperationResult(
             success=True, document=new_document.to_string()
         )
 
@@ -584,8 +653,6 @@ class StructureOperations:
         Returns:
             ValidationResult indicating whether the operation is valid
         """
-        from doctk.lsp.protocols import ValidationResult
-
         tree_builder = DocumentTreeBuilder(document)
         node = tree_builder.find_node(node_id)
         parent = tree_builder.find_node(parent_id)
@@ -629,8 +696,6 @@ class StructureOperations:
         Returns:
             ValidationResult indicating whether the operation is valid
         """
-        from doctk.lsp.protocols import ValidationResult
-
         tree_builder = DocumentTreeBuilder(document)
         node = tree_builder.find_node(node_id)
 

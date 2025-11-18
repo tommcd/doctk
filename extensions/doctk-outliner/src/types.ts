@@ -87,6 +87,16 @@ export interface OperationResult {
 }
 
 /**
+ * Result of validating an operation.
+ */
+export interface ValidationResult {
+  /** Whether the operation is valid */
+  valid: boolean;
+  /** Error message (if invalid) */
+  error?: string;
+}
+
+/**
  * Configuration for the doctk outliner.
  */
 export interface DoctkConfiguration {
@@ -99,19 +109,6 @@ export interface DoctkConfiguration {
     showContentPreview: boolean;
     /** Maximum length of preview text */
     maxPreviewLength: number;
-  };
-
-  keybindings: {
-    /** Keybinding for promote operation */
-    promote: string;
-    /** Keybinding for demote operation */
-    demote: string;
-    /** Keybinding for move up operation */
-    moveUp: string;
-    /** Keybinding for move down operation */
-    moveDown: string;
-    /** Keybinding for delete operation */
-    delete: string;
   };
 
   lsp: {

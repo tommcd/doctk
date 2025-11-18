@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+import traceback
 from typing import Any, Optional
 
 from doctk.core import Document, Node
@@ -57,6 +58,7 @@ class ExtensionBridge:
             result = self._execute_method(method, params)
             return self._success_response(request_id, result)
         except Exception as e:
+            traceback.print_exc(file=sys.stderr)
             return self._error_response(request_id, -32603, f"Internal error: {str(e)}")
 
     def _execute_method(self, method: str, params: dict[str, Any]) -> Any:
@@ -104,7 +106,7 @@ class ExtensionBridge:
             raise ValueError("Missing required parameters: document, node_id")
 
         doc = Document.from_string(document_text)
-        new_doc, result = self.operations.promote(doc, node_id)
+        result = self.operations.promote(doc, node_id)
 
         return self._operation_result_to_dict(result)
 
@@ -117,7 +119,7 @@ class ExtensionBridge:
             raise ValueError("Missing required parameters: document, node_id")
 
         doc = Document.from_string(document_text)
-        new_doc, result = self.operations.demote(doc, node_id)
+        result = self.operations.demote(doc, node_id)
 
         return self._operation_result_to_dict(result)
 
@@ -130,7 +132,7 @@ class ExtensionBridge:
             raise ValueError("Missing required parameters: document, node_id")
 
         doc = Document.from_string(document_text)
-        new_doc, result = self.operations.move_up(doc, node_id)
+        result = self.operations.move_up(doc, node_id)
 
         return self._operation_result_to_dict(result)
 
@@ -143,7 +145,7 @@ class ExtensionBridge:
             raise ValueError("Missing required parameters: document, node_id")
 
         doc = Document.from_string(document_text)
-        new_doc, result = self.operations.move_down(doc, node_id)
+        result = self.operations.move_down(doc, node_id)
 
         return self._operation_result_to_dict(result)
 
@@ -157,7 +159,7 @@ class ExtensionBridge:
             raise ValueError("Missing required parameters: document, node_id, parent_id")
 
         doc = Document.from_string(document_text)
-        new_doc, result = self.operations.nest(doc, node_id, parent_id)
+        result = self.operations.nest(doc, node_id, parent_id)
 
         return self._operation_result_to_dict(result)
 
@@ -170,7 +172,7 @@ class ExtensionBridge:
             raise ValueError("Missing required parameters: document, node_id")
 
         doc = Document.from_string(document_text)
-        new_doc, result = self.operations.unnest(doc, node_id)
+        result = self.operations.unnest(doc, node_id)
 
         return self._operation_result_to_dict(result)
 
@@ -307,6 +309,9 @@ class ExtensionBridge:
 
         This is the main loop for the JSON-RPC bridge.
         """
+        # Signal that the bridge is ready
+        print("BRIDGE_READY", flush=True)
+
         for line in sys.stdin:
             try:
                 request = json.loads(line.strip())

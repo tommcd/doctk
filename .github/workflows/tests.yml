@@ -11,14 +11,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # Optimized matrix: Test all Python versions on Ubuntu, only latest on Windows
-        # Total: 6 jobs (down from 15)
+        # Optimized matrix: Test actively maintained Python versions
+        # Total: 4 jobs (Python 3.12+ only - 3.10 and 3.11 are security-fix only)
         include:
-          # Ubuntu: Test all Python versions (primary platform)
-          - os: ubuntu-latest
-            python-version: '3.10'
-          - os: ubuntu-latest
-            python-version: '3.11'
+          # Ubuntu: Test all actively maintained Python versions
           - os: ubuntu-latest
             python-version: '3.12'
           - os: ubuntu-latest
@@ -48,7 +44,7 @@ jobs:
       run: uv run pytest -v --cov=doctk --cov-report=xml --cov-report=term
 
     - name: Upload coverage to Codecov
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
       uses: codecov/codecov-action@v4
       with:
         file: ./coverage.xml

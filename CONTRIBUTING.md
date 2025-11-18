@@ -6,7 +6,7 @@ Thank you for your interest in contributing to doctk! This document provides gui
 
 ### Prerequisites
 
-- Python 3.10 or higher
+- Python 3.12 or higher
 - [uv](https://docs.astral.sh/uv/) package manager
 - Git
 - Bash shell (for setup scripts)
@@ -27,7 +27,7 @@ cd doctk
 This script will:
 
 1. Install uv if not present
-1. Verify Python 3.10+ is available
+1. Verify Python 3.12+ is available
 1. Install external tools (shellcheck, shfmt, lychee, markdownlint, taplo, hadolint)
 1. Install Python dependencies with `uv sync --all-groups`
 1. Install tox globally

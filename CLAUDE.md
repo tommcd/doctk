@@ -159,7 +159,7 @@ doctk/
 This script:
 
 1. Installs `uv` (fast Python package manager)
-2. Verifies Python 3.10+
+2. Verifies Python 3.12+
 3. Installs external tools (shellcheck, shfmt, lychee, markdownlint, taplo, hadolint)
 4. Installs Python dependencies with `uv sync --all-groups` (dev and docs)
 5. Installs tox globally
@@ -237,11 +237,11 @@ uv run doctk demo               # Run interactive demo
 
 GitHub Actions runs tests on:
 
-- **Ubuntu**: Python 3.10, 3.11, 3.12, 3.13, 3.14 (primary platform)
+- **Ubuntu**: Python 3.12, 3.13, 3.14 (actively maintained versions)
 - **Windows**: Python 3.14 only (compatibility check)
-- **Coverage**: Reported to codecov (Ubuntu 3.11)
+- **Coverage**: Reported to codecov (Ubuntu 3.13)
 
-**Total**: 6 jobs (optimized for speed)
+**Total**: 4 jobs (optimized for speed, focuses on actively maintained Python versions)
 
 ---
 
@@ -501,7 +501,7 @@ def test_promote_heading_at_minimum_level():
 
 - **Build backend**: hatchling
 - **Package manager**: uv (recommended) or pip
-- **Python versions**: 3.10, 3.11, 3.12, 3.13, 3.14
+- **Python versions**: 3.12, 3.13, 3.14 (actively maintained only)
 
 ---
 

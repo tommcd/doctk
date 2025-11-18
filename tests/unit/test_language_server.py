@@ -69,9 +69,12 @@ class TestDoctkLanguageServer:
 
         diagnostics = server.validate_syntax(text)
 
-        # Parser has error recovery, so it silently handles parse errors in MVP
-        # Future enhancement: collect and report parse errors
-        assert diagnostics == []
+        # Parser errors are now reported as diagnostics
+        assert len(diagnostics) == 1
+        diagnostic = diagnostics[0]
+        assert diagnostic.severity == DiagnosticSeverity.Error
+        assert diagnostic.source == "doctk-lsp"
+        assert "Expected 'doc' or identifier" in diagnostic.message
 
     def test_validate_syntax_error_position(self):
         """Test that error diagnostics include correct position."""
@@ -80,9 +83,15 @@ class TestDoctkLanguageServer:
 
         diagnostics = server.validate_syntax(text)
 
-        # Parser has error recovery, so it silently handles parse errors in MVP
-        # Future enhancement: collect and report parse errors with positions
-        assert diagnostics == []
+        # Parser errors now generate diagnostics
+        assert len(diagnostics) == 1
+        diagnostic = diagnostics[0]
+        # Should have a range
+        from lsprotocol.types import Position, Range
+
+        assert isinstance(diagnostic.range, Range)
+        assert isinstance(diagnostic.range.start, Position)
+        assert isinstance(diagnostic.range.end, Position)
 
     def test_validate_syntax_multiple_lines(self):
         """Test syntax validation with multiple lines."""
@@ -105,15 +114,21 @@ class TestLanguageServerIntegration:
 
         # Create a document state
         uri = "file:///test.tk"
-        # Use lexer error (not parser error) since parser has error recovery
-        text = "doc | @invalid"
+        # Use both lexer and parser errors
+        text = "doc | @invalid"  # Lexer error
         state = DocumentState(uri, text, 1)
         server.documents[uri] = state
 
         # Test validate_syntax directly
         diagnostics = server.validate_syntax(text)
 
+        # Should get diagnostic for lexer error
         assert len(diagnostics) > 0
+
+        # Also test parser error
+        text2 = "123 | select heading"  # Parser error
+        diagnostics2 = server.validate_syntax(text2)
+        assert len(diagnostics2) > 0
 
     def test_valid_dsl_examples(self):
         """Test various valid DSL examples."""
@@ -136,8 +151,10 @@ class TestLanguageServerIntegration:
         """Test various invalid DSL examples."""
         server = DoctkLanguageServer()
 
-        # Only test lexer errors for now (parser has error recovery in MVP)
+        # Test both lexer and parser errors
         examples = [
+            "123 | select heading",  # Invalid source (parser error)
+            "doc | where level=|",  # Invalid argument value (parser error)
             "doc | @invalid",  # Invalid character (lexer error)
         ]
 

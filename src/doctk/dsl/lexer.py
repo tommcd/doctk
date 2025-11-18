@@ -57,6 +57,23 @@ class Token:
         return f"Token({self.type.name}, {self.value!r}, {self.line}:{self.column})"
 
 
+class LexerError(Exception):
+    """Exception raised for lexical analysis errors."""
+
+    def __init__(self, message: str, line: int, column: int):
+        """
+        Initialize lexer error.
+
+        Args:
+            message: Error message
+            line: Line number where error occurred (1-indexed)
+            column: Column number where error occurred (1-indexed)
+        """
+        super().__init__(f"{message} at line {line}, column {column}")
+        self.line = line
+        self.column = column
+
+
 class Lexer:
     """Lexer for the doctk DSL."""
 
@@ -242,7 +259,7 @@ class Lexer:
             return Token(single_char_map[char], char, line, column)
 
         # Unknown character - raise error
-        raise ValueError(f"Unknown character '{char}' at line {line}, column {column}")
+        raise LexerError(f"Unknown character '{char}'", line, column)
 
     def tokenize(self) -> list[Token]:
         """

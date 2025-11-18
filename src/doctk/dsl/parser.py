@@ -23,10 +23,15 @@ class Pipeline(ASTNode):
 
 @dataclass
 class FunctionCall(ASTNode):
-    """Function call: name(arg1, arg2)."""
+    """
+    Function call: name(arg1, arg2, key1=val1).
+
+    Supports both positional and keyword arguments.
+    """
 
     name: str
-    arguments: dict[str, Any]
+    args: list[Any]  # Positional arguments
+    kwargs: dict[str, Any]  # Keyword arguments
 
 
 @dataclass
@@ -103,6 +108,9 @@ class Parser:
 
         Returns:
             List of AST nodes (statements)
+
+        Raises:
+            ParseError: If parsing fails due to invalid syntax
         """
         statements: list[ASTNode] = []
 
@@ -112,20 +120,10 @@ class Parser:
                 self.advance()
                 continue
 
-            # Parse statement
-            try:
-                stmt = self.parse_statement()
-                if stmt:
-                    statements.append(stmt)
-            except ParseError:
-                # On error, skip to next newline or EOF
-                while (
-                    self.current_token().type != TokenType.NEWLINE
-                    and self.current_token().type != TokenType.EOF
-                ):
-                    self.advance()
-                if self.current_token().type == TokenType.NEWLINE:
-                    self.advance()
+            # Parse statement - let ParseError propagate to caller
+            stmt = self.parse_statement()
+            if stmt:
+                statements.append(stmt)
 
         return statements
 
@@ -177,7 +175,7 @@ class Parser:
         return Pipeline(source=source, operations=operations)
 
     def parse_function_call(self) -> FunctionCall:
-        """Parse function call."""
+        """Parse function call with positional and keyword arguments."""
         # Get function name (can be identifier or keyword used as operation name)
         name_token = self.current_token()
 
@@ -196,38 +194,47 @@ class Parser:
         name = name_token.value
         self.advance()
 
-        # Parse arguments
-        arguments: dict[str, Any] = {}
+        # Parse arguments - positional and keyword
+        args: list[Any] = []
+        kwargs: dict[str, Any] = {}
+
+        # Track whether we've seen any keyword arguments
+        seen_kwargs = False
 
         # Check for arguments (optional)
-        if self.current_token().type == TokenType.IDENTIFIER:
+        while self.current_token().type == TokenType.IDENTIFIER:
             # Check if this is a key=value argument or just a value
             # Look ahead to see if next token is =
             if self.peek_token().type == TokenType.EQUALS:
-                # Parse key=value arguments
-                while self.current_token().type == TokenType.IDENTIFIER:
-                    key_token = self.advance()
-                    key = key_token.value
+                # Keyword argument
+                seen_kwargs = True
+                key_token = self.advance()
+                key = key_token.value
 
-                    # Expect equals sign
-                    self.expect(TokenType.EQUALS)
+                # Expect equals sign
+                self.expect(TokenType.EQUALS)
 
-                    # Parse value
-                    value = self.parse_value()
-                    arguments[key] = value
-
-                    # Check for comma (multiple arguments)
-                    if self.current_token().type == TokenType.COMMA:
-                        self.advance()
-            else:
-                # Positional argument - just a value
+                # Parse value
                 value = self.parse_value()
-                # Use the value as both key and value for now
-                # (This matches the test expectation: {"heading": "heading"})
-                if isinstance(value, str):
-                    arguments[value] = value
+                kwargs[key] = value
+            else:
+                # Positional argument
+                if seen_kwargs:
+                    raise ParseError(
+                        "Positional arguments cannot follow keyword arguments",
+                        self.current_token(),
+                    )
 
-        return FunctionCall(name=name, arguments=arguments)
+                value = self.parse_value()
+                args.append(value)
+
+            # Check for comma (multiple arguments)
+            if self.current_token().type == TokenType.COMMA:
+                self.advance()
+            else:
+                break
+
+        return FunctionCall(name=name, args=args, kwargs=kwargs)
 
     def parse_value(self) -> Any:
         """Parse a value (string, number, boolean, identifier)."""

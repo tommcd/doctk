@@ -22,7 +22,7 @@ from lsprotocol.types import (
 )
 from pygls.lsp.server import LanguageServer
 
-from doctk.dsl.lexer import Lexer
+from doctk.dsl.lexer import Lexer, LexerError
 from doctk.dsl.parser import ParseError, Parser
 
 # Configure logging
@@ -175,33 +175,19 @@ class DoctkLanguageServer(LanguageServer):
             )
             diagnostics.append(diagnostic)
 
-        except ValueError as e:
-            # Lexer error (unknown character)
-            error_msg = str(e)
-
-            # Try to extract line and column from error message
-            # Format: "Unknown character 'X' at line N, column M"
-            line = 0
-            column = 0
-
-            if "line" in error_msg and "column" in error_msg:
-                parts = error_msg.split("at line")[1].split("column")
-                try:
-                    line = int(parts[0].strip().rstrip(","))
-                    column = int(parts[1].strip())
-                except (IndexError, ValueError):
-                    pass
-
+        except LexerError as e:
+            # Lexer error with line/column information
+            # LexerError has line/column as attributes (1-indexed)
             # Convert to 0-indexed positions for LSP
-            line = max(0, line - 1)
-            column = max(0, column - 1)
+            line = max(0, e.line - 1)
+            column = max(0, e.column - 1)
 
             diagnostic = Diagnostic(
                 range=Range(
                     start=Position(line=line, character=column),
                     end=Position(line=line, character=column + 1),
                 ),
-                message=error_msg,
+                message=str(e),
                 severity=DiagnosticSeverity.Error,
                 source="doctk-lsp",
             )

@@ -34,7 +34,9 @@ class TestParserBasics:
         assert pipeline.source == "doc"
         assert len(pipeline.operations) == 1
         assert pipeline.operations[0].name == "select"
-        assert pipeline.operations[0].arguments == {"heading": "heading"}
+        # "heading" is a positional argument
+        assert pipeline.operations[0].args == ["heading"]
+        assert pipeline.operations[0].kwargs == {}
 
     def test_parse_pipeline_with_multiple_operations(self):
         """Test parsing pipeline with multiple operations."""
@@ -66,7 +68,9 @@ class TestParserBasics:
         assert len(pipeline.operations) == 1
         operation = pipeline.operations[0]
         assert operation.name == "where"
-        assert operation.arguments == {"level": 2}
+        # Keyword arguments
+        assert operation.args == []
+        assert operation.kwargs == {"level": 2}
 
     def test_parse_operation_with_string_argument(self):
         """Test parsing operation with string argument."""
@@ -79,7 +83,8 @@ class TestParserBasics:
 
         pipeline = result[0]
         operation = pipeline.operations[0]
-        assert operation.arguments == {"text": "Hello"}
+        assert operation.args == []
+        assert operation.kwargs == {"text": "Hello"}
 
     def test_parse_operation_with_multiple_arguments(self):
         """Test parsing operation with multiple arguments."""
@@ -93,7 +98,8 @@ class TestParserBasics:
         pipeline = result[0]
         operation = pipeline.operations[0]
         assert operation.name == "operation"
-        assert operation.arguments == {"level": 2, "text": "foo"}
+        assert operation.args == []
+        assert operation.kwargs == {"level": 2, "text": "foo"}
 
 
 class TestParserAssignment:
@@ -126,11 +132,11 @@ class TestParserErrors:
         tokens = lexer.tokenize()
         parser = Parser(tokens)
 
-        # Parser has error recovery, so it returns empty list instead of raising
-        result = parser.parse()
+        # Parser should raise ParseError for invalid syntax
+        with pytest.raises(ParseError) as exc_info:
+            parser.parse()
 
-        # Should return empty list due to error recovery
-        assert result == []
+        assert "Expected 'doc' or identifier" in str(exc_info.value)
 
     def test_parse_error_missing_pipe(self):
         """Test that missing pipe doesn't cause error (just empty operations)."""
@@ -153,33 +159,27 @@ class TestParserErrors:
         tokens = lexer.tokenize()
         parser = Parser(tokens)
 
-        # Parser has error recovery, so it returns empty list instead of raising
-        result = parser.parse()
+        # Parser should raise ParseError for invalid syntax
+        with pytest.raises(ParseError) as exc_info:
+            parser.parse()
 
-        # Should return empty list due to error recovery
-        assert result == []
+        assert "Expected value" in str(exc_info.value)
 
     def test_parse_error_has_token_info(self):
-        """Test that parse errors can include token information."""
+        """Test that parse errors include token information."""
         source = "doc | 123"
         lexer = Lexer(source)
         tokens = lexer.tokenize()
         parser = Parser(tokens)
 
-        # Test that parsing with error recovery returns empty result
-        result = parser.parse()
-        assert result == []
+        # Parser should raise ParseError with token info
+        with pytest.raises(ParseError) as exc_info:
+            parser.parse()
 
-        # Test that ParseError can be raised with token info directly
-        try:
-            parser2 = Parser(tokens)
-            parser2.pos = 0  # Reset position
-            parser2.parse_statement()  # This should raise ParseError
-            pytest.fail("Expected ParseError to be raised")
-        except ParseError as error:
-            assert error.token is not None
-            assert error.token.line >= 1
-            assert error.token.column >= 1
+        error = exc_info.value
+        assert error.token is not None
+        assert error.token.line >= 1
+        assert error.token.column >= 1
 
 
 class TestParserComplexCases:
@@ -229,5 +229,6 @@ class TestParserComplexCases:
         assert len(pipeline.operations) == 3
         assert pipeline.operations[0].name == "select"
         assert pipeline.operations[1].name == "where"
-        assert pipeline.operations[1].arguments == {"level": 3}
+        assert pipeline.operations[1].args == []
+        assert pipeline.operations[1].kwargs == {"level": 3}
         assert pipeline.operations[2].name == "promote"

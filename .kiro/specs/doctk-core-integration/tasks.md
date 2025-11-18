@@ -195,37 +195,42 @@ This implementation plan breaks down the core integration layer and execution ca
     - Test syntax and execution errors
     - _Requirements: 13_
 
-- [ ] 8. Implement code block execution in Markdown
+- [x] 8. Implement code block execution in Markdown (core functionality)
 
-  - [ ] 8.1 Create CodeBlockExecutor class
+  - [x] 8.1 Create CodeBlockExecutor class
 
-    - Implement code block detection (\`\`\`doctk blocks)
+    - Implemented code block detection (`doctk` blocks)
     - Extract DSL code from code blocks
+    - Execute code blocks on documents
+    - Support for executing specific blocks by index
+    - Support for executing all blocks in sequence
     - _Requirements: 14.1_
 
-  - [ ] 8.2 Add execution command for code blocks
+  - [ ] 8.2 Add execution command for code blocks (deferred to VS Code extension spec)
 
     - Register command to execute selected code block
     - Execute DSL code and apply to document
     - _Requirements: 14.2, 14.3_
 
-  - [ ] 8.3 Add error handling for code block execution
+  - [ ] 8.3 Add error handling for code block execution (deferred to VS Code extension spec)
 
     - Display errors in output panel
     - Handle execution failures gracefully
     - _Requirements: 14.4_
 
-  - [ ] 8.4 Support multiple code blocks
+  - [ ] 8.4 Support multiple code blocks (deferred to VS Code extension spec)
 
     - Execute only the selected code block
     - Handle documents with multiple doctk blocks
     - _Requirements: 14.5_
 
-  - [ ] 8.5 Write tests for code block execution
+  - [x] 8.5 Write tests for code block execution
 
-    - Test code block detection
-    - Test execution and document update
-    - Test error handling
+    - Test code block detection (multiple blocks, multiline, empty, unclosed)
+    - Test execution and document update (25 comprehensive tests)
+    - Test error handling (syntax errors, execution errors)
+    - Test file-based execution (single block, multiple blocks, all blocks)
+    - Test edge cases (invalid indices, missing files, no blocks)
     - _Requirements: 14_
 
 - [ ] 9. Implement pluggable architecture interfaces

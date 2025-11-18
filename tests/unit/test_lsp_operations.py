@@ -576,6 +576,33 @@ class TestGranularEdits:
 
         assert result.success is True
         assert result.modified_ranges is not None
+        # Should have at least one range for the moved section
+        assert len(result.modified_ranges) >= 1
+        # Verify that Section 2 is in the modified ranges
+        assert any("Section 2" in r.new_text for r in result.modified_ranges)
+
+    def test_move_up_modified_range_details(self):
+        """Test move_up modified range has correct positions and content."""
+        doc = Document(
+            nodes=[
+                Heading(level=2, text="Section 1"),
+                Paragraph(content="Content 1"),
+                Heading(level=2, text="Section 2"),
+                Paragraph(content="Content 2"),
+            ]
+        )
+
+        result = StructureOperations.move_up(doc, "h2-1")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+        # The moved heading should be in the results
+        heading_range = next(
+            (r for r in result.modified_ranges if "Section 2" in r.new_text), None
+        )
+        assert heading_range is not None
+        # Verify it's a heading (should have ##)
+        assert "##" in heading_range.new_text
 
     def test_move_down_returns_modified_ranges(self):
         """Test that move_down operation returns modified ranges."""
@@ -590,6 +617,34 @@ class TestGranularEdits:
 
         assert result.success is True
         assert result.modified_ranges is not None
+        # Should have at least one range for the moved section
+        assert len(result.modified_ranges) >= 1
+        # Verify that Section 1 is in the modified ranges
+        assert any("Section 1" in r.new_text for r in result.modified_ranges)
+
+    def test_move_down_modified_range_details(self):
+        """Test move_down modified range has correct positions and content."""
+        doc = Document(
+            nodes=[
+                Heading(level=2, text="Section 1"),
+                Paragraph(content="Content 1"),
+                Heading(level=2, text="Section 2"),
+                Paragraph(content="Content 2"),
+            ]
+        )
+
+        result = StructureOperations.move_down(doc, "h2-0")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+        # The moved heading should be in the results
+        heading_range = next(
+            (r for r in result.modified_ranges if "Section 1" in r.new_text), None
+        )
+        assert heading_range is not None
+        # Verify start_line and end_line are valid
+        assert heading_range.start_line >= 0
+        assert heading_range.end_line >= heading_range.start_line
 
     def test_nest_returns_modified_ranges(self):
         """Test that nest operation returns modified ranges."""
@@ -604,6 +659,31 @@ class TestGranularEdits:
 
         assert result.success is True
         assert result.modified_ranges is not None
+        # Should have at least one range for the nested node
+        assert len(result.modified_ranges) >= 1
+
+    def test_nest_modified_range_shows_level_change(self):
+        """Test that nest modified range reflects the level change."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Parent"),
+                Heading(level=1, text="Child"),
+            ]
+        )
+
+        result = StructureOperations.nest(doc, "h1-1", "h1-0")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+        # The child should now be level 2 (h2 -> ##)
+        child_range = next(
+            (r for r in result.modified_ranges if "Child" in r.new_text), None
+        )
+        assert child_range is not None
+        # Should show level 2 heading
+        assert "##" in child_range.new_text
+        # Should NOT be level 1
+        assert not child_range.new_text.strip().startswith("# Child")
 
     def test_nest_modified_range_content(self):
         """Test that nest modified range contains adjusted level."""

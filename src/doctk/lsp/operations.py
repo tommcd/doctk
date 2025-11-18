@@ -122,8 +122,9 @@ class DiffComputer:
         original_lines = original_text.splitlines(keepends=True)
         modified_lines = modified_text.splitlines(keepends=True)
 
-        # Build node map for original document
+        # Build node maps for both documents (created once for performance)
         original_builder = DocumentTreeBuilder(original_doc)
+        modified_builder = DocumentTreeBuilder(modified_doc)
 
         ranges: list[ModifiedRange] = []
 
@@ -134,15 +135,15 @@ class DiffComputer:
             if original_node is None:
                 continue  # Node doesn't exist in original document
 
-            # Get the index of the node in the original document
-            node_index = original_builder.get_node_index(node_id)
-            if node_index is None:
-                continue
+            # Find the corresponding node in the modified document
+            # Use content-based matching instead of index because operations
+            # like move_up, move_down, and nest change node positions
+            modified_node = DiffComputer._find_matching_node(
+                original_node, modified_doc.nodes
+            )
 
-            # Get the corresponding node in the modified document (same index)
-            # This works because operations preserve node positions, only changing content
-            if node_index >= len(modified_doc.nodes):
-                # Node was deleted
+            if modified_node is None:
+                # Node was deleted or cannot be matched
                 original_range = DiffComputer._get_node_line_range(
                     original_doc, original_node, original_builder
                 )
@@ -159,14 +160,10 @@ class DiffComputer:
                     )
                 continue
 
-            modified_node = modified_doc.nodes[node_index]
-
             # Get line ranges for the node in both documents
             original_range = DiffComputer._get_node_line_range(
                 original_doc, original_node, original_builder
             )
-            # Create a temporary builder for computing the modified node's position
-            modified_builder = DocumentTreeBuilder(modified_doc)
             modified_range = DiffComputer._get_node_line_range(
                 modified_doc, modified_node, modified_builder
             )
@@ -193,6 +190,49 @@ class DiffComputer:
         return ranges
 
     @staticmethod
+    def _find_matching_node(
+        original_node: Node, modified_nodes: list[Node]
+    ) -> Node | None:
+        """
+        Find a node in the modified document that matches the original node by content.
+
+        This is necessary because operations like move_up, move_down, and nest
+        change node positions, making index-based matching unreliable.
+
+        Args:
+            original_node: The node to find a match for
+            modified_nodes: List of nodes in the modified document
+
+        Returns:
+            The matching node, or None if no match found
+        """
+        # Match headings by text (level may change in promote/demote)
+        if isinstance(original_node, Heading):
+            for node in modified_nodes:
+                if isinstance(node, Heading) and node.text == original_node.text:
+                    return node
+
+        # Match paragraphs by content
+        from doctk.core import Paragraph
+
+        if isinstance(original_node, Paragraph):
+            for node in modified_nodes:
+                if isinstance(node, Paragraph) and node.content == original_node.content:
+                    return node
+
+        # Match other node types by their content
+        # For now, just check if it's the same type and content
+        for node in modified_nodes:
+            if type(node) == type(original_node):  # noqa: E721
+                # Use string representation as a fallback
+                orig_str = str(original_node)
+                node_str = str(node)
+                if orig_str == node_str:
+                    return node
+
+        return None
+
+    @staticmethod
     def _get_node_line_range(
         doc: Document[Node], node: Node | None, builder: DocumentTreeBuilder
     ) -> tuple[int, int] | None:
@@ -216,24 +256,43 @@ class DiffComputer:
         except ValueError:
             return None
 
-        # Convert node index to line range
-        # We'll use a simple approach: count lines from document start
-        lines_before = 0
-        for i in range(node_index):
-            # Create a temp document with just this node to get its string representation
-            temp_doc = Document([doc.nodes[i]])
-            node_text = temp_doc.to_string()
-            lines_before += node_text.count("\n") + (1 if node_text and not node_text.endswith("\n") else 0)
+        # Get the full document text and split into lines
+        full_text = doc.to_string()
+        lines = full_text.splitlines(keepends=True)
 
-        # Get the node's text and count its lines
-        temp_doc = Document([node])
-        node_text = temp_doc.to_string()
-        node_lines = node_text.count("\n") + (1 if node_text and not node_text.endswith("\n") else 0)
+        # Find where this node's text appears in the document
+        current_line = 0
+        for i in range(node_index + 1):
+            # Get the text for node i
+            temp_doc_i = Document([doc.nodes[i]])
+            search_text = temp_doc_i.to_string().strip()
 
-        start_line = lines_before
-        end_line = lines_before + node_lines - 1
+            # Find this text in the remaining lines
+            found = False
+            for line_idx in range(current_line, len(lines)):
+                line_content = lines[line_idx].rstrip('\n')
+                if search_text.startswith(line_content) or line_content.startswith(search_text.split('\n')[0]):
+                    # Found the start of this node
+                    if i == node_index:
+                        # This is the node we're looking for
+                        start_line = line_idx
+                        # Count how many lines this node occupies
+                        num_node_lines = search_text.count('\n') + 1
+                        end_line = start_line + num_node_lines - 1
+                        return (start_line, end_line)
+                    else:
+                        # Skip past this node
+                        num_node_lines = search_text.count('\n') + 1
+                        current_line = line_idx + num_node_lines
+                        # Skip any blank lines after this node
+                        while current_line < len(lines) and lines[current_line].strip() == '':
+                            current_line += 1
+                        found = True
+                        break
+            if not found:
+                return None
 
-        return (start_line, end_line)
+        return None
 
 
 class StructureOperations:

@@ -99,23 +99,23 @@ This implementation plan breaks down the core integration layer and execution ca
     - Added 16 comprehensive tests for granular edit functionality
     - _PR #6 Issue #1 (Critical)_
 
-- [ ] 5. Centralize node ID generation in backend (MEDIUM from PR #6 review)
+- [x] 5. Centralize node ID generation in backend (MEDIUM from PR #6 review)
 
-  - [ ] 5.1 Add TreeNode dataclass and tree building method
+  - [x] 5.1 Add TreeNode dataclass and tree building method
 
     - Define TreeNode dataclass with id, label, level, line, column, children
     - Add `build_tree_with_ids()` method to DocumentTreeBuilder
     - Return hierarchical tree structure with all IDs assigned
     - _PR #6 Issue #5 (Medium)_
 
-  - [ ] 5.2 Add get_document_tree RPC method to bridge
+  - [x] 5.2 Add get_document_tree RPC method to bridge
 
     - Implement `get_document_tree()` in ExtensionBridge
     - Add tree serialization helper method
     - Return JSON-serializable tree structure
     - _PR #6 Issue #5 (Medium)_
 
-  - [ ] 5.3 Write tests for centralized ID generation
+  - [x] 5.3 Write tests for centralized ID generation
 
     - Test backend tree building with various document structures
     - Test IDs are consistent between operations

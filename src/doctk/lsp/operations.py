@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from doctk.core import Document, Heading, Node
-from doctk.lsp.protocols import ModifiedRange, OperationResult, ValidationResult
+from doctk.lsp.protocols import ModifiedRange, OperationResult, TreeNode, ValidationResult
 
 
 class DocumentTreeBuilder:
@@ -31,6 +31,120 @@ class DocumentTreeBuilder:
                 heading_counter[level] = heading_counter.get(level, 0) + 1
                 node_id = f"h{level}-{heading_counter[level] - 1}"
                 self.node_map[node_id] = node
+
+    def build_tree_with_ids(self) -> TreeNode:
+        """
+        Build complete tree structure with IDs assigned.
+
+        This creates a hierarchical tree structure where each heading node
+        has an ID assigned by the backend (single source of truth).
+
+        Returns:
+            TreeNode representing the document root with all children
+        """
+        # Create a virtual root node
+        root = TreeNode(
+            id="root",
+            label="Document",
+            level=0,
+            line=0,
+            column=0,
+            children=[],
+        )
+
+        # Track the current path in the tree (stack of nodes by level)
+        # level 0 is the root, level 1-6 are heading levels
+        level_stack: list[TreeNode] = [root]
+
+        # Counter for generating node IDs
+        heading_counter: dict[int, int] = {}
+
+        # Calculate line numbers for each node
+        # Convert document to string and split into lines for line number tracking
+        doc_text = self.document.to_string()
+        lines = doc_text.split("\n")
+
+        # Build the tree by iterating through all nodes
+        current_line = 0  # Track current line in document
+        for node_index, node in enumerate(self.document.nodes):
+            if isinstance(node, Heading):
+                level = node.level
+                heading_counter[level] = heading_counter.get(level, 0) + 1
+                node_id = f"h{level}-{heading_counter[level] - 1}"
+
+                # Calculate actual line number for this node
+                # Use the same logic as _get_node_line_range to find line numbers
+                node_line_range = self._calculate_node_line(node_index, lines)
+                node_line = node_line_range if node_line_range is not None else current_line
+
+                # Create TreeNode for this heading
+                tree_node = TreeNode(
+                    id=node_id,
+                    label=node.text,
+                    level=level,
+                    line=node_line,
+                    column=0,
+                    children=[],
+                )
+
+                # Find the appropriate parent
+                # The parent is the last node in the stack with level < current level
+                while len(level_stack) > 1 and level_stack[-1].level >= level:
+                    level_stack.pop()
+
+                # Add this node to the parent's children
+                parent = level_stack[-1]
+                parent.children.append(tree_node)
+
+                # Push this node onto the stack
+                level_stack.append(tree_node)
+
+        return root
+
+    def _calculate_node_line(self, node_index: int, lines: list[str]) -> int | None:
+        """
+        Calculate the line number where a node starts.
+
+        Args:
+            node_index: Index of the node in the document
+            lines: Lines of the document text
+
+        Returns:
+            Line number (0-indexed) or None if not found
+        """
+        # Track current line as we iterate through nodes
+        current_line = 0
+
+        for i in range(node_index + 1):
+            # Get the text for node i
+            temp_doc_i = Document([self.document.nodes[i]])
+            search_text = temp_doc_i.to_string().strip()
+
+            # Find this text in the remaining lines
+            found = False
+            for line_idx in range(current_line, len(lines)):
+                line_content = lines[line_idx].rstrip("\n")
+                # Check if this line starts the node
+                if search_text.startswith(line_content) or line_content.startswith(
+                    search_text.split("\n")[0]
+                ):
+                    # Found the start of this node
+                    if i == node_index:
+                        # This is the node we're looking for
+                        return line_idx
+                    else:
+                        # Skip past this node
+                        num_node_lines = search_text.count("\n") + 1
+                        current_line = line_idx + num_node_lines
+                        # Skip any blank lines after this node
+                        while current_line < len(lines) and lines[current_line].strip() == "":
+                            current_line += 1
+                        found = True
+                        break
+            if not found:
+                return None
+
+        return None
 
     def find_node(self, node_id: str) -> Node | None:
         """
@@ -138,9 +252,7 @@ class DiffComputer:
             # Find the corresponding node in the modified document
             # Use content-based matching instead of index because operations
             # like move_up, move_down, and nest change node positions
-            modified_node = DiffComputer._find_matching_node(
-                original_node, modified_doc.nodes
-            )
+            modified_node = DiffComputer._find_matching_node(original_node, modified_doc.nodes)
 
             if modified_node is None:
                 # Node was deleted or cannot be matched
@@ -154,7 +266,9 @@ class DiffComputer:
                             start_line=start_line,
                             start_column=0,
                             end_line=end_line,
-                            end_column=len(original_lines[end_line]) if end_line < len(original_lines) else 0,
+                            end_column=len(original_lines[end_line])
+                            if end_line < len(original_lines)
+                            else 0,
                             new_text="",
                         )
                     )
@@ -182,7 +296,9 @@ class DiffComputer:
                         start_line=start_line,
                         start_column=0,
                         end_line=end_line,
-                        end_column=len(original_lines[end_line]) if end_line < len(original_lines) else 0,
+                        end_column=len(original_lines[end_line])
+                        if end_line < len(original_lines)
+                        else 0,
                         new_text=new_text,
                     )
                 )
@@ -190,9 +306,7 @@ class DiffComputer:
         return ranges
 
     @staticmethod
-    def _find_matching_node(
-        original_node: Node, modified_nodes: list[Node]
-    ) -> Node | None:
+    def _find_matching_node(original_node: Node, modified_nodes: list[Node]) -> Node | None:
         """
         Find a node in the modified document that matches the original node by content.
 
@@ -270,22 +384,24 @@ class DiffComputer:
             # Find this text in the remaining lines
             found = False
             for line_idx in range(current_line, len(lines)):
-                line_content = lines[line_idx].rstrip('\n')
-                if search_text.startswith(line_content) or line_content.startswith(search_text.split('\n')[0]):
+                line_content = lines[line_idx].rstrip("\n")
+                if search_text.startswith(line_content) or line_content.startswith(
+                    search_text.split("\n")[0]
+                ):
                     # Found the start of this node
                     if i == node_index:
                         # This is the node we're looking for
                         start_line = line_idx
                         # Count how many lines this node occupies
-                        num_node_lines = search_text.count('\n') + 1
+                        num_node_lines = search_text.count("\n") + 1
                         end_line = start_line + num_node_lines - 1
                         return (start_line, end_line)
                     else:
                         # Skip past this node
-                        num_node_lines = search_text.count('\n') + 1
+                        num_node_lines = search_text.count("\n") + 1
                         current_line = line_idx + num_node_lines
                         # Skip any blank lines after this node
-                        while current_line < len(lines) and lines[current_line].strip() == '':
+                        while current_line < len(lines) and lines[current_line].strip() == "":
                             current_line += 1
                         found = True
                         break
@@ -314,14 +430,10 @@ class StructureOperations:
         node = tree_builder.find_node(node_id)
 
         if node is None:
-            return OperationResult(
-                success=False, error=f"Node not found: {node_id}"
-            )
+            return OperationResult(success=False, error=f"Node not found: {node_id}")
 
         if not isinstance(node, Heading):
-            return OperationResult(
-                success=False, error=f"Node {node_id} is not a heading"
-            )
+            return OperationResult(success=False, error=f"Node {node_id} is not a heading")
 
         # Validate: already at minimum level?
         if node.level <= 1:
@@ -334,9 +446,7 @@ class StructureOperations:
         # Get the index of the node
         node_index = tree_builder.get_node_index(node_id)
         if node_index is None:
-            return OperationResult(
-                success=False, error=f"Could not find index for node: {node_id}"
-            )
+            return OperationResult(success=False, error=f"Could not find index for node: {node_id}")
 
         # Create new promoted node
         promoted_node = node.promote()
@@ -375,14 +485,10 @@ class StructureOperations:
         node = tree_builder.find_node(node_id)
 
         if node is None:
-            return OperationResult(
-                success=False, error=f"Node not found: {node_id}"
-            )
+            return OperationResult(success=False, error=f"Node not found: {node_id}")
 
         if not isinstance(node, Heading):
-            return OperationResult(
-                success=False, error=f"Node {node_id} is not a heading"
-            )
+            return OperationResult(success=False, error=f"Node {node_id} is not a heading")
 
         # Validate: already at maximum level?
         if node.level >= 6:
@@ -395,9 +501,7 @@ class StructureOperations:
         # Get the index of the node
         node_index = tree_builder.get_node_index(node_id)
         if node_index is None:
-            return OperationResult(
-                success=False, error=f"Could not find index for node: {node_id}"
-            )
+            return OperationResult(success=False, error=f"Could not find index for node: {node_id}")
 
         # Create new demoted node
         demoted_node = node.demote()
@@ -484,14 +588,10 @@ class StructureOperations:
         node = tree_builder.find_node(node_id)
 
         if node is None:
-            return OperationResult(
-                success=False, error=f"Node not found: {node_id}"
-            )
+            return OperationResult(success=False, error=f"Node not found: {node_id}")
 
         if not isinstance(node, Heading):
-            return OperationResult(
-                success=False, error=f"Node {node_id} is not a heading"
-            )
+            return OperationResult(success=False, error=f"Node {node_id} is not a heading")
 
         # Get the section range for the current node
         section_range = tree_builder.get_section_range(node_id)
@@ -534,15 +634,11 @@ class StructureOperations:
                 break
 
         if prev_node_id is None:
-            return OperationResult(
-                success=False, error="Could not find previous section ID"
-            )
+            return OperationResult(success=False, error="Could not find previous section ID")
 
         prev_section_range = tree_builder.get_section_range(prev_node_id)
         if prev_section_range is None:
-            return OperationResult(
-                success=False, error="Could not find previous section range"
-            )
+            return OperationResult(success=False, error="Could not find previous section range")
 
         prev_section_start, prev_section_end = prev_section_range
 
@@ -587,14 +683,10 @@ class StructureOperations:
         node = tree_builder.find_node(node_id)
 
         if node is None:
-            return OperationResult(
-                success=False, error=f"Node not found: {node_id}"
-            )
+            return OperationResult(success=False, error=f"Node not found: {node_id}")
 
         if not isinstance(node, Heading):
-            return OperationResult(
-                success=False, error=f"Node {node_id} is not a heading"
-            )
+            return OperationResult(success=False, error=f"Node {node_id} is not a heading")
 
         # Get the section range for the current node
         section_range = tree_builder.get_section_range(node_id)
@@ -637,15 +729,11 @@ class StructureOperations:
                 break
 
         if next_node_id is None:
-            return OperationResult(
-                success=False, error="Could not find next section ID"
-            )
+            return OperationResult(success=False, error="Could not find next section ID")
 
         next_section_range = tree_builder.get_section_range(next_node_id)
         if next_section_range is None:
-            return OperationResult(
-                success=False, error="Could not find next section range"
-            )
+            return OperationResult(success=False, error="Could not find next section range")
 
         next_section_start, next_section_end = next_section_range
 
@@ -725,9 +813,7 @@ class StructureOperations:
         return ValidationResult(valid=True)
 
     @staticmethod
-    def nest(
-        document: Document[Node], node_id: str, parent_id: str
-    ) -> OperationResult:
+    def nest(document: Document[Node], node_id: str, parent_id: str) -> OperationResult:
         """
         Nest a node under a new parent (make it a child of the parent).
 
@@ -747,24 +833,16 @@ class StructureOperations:
         parent = tree_builder.find_node(parent_id)
 
         if node is None:
-            return OperationResult(
-                success=False, error=f"Node not found: {node_id}"
-            )
+            return OperationResult(success=False, error=f"Node not found: {node_id}")
 
         if parent is None:
-            return OperationResult(
-                success=False, error=f"Parent node not found: {parent_id}"
-            )
+            return OperationResult(success=False, error=f"Parent node not found: {parent_id}")
 
         if not isinstance(node, Heading):
-            return OperationResult(
-                success=False, error=f"Node {node_id} is not a heading"
-            )
+            return OperationResult(success=False, error=f"Node {node_id} is not a heading")
 
         if not isinstance(parent, Heading):
-            return OperationResult(
-                success=False, error=f"Parent node {parent_id} is not a heading"
-            )
+            return OperationResult(success=False, error=f"Parent node {parent_id} is not a heading")
 
         # Get section ranges
         section_range = tree_builder.get_section_range(node_id)
@@ -853,14 +931,10 @@ class StructureOperations:
         node = tree_builder.find_node(node_id)
 
         if node is None:
-            return OperationResult(
-                success=False, error=f"Node not found: {node_id}"
-            )
+            return OperationResult(success=False, error=f"Node not found: {node_id}")
 
         if not isinstance(node, Heading):
-            return OperationResult(
-                success=False, error=f"Node {node_id} is not a heading"
-            )
+            return OperationResult(success=False, error=f"Node {node_id} is not a heading")
 
         # Validate: already at minimum level?
         if node.level <= 1:
@@ -873,9 +947,7 @@ class StructureOperations:
         # Get the index of the node
         node_index = tree_builder.get_node_index(node_id)
         if node_index is None:
-            return OperationResult(
-                success=False, error=f"Could not find index for node: {node_id}"
-            )
+            return OperationResult(success=False, error=f"Could not find index for node: {node_id}")
 
         # Create new unnested node (promote by one level)
         unnested_node = node.promote()
@@ -899,9 +971,7 @@ class StructureOperations:
         )
 
     @staticmethod
-    def validate_nest(
-        document: Document[Node], node_id: str, parent_id: str
-    ) -> ValidationResult:
+    def validate_nest(document: Document[Node], node_id: str, parent_id: str) -> ValidationResult:
         """
         Validate that a nest operation can be executed.
 
@@ -927,9 +997,7 @@ class StructureOperations:
             return ValidationResult(valid=False, error=f"Node {node_id} is not a heading")
 
         if not isinstance(parent, Heading):
-            return ValidationResult(
-                valid=False, error=f"Parent node {parent_id} is not a heading"
-            )
+            return ValidationResult(valid=False, error=f"Parent node {parent_id} is not a heading")
 
         # Can't nest a node under itself
         if node_id == parent_id:

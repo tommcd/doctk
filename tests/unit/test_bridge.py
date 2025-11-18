@@ -1,7 +1,5 @@
 """Tests for the ExtensionBridge JSON-RPC interface."""
 
-
-
 from doctk.lsp.bridge import ExtensionBridge
 
 
@@ -325,9 +323,7 @@ class TestExtensionBridgeIntegration:
         assert response2["result"]["success"] is True
 
         # Third should now be first
-        lines = [
-            line for line in response2["result"]["document"].split("\n") if line.strip()
-        ]
+        lines = [line for line in response2["result"]["document"].split("\n") if line.strip()]
         assert "Third" in lines[0]
 
     def test_validation_before_operation(self):
@@ -379,3 +375,349 @@ class TestExtensionBridgeIntegration:
         }
         valid_response = self.bridge.handle_request(valid_request)
         assert valid_response["result"]["success"] is True
+
+
+class TestGetDocumentTree:
+    """Tests for get_document_tree RPC method."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.bridge = ExtensionBridge()
+
+    def test_get_document_tree_single_heading(self):
+        """Test getting document tree with single heading."""
+        doc_text = "# Title\n"
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "get_document_tree",
+            "params": {"document": doc_text},
+        }
+
+        response = self.bridge.handle_request(request)
+
+        assert response["jsonrpc"] == "2.0"
+        assert response["id"] == 1
+        assert "result" in response
+        assert "root" in response["result"]
+        assert "version" in response["result"]
+
+        # Check root node
+        root = response["result"]["root"]
+        assert root["id"] == "root"
+        assert root["label"] == "Document"
+        assert len(root["children"]) == 1
+
+        # Check first child
+        child = root["children"][0]
+        assert child["id"] == "h1-0"
+        assert child["label"] == "Title"
+        assert child["level"] == 1
+
+    def test_get_document_tree_flat_structure(self):
+        """Test getting document tree with flat structure."""
+        doc_text = "# First\n\n# Second\n\n# Third\n"
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "get_document_tree",
+            "params": {"document": doc_text},
+        }
+
+        response = self.bridge.handle_request(request)
+
+        assert "result" in response
+        root = response["result"]["root"]
+
+        # Should have 3 children
+        assert len(root["children"]) == 3
+        assert root["children"][0]["id"] == "h1-0"
+        assert root["children"][0]["label"] == "First"
+        assert root["children"][1]["id"] == "h1-1"
+        assert root["children"][1]["label"] == "Second"
+        assert root["children"][2]["id"] == "h1-2"
+        assert root["children"][2]["label"] == "Third"
+
+    def test_get_document_tree_nested_structure(self):
+        """Test getting document tree with nested structure."""
+        doc_text = """# Chapter 1
+
+## Section 1.1
+
+## Section 1.2
+
+# Chapter 2
+"""
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "get_document_tree",
+            "params": {"document": doc_text},
+        }
+
+        response = self.bridge.handle_request(request)
+
+        assert "result" in response
+        root = response["result"]["root"]
+
+        # Should have 2 top-level chapters
+        assert len(root["children"]) == 2
+
+        # Chapter 1 should have 2 sections
+        chapter1 = root["children"][0]
+        assert chapter1["id"] == "h1-0"
+        assert chapter1["label"] == "Chapter 1"
+        assert len(chapter1["children"]) == 2
+        assert chapter1["children"][0]["id"] == "h2-0"
+        assert chapter1["children"][0]["label"] == "Section 1.1"
+        assert chapter1["children"][1]["id"] == "h2-1"
+        assert chapter1["children"][1]["label"] == "Section 1.2"
+
+        # Chapter 2 should have no children
+        chapter2 = root["children"][1]
+        assert chapter2["id"] == "h1-1"
+        assert chapter2["label"] == "Chapter 2"
+        assert len(chapter2["children"]) == 0
+
+    def test_get_document_tree_deep_nesting(self):
+        """Test getting document tree with deep nesting."""
+        doc_text = """# Level 1
+
+## Level 2
+
+### Level 3
+
+#### Level 4
+"""
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "get_document_tree",
+            "params": {"document": doc_text},
+        }
+
+        response = self.bridge.handle_request(request)
+
+        assert "result" in response
+        root = response["result"]["root"]
+
+        # Navigate through the tree
+        level1 = root["children"][0]
+        assert level1["id"] == "h1-0"
+        assert level1["label"] == "Level 1"
+
+        level2 = level1["children"][0]
+        assert level2["id"] == "h2-0"
+        assert level2["label"] == "Level 2"
+
+        level3 = level2["children"][0]
+        assert level3["id"] == "h3-0"
+        assert level3["label"] == "Level 3"
+
+        level4 = level3["children"][0]
+        assert level4["id"] == "h4-0"
+        assert level4["label"] == "Level 4"
+        assert len(level4["children"]) == 0
+
+    def test_get_document_tree_empty_document(self):
+        """Test getting document tree for empty document."""
+        doc_text = ""
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "get_document_tree",
+            "params": {"document": doc_text},
+        }
+
+        response = self.bridge.handle_request(request)
+
+        assert "result" in response
+        root = response["result"]["root"]
+        assert root["id"] == "root"
+        assert root["label"] == "Document"
+        assert len(root["children"]) == 0
+
+    def test_get_document_tree_version_timestamp(self):
+        """Test that version is a valid timestamp."""
+        doc_text = "# Title\n"
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "get_document_tree",
+            "params": {"document": doc_text},
+        }
+
+        response = self.bridge.handle_request(request)
+
+        assert "result" in response
+        version = response["result"]["version"]
+        # Version should be a positive integer (timestamp in milliseconds)
+        assert isinstance(version, int)
+        assert version > 0
+
+    def test_get_document_tree_missing_document_parameter(self):
+        """Test error handling when document parameter is missing."""
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "get_document_tree",
+            "params": {},
+        }
+
+        response = self.bridge.handle_request(request)
+
+        assert "error" in response
+        assert response["error"]["code"] == -32603
+        assert "missing" in response["error"]["message"].lower()
+
+    def test_get_document_tree_consistency_across_calls(self):
+        """Test that tree structure is consistent across multiple calls."""
+        doc_text = """# Title
+
+## Section 1
+
+### Subsection 1.1
+
+## Section 2
+"""
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "get_document_tree",
+            "params": {"document": doc_text},
+        }
+
+        # Call twice
+        response1 = self.bridge.handle_request(request)
+        response2 = self.bridge.handle_request(request)
+
+        # Trees should have the same structure (excluding version)
+        root1 = response1["result"]["root"]
+        root2 = response2["result"]["root"]
+
+        # Same structure
+        assert root1["id"] == root2["id"]
+        assert len(root1["children"]) == len(root2["children"])
+
+        # Same child IDs
+        assert root1["children"][0]["id"] == root2["children"][0]["id"]
+        assert root1["children"][0]["label"] == root2["children"][0]["label"]
+
+    def test_get_document_tree_node_structure(self):
+        """Test that each node has all required fields."""
+        doc_text = "# Title\n\n## Section\n"
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "get_document_tree",
+            "params": {"document": doc_text},
+        }
+
+        response = self.bridge.handle_request(request)
+
+        def check_node_structure(node):
+            """Verify node has all required fields."""
+            assert "id" in node
+            assert "label" in node
+            assert "level" in node
+            assert "line" in node
+            assert "column" in node
+            assert "children" in node
+            assert isinstance(node["children"], list)
+
+            # Check all children recursively
+            for child in node["children"]:
+                check_node_structure(child)
+
+        root = response["result"]["root"]
+        check_node_structure(root)
+
+    def test_get_document_tree_line_numbers_simple(self):
+        """Test that line numbers are correct for simple document."""
+        doc_text = "# First\n\n# Second\n\n# Third\n"
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "get_document_tree",
+            "params": {"document": doc_text},
+        }
+
+        response = self.bridge.handle_request(request)
+
+        root = response["result"]["root"]
+        # First heading at line 0
+        assert root["children"][0]["line"] == 0
+        # Second heading at line 2
+        assert root["children"][1]["line"] == 2
+        # Third heading at line 4
+        assert root["children"][2]["line"] == 4
+
+    def test_get_document_tree_line_numbers_with_content(self):
+        """Test line numbers with paragraphs between headings."""
+        doc_text = """# Title
+
+Introduction paragraph.
+
+## Section
+
+Section content.
+"""
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "get_document_tree",
+            "params": {"document": doc_text},
+        }
+
+        response = self.bridge.handle_request(request)
+
+        root = response["result"]["root"]
+        lines = doc_text.split("\n")
+
+        # Title at line 0
+        title = root["children"][0]
+        assert title["line"] == 0
+        assert lines[title["line"]].startswith("# Title")
+
+        # Section should be after the paragraph
+        section = title["children"][0]
+        assert lines[section["line"]].startswith("## Section")
+
+    def test_get_document_tree_line_numbers_complex(self):
+        """Test line numbers in complex nested document."""
+        doc_text = """# Chapter 1
+
+Chapter intro.
+
+## Section 1.1
+
+Section content.
+
+## Section 1.2
+
+# Chapter 2
+"""
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "get_document_tree",
+            "params": {"document": doc_text},
+        }
+
+        response = self.bridge.handle_request(request)
+
+        root = response["result"]["root"]
+        lines = doc_text.split("\n")
+
+        # Verify each heading's line matches its position in the text
+        chapter1 = root["children"][0]
+        assert lines[chapter1["line"]].startswith("# Chapter 1")
+
+        section11 = chapter1["children"][0]
+        assert lines[section11["line"]].startswith("## Section 1.1")
+
+        section12 = chapter1["children"][1]
+        assert lines[section12["line"]].startswith("## Section 1.2")
+
+        chapter2 = root["children"][1]
+        assert lines[chapter2["line"]].startswith("# Chapter 2")

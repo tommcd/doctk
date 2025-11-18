@@ -105,10 +105,15 @@ After core integration tasks 1-5 are complete, these two specs can be developed 
    - Fixed bug where node IDs change after level modifications
    - All tests pass (127/127)
 
-1. ⚠️ **NEXT**: Core integration Task 5 (Centralized node IDs - MEDIUM)
+1. ✅ **COMPLETED**: Core integration Task 5 (Centralized node IDs - MEDIUM)
 
-   - Required by VS Code extension for consistency
-   - Blocks VS Code extension Task 9
+   - Implemented TreeNode dataclass in protocols.py
+   - Added build_tree_with_ids() method to DocumentTreeBuilder
+   - Implemented get_document_tree() RPC method in ExtensionBridge
+   - Added 20 comprehensive tests for tree building and RPC method
+   - All tests pass (88/88 for LSP tests)
+   - Backend is now single source of truth for node IDs
+   - VS Code extension Task 9 now unblocked
 
 ### Phase 2: Parallel Development (PARALLEL)
 
@@ -183,23 +188,32 @@ After Phase 2 tracks complete:
 
 Based on the task files:
 
-- ✅ **Core Integration**: Tasks 1-4 complete (foundation ready, granular edits implemented)
-- ⚠️ **Core Integration**: Task 5 MEDIUM priority for VS Code extension
+- ✅ **Core Integration**: Tasks 1-5 complete (foundation ready, granular edits implemented, centralized IDs implemented)
 - ✅ **VS Code Extension**: Tasks 1-2 complete (tree provider ready)
-- ⏸️ **VS Code Extension**: Partially unblocked - can implement most features, Task 5 needed for full functionality
-- ⏸️ **Language Server**: Can start now (minimal dependencies)
+- ✅ **VS Code Extension**: Fully unblocked - all Phase 1 dependencies complete
+- ✅ **Language Server**: Can start now (all dependencies met)
 
 ## Recommendation
 
 **Immediate next steps:**
 
-1. **Complete Core Integration Task 5** (Centralized node IDs) - MEDIUM
-1. **Then start parallel development:**
-   - VS Code extension Tasks 3-11 (most can start now, Task 9 needs Core Task 5)
-   - Language Server Tasks 1-9 (can start now)
-   - Core integration Tasks 6-13 (can start now)
+Phase 1 is now complete! Proceed with parallel development:
+
+1. **VS Code extension Tasks 3-11** - All unblocked, can proceed
+2. **Language Server Tasks 1-9** - All unblocked, can proceed
+3. **Core integration Tasks 6-13** - All unblocked, can proceed
 
 **Recent Progress:**
+
+- ✅ **2025-11-18**: Completed Core Integration Task 5 (Centralized node IDs)
+  - Implemented TreeNode dataclass in protocols.py
+  - Added build_tree_with_ids() method to DocumentTreeBuilder for hierarchical tree generation
+  - Implemented get_document_tree() RPC method in ExtensionBridge with JSON serialization
+  - Added 20 comprehensive tests (8 for tree building, 12 for RPC method)
+  - All 88 LSP tests pass
+  - Ruff formatting and linting passes
+  - Backend is now single source of truth for document structure and node IDs
+  - VS Code extension fully unblocked
 
 - ✅ **2025-11-18**: Completed Core Integration Task 4 (Granular edits)
   - Implemented ModifiedRange dataclass in protocols.py

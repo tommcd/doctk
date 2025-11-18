@@ -236,6 +236,97 @@ def extract() -> Callable[[Document[T]], list[T]]:
     return extractor
 
 
+# Structure operations (hierarchy manipulation)
+def lift() -> Callable[[Document[Node]], Document[Node]]:
+    """
+    Lift sections up in hierarchy (decrease level).
+
+    This promotes headings, making them siblings of their parent.
+    For example: h3 -> h2 (becomes sibling of parent h1).
+
+    This is equivalent to promote() but emphasizes hierarchical restructuring.
+    """
+
+    def transform(doc: Document[Node]) -> Document[Node]:
+        def lift_node(node: Node) -> Node:
+            if isinstance(node, Heading):
+                return node.promote()
+            return node
+
+        return doc.map(lift_node)
+
+    return transform
+
+
+def lower() -> Callable[[Document[Node]], Document[Node]]:
+    """
+    Lower sections down in hierarchy (increase level).
+
+    This demotes headings, making them children of the previous sibling.
+    For example: h2 -> h3 (becomes child of previous h2).
+
+    This is equivalent to demote() but emphasizes hierarchical restructuring.
+    """
+
+    def transform(doc: Document[Node]) -> Document[Node]:
+        def lower_node(node: Node) -> Node:
+            if isinstance(node, Heading):
+                return node.demote()
+            return node
+
+        return doc.map(lower_node)
+
+    return transform
+
+
+def nest(under: str | None = None) -> Callable[[Document[Node]], Document[Node]]:
+    """
+    Nest sections under a target section.
+
+    Args:
+        under: Target section identifier (default: previous section)
+
+    This operation moves selected sections to be children of a target section
+    by increasing their heading level appropriately.
+
+    Example:
+        doc | select(heading) | where(text="Appendix") | nest(under="previous")
+    """
+
+    def transform(doc: Document[Node]) -> Document[Node]:
+        # For now, implement basic nesting by demoting
+        # Full implementation would require hierarchical document structure
+        def nest_node(node: Node) -> Node:
+            if isinstance(node, Heading):
+                return node.demote()
+            return node
+
+        return doc.map(nest_node)
+
+    return transform
+
+
+def unnest() -> Callable[[Document[Node]], Document[Node]]:
+    """
+    Remove one level of nesting (promote to parent's level).
+
+    This operation decreases nesting depth by promoting headings.
+
+    Example:
+        doc | select(heading) | where(level=4) | unnest()
+    """
+
+    def transform(doc: Document[Node]) -> Document[Node]:
+        def unnest_node(node: Node) -> Node:
+            if isinstance(node, Heading):
+                return node.promote()
+            return node
+
+        return doc.map(unnest_node)
+
+    return transform
+
+
 # Convenient type-based selectors
 heading = select(is_heading)
 paragraph = select(is_paragraph)

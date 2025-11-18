@@ -1089,13 +1089,22 @@ class StructureOperations:
             start_line = first_node_range[0]
             end_line = last_node_range[1]
 
+            # Extend to include trailing blank line that markdown writer adds
+            # The markdown writer appends a blank line after each node (markdown.py:41-50)
+            # We need to delete this separator to avoid doubled blank lines
+            if end_line + 1 < len(original_lines):
+                end_line = end_line + 1
+                end_column = 0  # Start of next line
+            else:
+                end_column = len(original_lines[end_line]) if end_line < len(original_lines) else 0
+
             # Create a deletion range (empty new_text)
             modified_ranges.append(
                 ModifiedRange(
                     start_line=start_line,
                     start_column=0,
                     end_line=end_line,
-                    end_column=len(original_lines[end_line]) if end_line < len(original_lines) else 0,
+                    end_column=end_column,
                     new_text="",
                 )
             )

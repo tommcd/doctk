@@ -3,7 +3,6 @@
  */
 
 import { spawn, ChildProcess } from 'child_process';
-import * as path from 'path';
 import { OperationResult, ValidationResult, DocumentTreeResponse } from './types';
 
 interface JsonRpcRequest {
@@ -110,7 +109,7 @@ export class PythonBridge {
 
     try {
       // Reject all pending requests
-      for (const [id, pending] of this.pendingRequests) {
+      for (const [_id, pending] of this.pendingRequests) {
         pending.reject(new Error('Bridge stopped'));
       }
       this.pendingRequests.clear();
@@ -339,7 +338,7 @@ export class PythonBridge {
    */
   private async handleProcessExit(code: number | null, signal: string | null): Promise<void> {
     // Reject all pending requests
-    for (const [id, pending] of this.pendingRequests) {
+    for (const [_id, pending] of this.pendingRequests) {
       pending.reject(new Error(`Process exited with code ${code}, signal ${signal}`));
     }
     this.pendingRequests.clear();
@@ -363,7 +362,7 @@ export class PythonBridge {
    */
   private handleProcessError(error: Error): void {
     // Reject all pending requests
-    for (const [id, pending] of this.pendingRequests) {
+    for (const [_id, pending] of this.pendingRequests) {
       pending.reject(error);
     }
     this.pendingRequests.clear();

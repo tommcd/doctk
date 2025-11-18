@@ -7,16 +7,25 @@ import { OutlineNode, DocumentTree, BackendTreeNode } from './types';
 import { PythonBridge } from './pythonBridge';
 
 /**
- * Provides a tree view of document structure.
+ * Provides a tree view of document structure with drag-and-drop support.
  *
- * Implements VS Code's TreeDataProvider interface to display
- * document headings in a hierarchical tree view.
+ * Implements VS Code's TreeDataProvider and TreeDragAndDropController interfaces
+ * to display document headings in a hierarchical tree view with interactive
+ * drag-and-drop operations for restructuring documents.
  */
-export class DocumentOutlineProvider implements vscode.TreeDataProvider<OutlineNode> {
+export class DocumentOutlineProvider
+  implements
+    vscode.TreeDataProvider<OutlineNode>,
+    vscode.TreeDragAndDropController<OutlineNode>
+{
   private _onDidChangeTreeData: vscode.EventEmitter<OutlineNode | undefined | null | void> =
     new vscode.EventEmitter<OutlineNode | undefined | null | void>();
   readonly onDidChangeTreeData: vscode.Event<OutlineNode | undefined | null | void> =
     this._onDidChangeTreeData.event;
+
+  // Drag-and-drop configuration
+  readonly dragMimeTypes = ['application/vnd.code.tree.doctkOutline'];
+  readonly dropMimeTypes = ['application/vnd.code.tree.doctkOutline'];
 
   private documentTree: DocumentTree | null = null;
   private document: vscode.TextDocument | null = null;
@@ -352,5 +361,180 @@ export class DocumentOutlineProvider implements vscode.TreeDataProvider<OutlineN
     this.documentTree = null;
     this.document = null;
     this.refresh();
+  }
+
+  /**
+   * Handle drag operation.
+   *
+   * Captures the source nodes being dragged and stores them in the data transfer.
+   *
+   * @param source - Array of nodes being dragged
+   * @param dataTransfer - Data transfer object for storing drag data
+   * @param token - Cancellation token
+   */
+  handleDrag(
+    source: readonly OutlineNode[],
+    dataTransfer: vscode.DataTransfer,
+    _token: vscode.CancellationToken
+  ): void {
+    // Store the source node IDs as JSON
+    const nodeIds = source.map((node) => node.id);
+    dataTransfer.set(
+      'application/vnd.code.tree.doctkOutline',
+      new vscode.DataTransferItem(JSON.stringify(nodeIds))
+    );
+  }
+
+  /**
+   * Handle drop operation.
+   *
+   * Determines the type of drop (nest or reorder) and executes the appropriate operation.
+   *
+   * @param target - Target node where items are dropped (undefined for root)
+   * @param dataTransfer - Data transfer object containing drag data
+   * @param token - Cancellation token
+   */
+  async handleDrop(
+    target: OutlineNode | undefined,
+    dataTransfer: vscode.DataTransfer,
+    token: vscode.CancellationToken
+  ): Promise<void> {
+    // Check cancellation
+    if (token.isCancellationRequested) {
+      return;
+    }
+
+    // Get the dragged node IDs
+    const transferItem = dataTransfer.get('application/vnd.code.tree.doctkOutline');
+    if (!transferItem) {
+      vscode.window.showErrorMessage('Invalid drop data');
+      return;
+    }
+
+    let nodeIds: string[];
+    try {
+      nodeIds = JSON.parse(transferItem.value as string);
+    } catch (error) {
+      vscode.window.showErrorMessage('Failed to parse drop data');
+      return;
+    }
+
+    if (nodeIds.length === 0) {
+      return;
+    }
+
+    // For now, only support single-node drag-and-drop
+    if (nodeIds.length > 1) {
+      vscode.window.showWarningMessage('Multiple node drag-and-drop not yet supported');
+      return;
+    }
+
+    const sourceId = nodeIds[0];
+
+    // Get the source node
+    const sourceNode = this.getNodeById(sourceId);
+    if (!sourceNode) {
+      vscode.window.showErrorMessage(`Source node not found: ${sourceId}`);
+      return;
+    }
+
+    // Validate drop: can't drop a node onto itself or its descendants
+    if (target && this.isDescendant(sourceNode, target)) {
+      vscode.window.showErrorMessage('Cannot drop a node onto itself or its descendants');
+      return;
+    }
+
+    // Determine drop type and execute operation
+    await this.executeDropOperation(sourceNode, target);
+  }
+
+  /**
+   * Execute the appropriate operation based on drop target.
+   *
+   * @param source - Source node being dropped
+   * @param target - Target node where source is dropped (undefined for root)
+   */
+  private async executeDropOperation(
+    source: OutlineNode,
+    target: OutlineNode | undefined
+  ): Promise<void> {
+    if (!this.document || !this.pythonBridge) {
+      vscode.window.showErrorMessage('No active document or Python bridge not available');
+      return;
+    }
+
+    try {
+      const documentText = this.document.getText();
+      let result;
+
+      if (!target) {
+        // Drop at root level - this is complex, so show a message for now
+        vscode.window.showInformationMessage(
+          'Dropping at root level not yet implemented. Use context menu operations instead.'
+        );
+        return;
+      } else {
+        // Drop onto a target node - this nests the source under the target
+        result = await this.pythonBridge.nest(documentText, source.id, target.id);
+      }
+
+      if (result.success) {
+        // Apply changes to document
+        const edit = new vscode.WorkspaceEdit();
+
+        // Use granular edits if available
+        if (result.modifiedRanges && result.modifiedRanges.length > 0) {
+          for (const range of result.modifiedRanges) {
+            const vsRange = new vscode.Range(
+              new vscode.Position(range.start_line, range.start_column),
+              new vscode.Position(range.end_line, range.end_column)
+            );
+            edit.replace(this.document.uri, vsRange, range.new_text);
+          }
+        } else {
+          // Fallback to full document replacement
+          const fullRange = new vscode.Range(
+            this.document.positionAt(0),
+            this.document.positionAt(documentText.length)
+          );
+          edit.replace(this.document.uri, fullRange, result.document || '');
+        }
+
+        await vscode.workspace.applyEdit(edit);
+
+        // Update tree view
+        this.updateFromDocument(this.document);
+
+        vscode.window.showInformationMessage(
+          `Moved "${source.label}" under "${target.label}"`
+        );
+      } else {
+        vscode.window.showErrorMessage(`Drop operation failed: ${result.error}`);
+      }
+    } catch (error) {
+      vscode.window.showErrorMessage(`Error during drop: ${error}`);
+      console.error('Drop error:', error);
+    }
+  }
+
+  /**
+   * Check if a node is a descendant of another node.
+   *
+   * @param ancestor - Potential ancestor node
+   * @param node - Node to check
+   * @returns True if node is a descendant of ancestor
+   */
+  private isDescendant(ancestor: OutlineNode, node: OutlineNode): boolean {
+    if (ancestor.id === node.id) {
+      return true;
+    }
+
+    for (const child of ancestor.children) {
+      if (this.isDescendant(child, node)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }

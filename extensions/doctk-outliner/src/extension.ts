@@ -37,10 +37,12 @@ export async function activate(context: vscode.ExtensionContext) {
   // Initialize outline provider with Python bridge for centralized ID generation
   outlineProvider = new DocumentOutlineProvider(pythonBridge);
 
-  // Register tree data provider
+  // Register tree data provider with drag-and-drop support
   treeView = vscode.window.createTreeView('doctkOutline', {
     treeDataProvider: outlineProvider,
     showCollapseAll: true,
+    canSelectMany: false,
+    dragAndDropController: outlineProvider,
   });
 
   // Register commands

@@ -43,16 +43,16 @@ This implementation plan breaks down the feature into discrete, actionable codin
     - Test nest/unnest with complex hierarchies
     - _Requirements: 20_
 
-- [ ] 3. Create ExtensionBridge for TypeScript-Python communication
+- [x] 3. Create ExtensionBridge for TypeScript-Python communication
 
-  - [ ] 3.1 Implement JSON-RPC bridge in Python
+  - [x] 3.1 Implement JSON-RPC bridge in Python
 
     - Create `ExtensionBridge` class that accepts JSON-RPC requests
     - Implement stdin/stdout communication protocol
     - Add request/response handling with proper error serialization
     - _Requirements: 20_
 
-  - [ ] 3.2 Implement TypeScript PythonBridge client
+  - [x] 3.2 Implement TypeScript PythonBridge client
 
     - Create `PythonBridge` class that spawns Python process
     - Implement JSON-RPC request/response handling
@@ -60,7 +60,7 @@ This implementation plan breaks down the feature into discrete, actionable codin
     - Handle process lifecycle (start, stop, restart)
     - _Requirements: 18, 20_
 
-  - [ ] 3.3 Write integration tests for bridge communication
+  - [x] 3.3 Write integration tests for bridge communication
 
     - Test request/response round-trip
     - Test error handling and serialization

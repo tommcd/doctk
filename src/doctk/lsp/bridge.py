@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import json
 import sys
-from typing import Any, Optional
+from typing import Any
 
-from doctk.core import Document, Node
+from doctk.core import Document
 from doctk.lsp.operations import StructureOperations
 from doctk.lsp.protocols import OperationResult
 

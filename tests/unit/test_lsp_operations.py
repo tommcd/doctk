@@ -1,6 +1,5 @@
 """Tests for LSP structure operations."""
 
-import pytest
 
 from doctk.core import Document, Heading, Paragraph
 from doctk.lsp.operations import DocumentTreeBuilder, StructureOperations

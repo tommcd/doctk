@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING
 
 from doctk.core import Document, Heading, Node
 
@@ -36,7 +36,7 @@ class DocumentTreeBuilder:
                 node_id = f"h{level}-{heading_counter[level] - 1}"
                 self.node_map[node_id] = node
 
-    def find_node(self, node_id: str) -> Optional[Node]:
+    def find_node(self, node_id: str) -> Node | None:
         """
         Find a node by its ID.
 
@@ -48,7 +48,7 @@ class DocumentTreeBuilder:
         """
         return self.node_map.get(node_id)
 
-    def get_node_index(self, node_id: str) -> Optional[int]:
+    def get_node_index(self, node_id: str) -> int | None:
         """
         Get the index of a node in the document.
 

@@ -1,10 +1,7 @@
 """Tests for the ExtensionBridge JSON-RPC interface."""
 
-import json
 
-import pytest
 
-from doctk.core import Document, Heading
 from doctk.lsp.bridge import ExtensionBridge
 
 
@@ -328,7 +325,9 @@ class TestExtensionBridgeIntegration:
         assert response2["result"]["success"] is True
 
         # Third should now be first
-        lines = [l for l in response2["result"]["document"].split("\n") if l.strip()]
+        lines = [
+            line for line in response2["result"]["document"].split("\n") if line.strip()
+        ]
         assert "Third" in lines[0]
 
     def test_validation_before_operation(self):

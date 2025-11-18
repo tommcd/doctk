@@ -1183,11 +1183,11 @@ class TestGranularEdits:
         )
 
         result = StructureOperations.delete(doc, "h2-0")
-        new_doc = (
-            Document.from_string(result.document) if result.success and result.document else doc
-        )
 
         assert result.success is True
+        assert result.document is not None
+
+        new_doc = Document.from_string(result.document)
         assert len(new_doc.nodes) == 1
         assert new_doc.nodes[0].text == "Title"
 
@@ -1202,11 +1202,11 @@ class TestGranularEdits:
         )
 
         result = StructureOperations.delete(doc, "h2-0")
-        new_doc = (
-            Document.from_string(result.document) if result.success and result.document else doc
-        )
 
         assert result.success is True
+        assert result.document is not None
+
+        new_doc = Document.from_string(result.document)
         assert len(new_doc.nodes) == 1
         assert new_doc.nodes[0].text == "Title"
 
@@ -1222,11 +1222,11 @@ class TestGranularEdits:
         )
 
         result = StructureOperations.delete(doc, "h2-0")
-        new_doc = (
-            Document.from_string(result.document) if result.success and result.document else doc
-        )
 
         assert result.success is True
+        assert result.document is not None
+
+        new_doc = Document.from_string(result.document)
         assert len(new_doc.nodes) == 2
         assert new_doc.nodes[0].text == "Title"
         assert new_doc.nodes[1].text == "Another section"

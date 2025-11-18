@@ -62,6 +62,27 @@ class ExtensionBridge:
             traceback.print_exc(file=sys.stderr)
             return self._error_response(request_id, -32603, f"Internal error: {str(e)}")
 
+    def _extract_document_and_node_id(self, params: dict[str, Any]) -> tuple[str, str]:
+        """
+        Extract and validate document and node_id parameters.
+
+        Args:
+            params: Parameters dictionary
+
+        Returns:
+            Tuple of (document_text, node_id)
+
+        Raises:
+            ValueError: If required parameters are missing
+        """
+        document_text = params.get("document")
+        node_id = params.get("node_id")
+
+        if not document_text or not node_id:
+            raise ValueError("Missing required parameters: document, node_id")
+
+        return document_text, node_id
+
     def _execute_method(self, method: str, params: dict[str, Any]) -> Any:
         """
         Execute a method with the given parameters.
@@ -103,11 +124,7 @@ class ExtensionBridge:
 
     def _handle_promote(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle promote operation."""
-        document_text = params.get("document")
-        node_id = params.get("node_id")
-
-        if not document_text or not node_id:
-            raise ValueError("Missing required parameters: document, node_id")
+        document_text, node_id = self._extract_document_and_node_id(params)
 
         doc = Document.from_string(document_text)
         result = self.operations.promote(doc, node_id)
@@ -116,11 +133,7 @@ class ExtensionBridge:
 
     def _handle_demote(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle demote operation."""
-        document_text = params.get("document")
-        node_id = params.get("node_id")
-
-        if not document_text or not node_id:
-            raise ValueError("Missing required parameters: document, node_id")
+        document_text, node_id = self._extract_document_and_node_id(params)
 
         doc = Document.from_string(document_text)
         result = self.operations.demote(doc, node_id)
@@ -129,11 +142,7 @@ class ExtensionBridge:
 
     def _handle_move_up(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle move_up operation."""
-        document_text = params.get("document")
-        node_id = params.get("node_id")
-
-        if not document_text or not node_id:
-            raise ValueError("Missing required parameters: document, node_id")
+        document_text, node_id = self._extract_document_and_node_id(params)
 
         doc = Document.from_string(document_text)
         result = self.operations.move_up(doc, node_id)
@@ -142,11 +151,7 @@ class ExtensionBridge:
 
     def _handle_move_down(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle move_down operation."""
-        document_text = params.get("document")
-        node_id = params.get("node_id")
-
-        if not document_text or not node_id:
-            raise ValueError("Missing required parameters: document, node_id")
+        document_text, node_id = self._extract_document_and_node_id(params)
 
         doc = Document.from_string(document_text)
         result = self.operations.move_down(doc, node_id)
@@ -169,11 +174,7 @@ class ExtensionBridge:
 
     def _handle_unnest(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle unnest operation."""
-        document_text = params.get("document")
-        node_id = params.get("node_id")
-
-        if not document_text or not node_id:
-            raise ValueError("Missing required parameters: document, node_id")
+        document_text, node_id = self._extract_document_and_node_id(params)
 
         doc = Document.from_string(document_text)
         result = self.operations.unnest(doc, node_id)
@@ -182,11 +183,7 @@ class ExtensionBridge:
 
     def _handle_validate_promote(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle validate_promote operation."""
-        document_text = params.get("document")
-        node_id = params.get("node_id")
-
-        if not document_text or not node_id:
-            raise ValueError("Missing required parameters: document, node_id")
+        document_text, node_id = self._extract_document_and_node_id(params)
 
         doc = Document.from_string(document_text)
         result = self.operations.validate_promote(doc, node_id)
@@ -195,11 +192,7 @@ class ExtensionBridge:
 
     def _handle_validate_demote(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle validate_demote operation."""
-        document_text = params.get("document")
-        node_id = params.get("node_id")
-
-        if not document_text or not node_id:
-            raise ValueError("Missing required parameters: document, node_id")
+        document_text, node_id = self._extract_document_and_node_id(params)
 
         doc = Document.from_string(document_text)
         result = self.operations.validate_demote(doc, node_id)
@@ -208,11 +201,7 @@ class ExtensionBridge:
 
     def _handle_validate_move_up(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle validate_move_up operation."""
-        document_text = params.get("document")
-        node_id = params.get("node_id")
-
-        if not document_text or not node_id:
-            raise ValueError("Missing required parameters: document, node_id")
+        document_text, node_id = self._extract_document_and_node_id(params)
 
         doc = Document.from_string(document_text)
         result = self.operations.validate_move_up(doc, node_id)
@@ -221,11 +210,7 @@ class ExtensionBridge:
 
     def _handle_validate_move_down(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle validate_move_down operation."""
-        document_text = params.get("document")
-        node_id = params.get("node_id")
-
-        if not document_text or not node_id:
-            raise ValueError("Missing required parameters: document, node_id")
+        document_text, node_id = self._extract_document_and_node_id(params)
 
         doc = Document.from_string(document_text)
         result = self.operations.validate_move_down(doc, node_id)
@@ -248,11 +233,7 @@ class ExtensionBridge:
 
     def _handle_validate_unnest(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle validate_unnest operation."""
-        document_text = params.get("document")
-        node_id = params.get("node_id")
-
-        if not document_text or not node_id:
-            raise ValueError("Missing required parameters: document, node_id")
+        document_text, node_id = self._extract_document_and_node_id(params)
 
         doc = Document.from_string(document_text)
         result = self.operations.validate_unnest(doc, node_id)
@@ -261,11 +242,7 @@ class ExtensionBridge:
 
     def _handle_delete(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle delete operation."""
-        document_text = params.get("document")
-        node_id = params.get("node_id")
-
-        if not document_text or not node_id:
-            raise ValueError("Missing required parameters: document, node_id")
+        document_text, node_id = self._extract_document_and_node_id(params)
 
         doc = Document.from_string(document_text)
         result = self.operations.delete(doc, node_id)
@@ -274,11 +251,7 @@ class ExtensionBridge:
 
     def _handle_validate_delete(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle validate_delete operation."""
-        document_text = params.get("document")
-        node_id = params.get("node_id")
-
-        if not document_text or not node_id:
-            raise ValueError("Missing required parameters: document, node_id")
+        document_text, node_id = self._extract_document_and_node_id(params)
 
         doc = Document.from_string(document_text)
         result = self.operations.validate_delete(doc, node_id)

@@ -1070,11 +1070,35 @@ class StructureOperations:
         modified_doc = Document(nodes=new_nodes)
 
         # Compute modified ranges for granular edits
-        modified_ranges = DiffComputer.compute_ranges(
-            original_doc=document,
-            modified_doc=modified_doc,
-            affected_node_ids=[node_id],
-        )
+        # For delete operations, we need to manually compute the range because
+        # DiffComputer only processes individual nodes, not entire sections
+        modified_ranges: list[ModifiedRange] = []
+
+        # Get the line range for the entire section being deleted
+        first_node = document.nodes[start_idx]
+        last_node = document.nodes[end_idx]
+
+        first_node_range = DiffComputer._get_node_line_range(document, first_node, tree_builder)
+        last_node_range = DiffComputer._get_node_line_range(document, last_node, tree_builder)
+
+        if first_node_range is not None and last_node_range is not None:
+            # Get the full document text for column calculation
+            original_text = document.to_string()
+            original_lines = original_text.splitlines(keepends=True)
+
+            start_line = first_node_range[0]
+            end_line = last_node_range[1]
+
+            # Create a deletion range (empty new_text)
+            modified_ranges.append(
+                ModifiedRange(
+                    start_line=start_line,
+                    start_column=0,
+                    end_line=end_line,
+                    end_column=len(original_lines[end_line]) if end_line < len(original_lines) else 0,
+                    new_text="",
+                )
+            )
 
         return OperationResult(
             success=True, document=modified_doc.to_string(), modified_ranges=modified_ranges

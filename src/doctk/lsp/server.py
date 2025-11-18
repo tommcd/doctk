@@ -25,8 +25,8 @@ from pygls.lsp.server import LanguageServer
 from doctk.dsl.lexer import Lexer, LexerError
 from doctk.dsl.parser import ParseError, Parser
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Get logger for this module
+# Note: Logging configuration is handled by the consuming application or main()
 logger = logging.getLogger(__name__)
 
 
@@ -212,6 +212,12 @@ class DoctkLanguageServer(LanguageServer):
 
 def main():
     """Start the language server."""
+    # Configure logging for standalone execution
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
+
     server = DoctkLanguageServer()
     server.start_io()
 

@@ -67,9 +67,9 @@ This implementation plan breaks down the feature into discrete, actionable codin
     - Test process restart on failure
     - _Requirements: 18_
 
-- [ ] 4. Implement tree data provider for VS Code
+- [x] 4. Implement tree data provider for VS Code
 
-  - [ ] 4.1 Create DocumentOutlineProvider class
+  - [x] 4.1 Create DocumentOutlineProvider class
 
     - Implement `TreeDataProvider<OutlineNode>` interface
     - Implement `getTreeItem()` to create tree items from nodes
@@ -77,7 +77,7 @@ This implementation plan breaks down the feature into discrete, actionable codin
     - Implement `getParent()` for navigation
     - _Requirements: 1.1, 1.2, 1.3_
 
-  - [ ] 4.2 Add document parsing to build tree structure
+  - [x] 4.2 Add document parsing to build tree structure
 
     - Parse Markdown document to extract headings
     - Build OutlineNode tree from heading hierarchy
@@ -85,14 +85,14 @@ This implementation plan breaks down the feature into discrete, actionable codin
     - Track node ranges (line/column positions)
     - _Requirements: 1.1, 1.2, 1.3_
 
-  - [ ] 4.3 Implement tree refresh and update mechanisms
+  - [x] 4.3 Implement tree refresh and update mechanisms
 
     - Add `refresh()` method to trigger tree re-render
     - Implement `updateFromDocument()` to sync with editor changes
     - Add debouncing to prevent excessive updates
     - _Requirements: 1.4, 16.1, 16.2, 16.3_
 
-  - [ ] 4.4 Write unit tests for tree provider
+  - [x] 4.4 Write unit tests for tree provider
 
     - Test tree building from various Markdown structures
     - Test node ID generation and uniqueness

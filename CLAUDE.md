@@ -18,7 +18,7 @@
 1. [Working with Kiro Specs](#working-with-kiro-specs)
 1. [Quick Reference](#quick-reference)
 
-______________________________________________________________________
+---
 
 ## Project Overview
 

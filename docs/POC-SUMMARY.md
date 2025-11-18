@@ -10,12 +10,14 @@ A **proof-of-concept** for a composable, functional toolkit for structured docum
 ## Key Achievements
 
 ### ✅ Core Abstractions
+
 - **Document** as Functor/Monad with `map`, `flatmap`, `filter`, `reduce`
 - **Node** hierarchy: Heading, Paragraph, List, ListItem, CodeBlock, BlockQuote
 - Pipe operator (`|`) support for elegant composition
 - Set operations: `union`, `intersect`, `diff`
 
 ### ✅ Operations (Morphisms)
+
 - **Composition**: `compose(f, g, h)` following category theory laws
 - **Selection**: `select(predicate)`, `where(**conditions)`
 - **Transforms**: `promote()`, `demote()`, `to_ordered()`, `to_unordered()`
@@ -23,11 +25,13 @@ A **proof-of-concept** for a composable, functional toolkit for structured docum
 - **Utilities**: `first()`, `last()`, `nth(n)`, `slice_nodes(start, end)`
 
 ### ✅ Markdown Support
+
 - **Parser**: markdown-it-py based converter (Markdown → AST)
 - **Writer**: AST → Markdown converter
 - **Round-trip**: Parse and write back preserving structure
 
 ### ✅ Outliner
+
 - Hierarchical tree visualization using Rich
 - Full outline view with depth limiting
 - Headings-only view (hierarchical structure)
@@ -35,6 +39,7 @@ A **proof-of-concept** for a composable, functional toolkit for structured docum
 - Windows console compatible (ASCII-safe icons)
 
 ### ✅ CLI Interface
+
 - `doctk outline <file>` - View document structure
 - `doctk outline <file> --headings-only` - Headings hierarchy
 - `doctk outline <file> --depth N` - Limit outline depth
@@ -43,7 +48,9 @@ A **proof-of-concept** for a composable, functional toolkit for structured docum
 - `doctk help` - Usage information
 
 ### ✅ Tests
+
 **12 tests passing** covering:
+
 - Document creation and parsing
 - Selection and filtering
 - Pipe operator and fluent API
@@ -117,17 +124,20 @@ doctk/
 ## Design Principles Validated
 
 ### Category Theory ✅
+
 - Operations compose naturally: `f ∘ g ∘ h`
 - Identity law holds: `id ∘ f = f ∘ id = f`
 - Associativity: `(f ∘ g) ∘ h = f ∘ (g ∘ h)`
 
 ### Functional Programming ✅
+
 - Pure functions (no mutation)
 - Referential transparency
 - Higher-order functions
 - Functor and Monad abstractions
 
 ### Zen of Python ✅
+
 - Beautiful, explicit, simple syntax
 - Readable pipelines
 - One obvious way to do things
@@ -136,15 +146,16 @@ doctk/
 ## What Works Well
 
 1. **Pipe operator syntax** - Intuitive, LSP-friendly
-2. **Composition** - Complex operations from simple primitives
-3. **Type-based selection** - Clean, expressive queries
-4. **Outliner** - Beautiful visualization with Rich
-5. **Test coverage** - Comprehensive test suite
-6. **Documentation** - Design rationale captured
+1. **Composition** - Complex operations from simple primitives
+1. **Type-based selection** - Clean, expressive queries
+1. **Outliner** - Beautiful visualization with Rich
+1. **Test coverage** - Comprehensive test suite
+1. **Documentation** - Design rationale captured
 
 ## Next Steps (Beyond POC)
 
 ### Phase 2: Enhanced Structure Operations
+
 - [ ] `lift()` / `lower()` - Reorder siblings
 - [ ] `nest()` / `unnest()` - Adjust hierarchy
 - [ ] Path-based selection (`select(path="/Introduction")`)
@@ -152,6 +163,7 @@ doctk/
 - [ ] XPath-like queries
 
 ### Phase 3: Advanced Operations
+
 - [ ] `split()` - Split document by criteria
 - [ ] `merge()` - Merge multiple documents
 - [ ] `template()` - Apply templates
@@ -159,18 +171,21 @@ doctk/
 - [ ] `normalize()` - Canonical form
 
 ### Phase 4: Format Support
+
 - [ ] ReStructuredText adapter
 - [ ] HTML adapter
 - [ ] Confluence adapter
 - [ ] Format-agnostic UDAST refinement
 
 ### Phase 5: Tooling
+
 - [ ] VSCode extension
 - [ ] Language Server Protocol (LSP)
 - [ ] Interactive TUI mode
 - [ ] JupyterLab plugin
 
 ### Phase 6: Performance
+
 - [ ] Lazy evaluation
 - [ ] Stream processing for large docs
 - [ ] Consider Rust port if needed
@@ -193,10 +208,10 @@ doctk/
 The POC successfully demonstrates that:
 
 1. **Category theory principles** provide elegant composition
-2. **Pipe operator syntax** is intuitive and LSP-friendly
-3. **Functional abstractions** work well for document manipulation
-4. **Format adapters** can be cleanly separated
-5. **The design scales** - clear path to full implementation
+1. **Pipe operator syntax** is intuitive and LSP-friendly
+1. **Functional abstractions** work well for document manipulation
+1. **Format adapters** can be cleanly separated
+1. **The design scales** - clear path to full implementation
 
 **Recommendation**: Proceed with full implementation, starting with enhanced structure operations and path-based selection.
 
@@ -206,7 +221,7 @@ The POC successfully demonstrates that:
 - **Tests**: [tests/test_basic.py](../tests/test_basic.py)
 - **Example**: [examples/sample.md](../examples/sample.md)
 
----
+______________________________________________________________________
 
 **Generated**: 2025-11-07
 **Commit**: `513cc9e` - Initial implementation of doctk

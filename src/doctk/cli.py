@@ -11,12 +11,9 @@ from rich.console import Console
 
 from doctk.core import Document
 from doctk.operations import (
-    demote,
     heading,
     promote,
     select,
-    to_ordered,
-    to_unordered,
     where,
 )
 from doctk.outliner import outline, outline_headings_only
@@ -218,7 +215,7 @@ Try it out!
     console.print(f"Before: {len(original_h3)} level-3 headings")
 
     transformed = doc | select(lambda n: hasattr(n, "level") and n.level == 3) | promote()
-    console.print(f"After promotion:")
+    console.print("After promotion:")
     for node in transformed:
         if hasattr(node, "level") and hasattr(node, "text"):
             console.print(f"  - [H{node.level}] {node.text}")

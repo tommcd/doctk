@@ -4,8 +4,6 @@ Outliner functionality for viewing document structure.
 Displays hierarchical document structure with beautiful formatting using Rich.
 """
 
-from typing import Any
-
 from rich.console import Console
 from rich.tree import Tree
 
@@ -107,7 +105,7 @@ class OutlinerVisitor(NodeVisitor):
 
     def visit_block_quote(self, node: BlockQuote) -> Tree:
         """Visit block quote and add to tree."""
-        label = f'> Block quote ({len(node.content)} blocks)'
+        label = f"> Block quote ({len(node.content)} blocks)"
         branch = self.tree.add(label)
 
         # Add content
@@ -160,7 +158,7 @@ def outline_headings_only(doc: Document[Node], console: Console | None = None) -
     if console is None:
         console = Console()
 
-    from doctk.operations import heading, select
+    from doctk.operations import select
 
     # Filter to headings only
     headings_doc = doc | select(lambda n: isinstance(n, Heading))

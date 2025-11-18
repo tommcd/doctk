@@ -1,0 +1,88 @@
+# Pre-commit hooks for code quality and formatting
+# See https://pre-commit.com for more information
+repos:
+  # Shell script executable permissions
+  - repo: local
+    hooks:
+      - id: ensure-sh-executable
+        name: Ensure *.sh files are executable
+        language: system
+        entry: chmod
+        args: [+x]
+        files: ^.*\.sh$
+        stages: [pre-commit, pre-push, manual]
+
+  # General file quality checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+      - id: end-of-file-fixer
+        name: Fix end of files
+      - id: check-yaml
+        name: Check YAML syntax (safe)
+        exclude: ^mkdocs\.yml$
+      - id: check-yaml
+        name: Check YAML syntax (mkdocs unsafe)
+        files: ^mkdocs\.yml$
+        args: [--unsafe]
+      - id: check-added-large-files
+        name: Check for large files
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+      - id: mixed-line-ending
+        name: Check for mixed line endings
+      - id: check-executables-have-shebangs
+        name: Check executables have shebangs
+
+  # Bash script quality
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        name: Shellcheck (bash linting)
+
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.10.0-1
+    hooks:
+      - id: shfmt
+        name: shfmt (bash formatting)
+        args: [-w, -i, "2", -ci, -bn]
+
+  # Python code quality
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.0
+    hooks:
+      - id: ruff
+        name: Ruff (Python linting)
+        args: [--fix]
+      - id: ruff-format
+        name: Ruff (Python formatting)
+
+  # Markdown formatting
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.22
+    hooks:
+      - id: mdformat
+        name: mdformat (Markdown formatting)
+        additional_dependencies:
+          - mdformat-frontmatter
+
+  # TOML formatting
+  - repo: https://github.com/ComPWA/taplo-pre-commit
+    rev: v0.9.3
+    hooks:
+      - id: taplo-format
+        name: taplo (TOML formatting)
+
+  # Tool plugin validation
+  - repo: local
+    hooks:
+      - id: validate-tool-plugins
+        name: Validate tool plugins
+        entry: uv run python scripts/validate-plugins.py
+        language: system
+        files: ^scripts/tools/.*\.md$
+        pass_filenames: false
+        description: Validate tool plugin Markdown files for required sections and code blocks

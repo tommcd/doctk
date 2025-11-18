@@ -1,0 +1,1 @@
+"""Shell script quality tests."""

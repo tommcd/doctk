@@ -7,8 +7,8 @@ Welcome to my project! This document shows the structure.
 To install this project:
 
 1. Clone the repository
-2. Run setup
-3. Configure
+1. Run setup
+1. Configure
 
 ### Prerequisites
 
@@ -47,9 +47,9 @@ We welcome contributions!
 ### Development Setup
 
 1. Fork the repo
-2. Create a branch
-3. Make changes
-4. Submit PR
+1. Create a branch
+1. Make changes
+1. Submit PR
 
 ## License
 

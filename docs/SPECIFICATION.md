@@ -8,20 +8,20 @@
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Architecture](#architecture)
-3. [Core Abstractions](#core-abstractions)
-4. [Operation Catalog](#operation-catalog)
-5. [Selection System](#selection-system)
-6. [Format Support](#format-support)
-7. [CLI Design](#cli-design)
-8. [Python API](#python-api)
-9. [Type System](#type-system)
-10. [Error Handling](#error-handling)
-11. [Performance](#performance)
-12. [Extension Points](#extension-points)
-13. [Implementation Phases](#implementation-phases)
+1. [Architecture](#architecture)
+1. [Core Abstractions](#core-abstractions)
+1. [Operation Catalog](#operation-catalog)
+1. [Selection System](#selection-system)
+1. [Format Support](#format-support)
+1. [CLI Design](#cli-design)
+1. [Python API](#python-api)
+1. [Type System](#type-system)
+1. [Error Handling](#error-handling)
+1. [Performance](#performance)
+1. [Extension Points](#extension-points)
+1. [Implementation Phases](#implementation-phases)
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -32,10 +32,10 @@ doctk is a **composable, format-agnostic toolkit** for structured document manip
 ### Design Pillars
 
 1. **Composability** - Complex operations from simple primitives
-2. **Purity** - Immutable transformations, referential transparency
-3. **Type Safety** - Well-typed operations with LSP support
-4. **Format Agnostic** - Universal AST with format adapters
-5. **Developer Experience** - Intuitive syntax, great tooling
+1. **Purity** - Immutable transformations, referential transparency
+1. **Type Safety** - Well-typed operations with LSP support
+1. **Format Agnostic** - Universal AST with format adapters
+1. **Developer Experience** - Intuitive syntax, great tooling
 
 ### Target Users
 
@@ -44,7 +44,7 @@ doctk is a **composable, format-agnostic toolkit** for structured document manip
 - **Content Engineers**: Transform between formats, apply templates
 - **Educators**: Create interactive document tutorials
 
----
+______________________________________________________________________
 
 ## Architecture
 
@@ -147,7 +147,7 @@ doctk/
     └── features.py         # Completions, hover, etc.
 ```
 
----
+______________________________________________________________________
 
 ## Core Abstractions
 
@@ -333,7 +333,7 @@ class Range:
     end: Location
 ```
 
----
+______________________________________________________________________
 
 ## Operation Catalog
 
@@ -555,7 +555,7 @@ map_nodes(f) -> Operation
 try_op(operation, on_error) -> Operation
 ```
 
----
+______________________________________________________________________
 
 ## Selection System
 
@@ -643,7 +643,7 @@ doc | select(match(
 ))
 ```
 
----
+______________________________________________________________________
 
 ## Format Support
 
@@ -685,6 +685,7 @@ class FormatRegistry:
 ### Markdown Support
 
 **Extensions**:
+
 - GFM (tables, task lists, strikethrough)
 - Front matter (YAML, TOML)
 - Math (LaTeX)
@@ -693,6 +694,7 @@ class FormatRegistry:
 - Footnotes
 
 **Preserves**:
+
 - Exact whitespace in code blocks
 - Link reference style
 - Heading setext vs ATX style (configurable)
@@ -700,12 +702,14 @@ class FormatRegistry:
 ### reStructuredText Support
 
 **Elements**:
+
 - Directives (.. code-block::, .. note::, etc.)
 - Roles (:ref:, :doc:, :math:, etc.)
 - Explicit markup
 - Tables (simple, grid, csv-table)
 
 **Sphinx Integration**:
+
 - Cross-references
 - Autodoc directives
 - Domain objects
@@ -713,11 +717,13 @@ class FormatRegistry:
 ### HTML Support
 
 **Semantic HTML5**:
+
 - `<article>`, `<section>`, `<header>`, `<footer>`
 - `<nav>`, `<aside>`, `<figure>`
 - Preserve classes and IDs
 
 **Clean Output**:
+
 - Minimal markup
 - No inline styles (use classes)
 - Accessible (ARIA attributes)
@@ -725,16 +731,18 @@ class FormatRegistry:
 ### Confluence Support
 
 **Wiki Markup**:
+
 - Macros ({info}, {code}, {toc})
 - Tables
 - Links (page links, external links)
 - Attachments
 
 **Storage Format (XHTML)**:
+
 - Read/write Confluence storage format
 - Preserve Confluence-specific metadata
 
----
+______________________________________________________________________
 
 ## CLI Design
 
@@ -906,7 +914,7 @@ find . -name "*.md" | xargs -I {} doctk transform {} "promote" -i
 doctk outline doc.md --json | jq '.headings[] | select(.level == 2)'
 ```
 
----
+______________________________________________________________________
 
 ## Python API
 
@@ -1006,7 +1014,7 @@ doc = DocumentBuilder()\
     .build()
 ```
 
----
+______________________________________________________________________
 
 ## Type System
 
@@ -1060,7 +1068,7 @@ class Nestable(Protocol):
     def unnest(self) -> list[Node]: ...
 ```
 
----
+______________________________________________________________________
 
 ## Error Handling
 
@@ -1146,25 +1154,29 @@ class ValidationResult:
         return [v for v in self.violations if v.severity == Severity.WARNING]
 ```
 
----
+______________________________________________________________________
 
 ## Performance
 
 ### Optimization Strategies
 
 1. **Lazy Evaluation**
+
    - Defer operations until result needed
    - Stream processing for large documents
 
-2. **Structural Sharing**
+1. **Structural Sharing**
+
    - Reuse unchanged subtrees
    - Copy-on-write for modifications
 
-3. **Parallel Processing**
+1. **Parallel Processing**
+
    - Process independent files concurrently
    - Parallel tree traversal
 
-4. **Caching**
+1. **Caching**
+
    - Cache parsed documents
    - Memoize expensive operations
 
@@ -1186,7 +1198,7 @@ Full round-trip        | < 25ms       | < 100ms        | < 500ms
 - Medium documents (100KB - 1MB): < 50MB
 - Large documents (> 1MB): Linear growth, streaming support
 
----
+______________________________________________________________________
 
 ## Extension Points
 
@@ -1255,11 +1267,12 @@ load_plugin("doctk_mermaid")  # Adds mermaid diagram support
 load_plugin("doctk_latex")    # Adds LaTeX support
 ```
 
----
+______________________________________________________________________
 
 ## Implementation Phases
 
 ### Phase 1: Core Enhancement (v0.2) - NEXT
+
 **Goal**: Robust core with complete operation set
 
 - [ ] Enhanced node hierarchy (Section, Table, Inline nodes)
@@ -1270,12 +1283,14 @@ load_plugin("doctk_latex")    # Adds LaTeX support
 - [ ] Comprehensive test suite (>80% coverage)
 
 **Deliverables**:
+
 - All node types implemented
 - All basic operations working
 - Location tracking for error reporting
 - Test coverage report
 
 ### Phase 2: Selection System (v0.3)
+
 **Goal**: Powerful, expressive selection capabilities
 
 - [ ] Path-based selection with full syntax
@@ -1286,11 +1301,13 @@ load_plugin("doctk_latex")    # Adds LaTeX support
 - [ ] Performance optimization (indexing)
 
 **Deliverables**:
+
 - Selection system documentation
 - Example gallery
 - Performance benchmarks
 
 ### Phase 3: Format Support (v0.4)
+
 **Goal**: Multi-format support with high fidelity
 
 - [ ] Enhanced Markdown support (GFM, extensions)
@@ -1301,11 +1318,13 @@ load_plugin("doctk_latex")    # Adds LaTeX support
 - [ ] Round-trip tests for all formats
 
 **Deliverables**:
+
 - 4 formats fully supported
 - Format conversion guide
 - Compatibility matrix
 
 ### Phase 4: Advanced Tools (v0.5)
+
 **Goal**: Rich ecosystem of document tools
 
 - [ ] Document differ
@@ -1316,11 +1335,13 @@ load_plugin("doctk_latex")    # Adds LaTeX support
 - [ ] Link checker
 
 **Deliverables**:
+
 - Tool documentation
 - Example rules/templates
 - CLI guides
 
 ### Phase 5: CLI & TUI (v0.6)
+
 **Goal**: Excellent command-line experience
 
 - [ ] Complete CLI command suite
@@ -1331,11 +1352,13 @@ load_plugin("doctk_latex")    # Adds LaTeX support
 - [ ] Usage examples
 
 **Deliverables**:
+
 - CLI reference manual
 - TUI user guide
 - Screencast tutorials
 
 ### Phase 6: LSP & Editor Integration (v0.7)
+
 **Goal**: First-class IDE support
 
 - [ ] Language Server Protocol implementation
@@ -1347,11 +1370,13 @@ load_plugin("doctk_latex")    # Adds LaTeX support
 - [ ] Refactoring actions
 
 **Deliverables**:
+
 - LSP server
 - VSCode extension published
 - LSP developer guide
 
 ### Phase 7: Performance & Scale (v0.8)
+
 **Goal**: Handle large documents efficiently
 
 - [ ] Lazy evaluation implementation
@@ -1362,11 +1387,13 @@ load_plugin("doctk_latex")    # Adds LaTeX support
 - [ ] Performance guide
 
 **Deliverables**:
+
 - Performance benchmarks
 - Optimization guide
 - Large doc examples
 
 ### Phase 8: Confluence Support (v0.9)
+
 **Goal**: Enterprise wiki integration
 
 - [ ] Confluence reader (storage format)
@@ -1377,11 +1404,13 @@ load_plugin("doctk_latex")    # Adds LaTeX support
 - [ ] Migration tools
 
 **Deliverables**:
+
 - Confluence guide
 - Migration scripts
 - Enterprise examples
 
 ### Phase 9: Extensibility & Plugins (v0.10)
+
 **Goal**: Rich plugin ecosystem
 
 - [ ] Plugin system architecture
@@ -1392,11 +1421,13 @@ load_plugin("doctk_latex")    # Adds LaTeX support
 - [ ] Developer documentation
 
 **Deliverables**:
+
 - Plugin development guide
 - Example plugin repository
 - Plugin registry
 
 ### Phase 10: v1.0 Release
+
 **Goal**: Production-ready, stable API
 
 - [ ] API freeze
@@ -1406,28 +1437,31 @@ load_plugin("doctk_latex")    # Adds LaTeX support
 - [ ] Long-term support plan
 
 **Deliverables**:
+
 - v1.0 release
 - Complete documentation site
 - Tutorial series
 - Case studies
 
----
+______________________________________________________________________
 
 ## Success Metrics
 
 ### Technical Metrics
+
 - **Test Coverage**: > 80%
 - **Performance**: Meet benchmark targets
 - **API Stability**: Semantic versioning, deprecation policy
 - **Documentation**: All public APIs documented
 
 ### User Metrics
+
 - **Adoption**: Downloads, GitHub stars
 - **Engagement**: Issues, PRs, discussions
 - **Satisfaction**: User feedback, surveys
 - **Use Cases**: Real-world applications
 
----
+______________________________________________________________________
 
 ## Appendices
 
@@ -1461,7 +1495,7 @@ A: doctk is format-agnostic with semantic understanding of document structure, n
 **Q: Can I use this in production?**
 A: v0.x is experimental. v1.0 will be production-ready with stability guarantees.
 
----
+______________________________________________________________________
 
 **Document Version**: 1.0
 **Last Updated**: 2025-11-07

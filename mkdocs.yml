@@ -1,0 +1,82 @@
+site_name: doctk
+site_description: A composable toolkit for structured document manipulation
+site_url: https://tommcd.github.io/doctk/
+repo_url: https://github.com/tommcd/doctk
+repo_name: tommcd/doctk
+
+# Exclude existing documentation files that aren't part of the MkDocs structure
+exclude_docs: |
+  POC-SUMMARY.md
+  REPRODUCTION-GUIDE.md
+  SESSION-SUMMARY.md
+  SPECIFICATION.md
+  design/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quick-start.md
+  - Development:
+      - Setup: development/setup.md
+      - Testing: development/testing.md
+      - Tool Management: development/tooling.md
+      - Code Quality: development/quality.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true

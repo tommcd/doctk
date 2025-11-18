@@ -6,6 +6,7 @@
 ## Vision
 
 A composable, functional toolkit for structured document manipulation inspired by:
+
 - **Category Theory**: Operations as morphisms, composition as fundamental
 - **Set Theory**: Documents as sets with algebraic operations
 - **The Zen of Python**: Beautiful, explicit, simple, readable
@@ -13,6 +14,7 @@ A composable, functional toolkit for structured document manipulation inspired b
 ## Problem Statement
 
 Existing tools (Pandoc, unified/remark) provide AST manipulation but lack:
+
 - User-friendly DSL for structural operations (outlining, moving sections, type transforms)
 - Composable primitives following functional programming principles
 - Format-agnostic abstraction layer
@@ -23,6 +25,7 @@ Existing tools (Pandoc, unified/remark) provide AST manipulation but lack:
 ### 1. Mathematical Foundations
 
 **Category Theory Concepts**:
+
 - **Objects**: Documents, Sections, Elements (nodes in AST)
 - **Morphisms**: Transformations between documents/elements
 - **Composition**: `f ∘ g` - operations compose naturally
@@ -30,6 +33,7 @@ Existing tools (Pandoc, unified/remark) provide AST manipulation but lack:
 - **Identity**: Operations that preserve structure
 
 **Set Theory Operations**:
+
 - Union, Intersection, Difference for document manipulation
 - Filter as subset selection
 - Power set for exploring document structures
@@ -98,11 +102,13 @@ def compose(*operations):
 ### Core Primitives (Morphisms)
 
 **Identity**: Returns document unchanged
+
 ```python
 identity()
 ```
 
 **Selectors** (Filters - like set membership):
+
 ```python
 select(predicate)      # Select elements matching predicate
 where(condition)       # Alias for functional style
@@ -113,6 +119,7 @@ slice(start, end)      # Range selection
 ```
 
 **Projections** (Extract properties):
+
 ```python
 content()              # Extract text content
 metadata()             # Extract metadata/attributes
@@ -123,6 +130,7 @@ path()                 # Get document path/location
 ```
 
 **Transformations** (Endofunctors - Type → Type):
+
 ```python
 map(f)                 # Apply function to each element
 filter(p)              # Keep elements matching predicate
@@ -131,6 +139,7 @@ flatmap(f)             # Map then flatten
 ```
 
 **Structural Operations** (Morphisms on structure):
+
 ```python
 promote()              # Increase level (h3 → h2)
 demote()               # Decrease level (h2 → h3)
@@ -141,6 +150,7 @@ unnest()               # Make child a sibling
 ```
 
 **Set Operations**:
+
 ```python
 union(other)           # Combine documents
 intersect(other)       # Common elements
@@ -149,6 +159,7 @@ concat(other)          # Sequential composition
 ```
 
 **Type Transforms**:
+
 ```python
 to_ordered()           # Convert list to ordered
 to_unordered()         # Convert list to unordered
@@ -193,14 +204,15 @@ doctk read doc.md | select list | flatmap unnest | write
 ### LSP Support Benefits
 
 1. **Type-aware completions** - After `|`, LSP suggests valid operations for current document state
-2. **Parameter hints** - Shows expected arguments with types
-3. **Hover documentation** - Inline help for each operation
-4. **Real-time validation** - Catch type errors before execution
-5. **Go-to-definition** - Jump to operation implementations
+1. **Parameter hints** - Shows expected arguments with types
+1. **Hover documentation** - Inline help for each operation
+1. **Real-time validation** - Catch type errors before execution
+1. **Go-to-definition** - Jump to operation implementations
 
 ## Example Use Cases
 
 ### Outliner Operations
+
 ```python
 # View document structure
 doc | outline()
@@ -210,6 +222,7 @@ doc | select(path="/Introduction") | children() | promote()
 ```
 
 ### Structural Transforms
+
 ```python
 # Promote all h3 to h2
 doc | select(heading) | where(level=3) | map(promote)
@@ -222,6 +235,7 @@ doc | select(list) | flatmap(unnest)
 ```
 
 ### Query Operations
+
 ```python
 # Find all TODOs
 doc | select(text) | where(contains("TODO"))
@@ -234,6 +248,7 @@ doc1 | diff(doc2) | where(is_structural_change)
 ```
 
 ### Batch Operations
+
 ```python
 # Convert all lists to ordered
 doc | select(list) | map(to_ordered)
@@ -265,12 +280,14 @@ doc | select(heading) | map(to_link) | reduce(to_list)
 **Language**: Python (for POC; Rust if performance needed later)
 
 **Core Libraries**:
+
 - `markdown-it-py` - Markdown parser (produces tokens/AST)
 - `mdit-py-plugins` - Extended Markdown features
 - `rich` - Beautiful CLI output
 - `click` - CLI framework (if needed)
 
 **AST Strategy**:
+
 - Build adapters to/from existing standards (mdast, Pandoc AST)
 - Define simplified UDAST (Universal Document AST) for operations
 - Format-specific readers/writers
@@ -278,36 +295,42 @@ doc | select(heading) | map(to_link) | reduce(to_list)
 ## MVP Roadmap
 
 ### Phase 1: Core Infrastructure (Current)
+
 - [x] Project setup with uv, ruff
 - [x] Git configuration for personal projects
 - [ ] Core abstractions: Document, Node, Operation
 - [ ] Basic Markdown parser/adapter
 
 ### Phase 2: Outliner (First Feature)
+
 - [ ] Document structure visualization
 - [ ] Heading hierarchy display
 - [ ] Section navigation
 - [ ] Rich CLI output
 
 ### Phase 3: Basic Structure Operations
+
 - [ ] promote/demote (heading levels)
 - [ ] lift/lower (sibling order)
 - [ ] nest/unnest (hierarchy changes)
 - [ ] Basic selection (by type, by path)
 
 ### Phase 4: Query System
+
 - [ ] `select(predicate)` implementation
 - [ ] `where(**conditions)` builder
 - [ ] Path-based selection
 - [ ] CSS-like selectors
 
 ### Phase 5: Transform System
+
 - [ ] `map(transform)` implementation
 - [ ] Type conversions (list, heading, etc.)
 - [ ] Content operations (extract, delete, duplicate)
 - [ ] Composition utilities
 
 ### Future Phases
+
 - Full format support (RST, HTML, Confluence)
 - Interactive TUI mode
 - VSCode extension
@@ -319,16 +342,19 @@ doc | select(heading) | map(to_link) | reduce(to_list)
 Following category theory, operations must satisfy:
 
 **Associativity**: `(f ∘ g) ∘ h = f ∘ (g ∘ h)`
+
 ```python
 doc | select(heading) | filter(level2) | promote()
 ```
 
 **Identity**: `f ∘ id = id ∘ f = f`
+
 ```python
 doc | identity() | select(heading)  # Same as: doc | select(heading)
 ```
 
 **Functoriality**: `map(f ∘ g) = map(f) ∘ map(g)`
+
 ```python
 doc | map(promote . capitalize)  # Same as: doc | map(promote) | map(capitalize)
 ```
@@ -340,6 +366,7 @@ doc | map(promote . capitalize)  # Same as: doc | map(promote) | map(capitalize)
 **Decision**: Support both, with pipe operator as primary
 
 **Rationale**:
+
 - Pipe operator better for LSP (linear type inference)
 - Method chaining familiar to Python developers
 - CLI uses pipe (Unix philosophy)
@@ -350,6 +377,7 @@ doc | map(promote . capitalize)  # Same as: doc | map(promote) | map(capitalize)
 **Decision**: Build POC in Python, port to Rust if needed
 
 **Rationale**:
+
 - Faster prototyping to validate design
 - Rich ecosystem for parsers and CLI
 - Can use Rust for performance-critical parts later
@@ -360,6 +388,7 @@ doc | map(promote . capitalize)  # Same as: doc | map(promote) | map(capitalize)
 **Decision**: Build format-specific adapters to/from UDAST
 
 **Rationale**:
+
 - Leverage existing mature parsers
 - Each format has quirks better handled by specialists
 - UDAST can be simpler, operation-friendly
@@ -370,6 +399,7 @@ doc | map(promote . capitalize)  # Same as: doc | map(promote) | map(capitalize)
 **Decision**: Start with outliner and basic structural operations
 
 **Rationale**:
+
 - Immediately useful standalone feature
 - Validates core abstractions
 - Simpler than full query/transform system
@@ -378,10 +408,10 @@ doc | map(promote . capitalize)  # Same as: doc | map(promote) | map(capitalize)
 ## Open Questions
 
 1. **Selector Syntax**: CSS-like, XPath-like, or custom?
-2. **UDAST Design**: How minimal can we make it while being universal?
-3. **Lazy Evaluation**: Should operations be lazy or eager?
-4. **Immutability**: Pure functional (all copies) or pragmatic (some mutation)?
-5. **Error Handling**: Exceptions, Result types, or silent failures?
+1. **UDAST Design**: How minimal can we make it while being universal?
+1. **Lazy Evaluation**: Should operations be lazy or eager?
+1. **Immutability**: Pure functional (all copies) or pragmatic (some mutation)?
+1. **Error Handling**: Exceptions, Result types, or silent failures?
 
 ## References
 
@@ -391,6 +421,6 @@ doc | map(promote . capitalize)  # Same as: doc | map(promote) | map(capitalize)
 - **Category Theory for Programmers**: https://bartoszmilewski.com/
 - **The Zen of Python**: PEP 20
 
----
+______________________________________________________________________
 
 **Next Steps**: Implement core abstractions and Markdown adapter

@@ -4,19 +4,19 @@
 **Purpose**: Educational transcript showing how to reproduce the entire doctk POC from scratch
 **Target Audience**: Developers learning document manipulation, functional programming, or project setup
 
----
+______________________________________________________________________
 
 ## Table of Contents
 
 1. [Prerequisites](#prerequisites)
-2. [Phase 1: Research & Design](#phase-1-research--design)
-3. [Phase 2: Project Setup](#phase-2-project-setup)
-4. [Phase 3: Core Implementation](#phase-3-core-implementation)
-5. [Phase 4: Documentation](#phase-4-documentation)
-6. [Phase 5: GitHub Repository](#phase-5-github-repository)
-7. [Verification](#verification)
+1. [Phase 1: Research & Design](#phase-1-research--design)
+1. [Phase 2: Project Setup](#phase-2-project-setup)
+1. [Phase 3: Core Implementation](#phase-3-core-implementation)
+1. [Phase 4: Documentation](#phase-4-documentation)
+1. [Phase 5: GitHub Repository](#phase-5-github-repository)
+1. [Verification](#verification)
 
----
+______________________________________________________________________
 
 ## Prerequisites
 
@@ -68,7 +68,7 @@ cd ~/git/tommcd/
 git config user.email  # Should show your personal email
 ```
 
----
+______________________________________________________________________
 
 ## Phase 1: Research & Design
 
@@ -77,11 +77,13 @@ git config user.email  # Should show your personal email
 **Explanation**: Before building, we research what already exists to avoid reinventing the wheel and to learn from existing solutions.
 
 **Tools to investigate**:
+
 - Pandoc (https://pandoc.org/)
 - unified/remark/rehype (https://unifiedjs.com/)
 - markdown-it-py (https://markdown-it-py.readthedocs.io/)
 
 **Key findings**:
+
 - Pandoc is great for conversion but lacks programmable manipulation
 - unified ecosystem (JS) has good composition but we want Python
 - Gap: No composable, functional document manipulation toolkit in Python
@@ -91,11 +93,12 @@ git config user.email  # Should show your personal email
 **Explanation**: Establish core principles that will guide all design decisions.
 
 **Principles chosen**:
+
 1. **Composability** - Complex operations from simple primitives
-2. **Purity** - Immutable transformations, no side effects
-3. **Type Safety** - Full type annotations for LSP support
-4. **Format Agnostic** - Universal AST with format adapters
-5. **Mathematical Rigor** - Category theory foundations
+1. **Purity** - Immutable transformations, no side effects
+1. **Type Safety** - Full type annotations for LSP support
+1. **Format Agnostic** - Universal AST with format adapters
+1. **Mathematical Rigor** - Category theory foundations
 
 **Key decision**: Use pipe operator (`|`) for LSP-friendly composition
 
@@ -105,7 +108,7 @@ git config user.email  # Should show your personal email
 
 This document will be created in Phase 4 after we validate the POC, but the thinking happens here.
 
----
+______________________________________________________________________
 
 ## Phase 2: Project Setup
 
@@ -290,7 +293,7 @@ Thumbs.db
 EOF
 ```
 
----
+______________________________________________________________________
 
 ## Phase 3: Core Implementation
 
@@ -624,6 +627,7 @@ EOF
 ```
 
 **Explanation of what we just created**:
+
 - `Node`: Abstract base class for all document elements
 - `Heading`, `Paragraph`, `List`, `ListItem`, `CodeBlock`, `BlockQuote`: Concrete node types
 - `Document`: Generic container implementing Functor (map, filter) and Monad (flatmap, reduce)
@@ -855,6 +859,7 @@ EOF
 ```
 
 **Explanation**:
+
 - `compose`: Right-to-left function composition
 - `select`, `where`: Selection operations
 - `promote`, `demote`: Structure transformations
@@ -1024,6 +1029,7 @@ EOF
 ```
 
 **Explanation**:
+
 - Uses `markdown-it-py` to tokenize Markdown
 - Converts tokens to our Node types (Heading, Paragraph, List, etc.)
 - Handles nested structures (lists, blockquotes)
@@ -1202,7 +1208,7 @@ uv run doctk demo
 
 **Explanation**: Create a sample document to test the outliner.
 
-```bash
+````bash
 cat > examples/sample.md << 'EOF'
 # My Project Documentation
 
@@ -1224,7 +1230,7 @@ You'll need Python 3.10+.
 
 ```bash
 pip install -e .
-```
+````
 
 ## Usage
 
@@ -1253,9 +1259,9 @@ We welcome contributions!
 ### Development Setup
 
 1. Fork the repo
-2. Create a branch
-3. Make changes
-4. Submit PR
+1. Create a branch
+1. Make changes
+1. Submit PR
 
 ## License
 
@@ -1263,10 +1269,12 @@ MIT License
 EOF
 
 # Test outliner on the sample
+
 uv run doctk outline examples/sample.md --headings-only
 
 # Expected output: hierarchical tree of headings
-```
+
+````
 
 ---
 
@@ -1286,7 +1294,7 @@ uv run doctk outline examples/sample.md --headings-only
 # - Syntax design rationale
 # - Architecture and technology stack
 # - MVP roadmap
-```
+````
 
 *Note: See [docs/design/01-initial-design.md](design/01-initial-design.md) for complete document.*
 
@@ -1437,7 +1445,7 @@ Next phase: v0.2 - Core Enhancement"
 git log --oneline
 ```
 
----
+______________________________________________________________________
 
 ## Phase 5: GitHub Repository
 
@@ -1694,7 +1702,7 @@ Documents the entire journey from concept to GitHub repository."
 git push origin master
 ```
 
----
+______________________________________________________________________
 
 ## Verification
 
@@ -1773,13 +1781,14 @@ cat LICENSE | head -5
 # Should show MIT License
 ```
 
----
+______________________________________________________________________
 
 ## Summary
 
 You've now reproduced the entire doctk POC from scratch! Here's what you created:
 
 **Code** (2,133 lines):
+
 - ✅ Complete implementation with Document/Node abstractions
 - ✅ Composable operations following category theory
 - ✅ Markdown parser and writer
@@ -1788,6 +1797,7 @@ You've now reproduced the entire doctk POC from scratch! Here's what you created
 - ✅ 12 comprehensive tests (all passing)
 
 **Documentation** (2,470 lines):
+
 - ✅ Design document (philosophy and rationale)
 - ✅ POC summary (validation results)
 - ✅ Specification (complete v1.0 roadmap)
@@ -1797,6 +1807,7 @@ You've now reproduced the entire doctk POC from scratch! Here's what you created
 - ✅ Professional README
 
 **GitHub Repository**:
+
 - ✅ Public repository created
 - ✅ MIT License
 - ✅ CI/CD with GitHub Actions (multi-platform)
@@ -1805,59 +1816,64 @@ You've now reproduced the entire doctk POC from scratch! Here's what you created
 
 **Git Commits**: 7 well-structured commits documenting the journey
 
----
+______________________________________________________________________
 
 ## Next Steps
 
 ### For Learning
 
 1. **Study the code**: Read through each module to understand the patterns
-2. **Run the tests**: Modify tests to understand behavior
-3. **Try the API**: Write your own transformations using the Python API
-4. **Experiment**: Try adding a new operation or node type
+1. **Run the tests**: Modify tests to understand behavior
+1. **Try the API**: Write your own transformations using the Python API
+1. **Experiment**: Try adding a new operation or node type
 
 ### For Development (v0.2)
 
 See [docs/SPECIFICATION.md](SPECIFICATION.md) Phase 1: Core Enhancement
 
 1. Enhanced node types (Section, Table, Inline)
-2. Location tracking for error reporting
-3. Structure operations (lift, lower, nest, unnest)
-4. Tree traversal utilities (depth_first, breadth_first)
-5. Error handling infrastructure
-6. Expand test coverage to >80%
+1. Location tracking for error reporting
+1. Structure operations (lift, lower, nest, unnest)
+1. Tree traversal utilities (depth_first, breadth_first)
+1. Error handling infrastructure
+1. Expand test coverage to >80%
 
----
+______________________________________________________________________
 
 ## Educational Notes
 
 ### Key Concepts Demonstrated
 
 1. **Category Theory in Practice**
+
    - Functors: `Document.map(f)`
    - Monads: `Document.flatmap(f)`
    - Morphisms: Operations as pure functions
    - Composition: `compose(f, g, h)`
 
-2. **Functional Programming**
+1. **Functional Programming**
+
    - Immutability: Operations return new documents
    - Higher-order functions: Operations return operations
    - Purity: No side effects
    - Composition over inheritance
 
-3. **Design Patterns**
+1. **Design Patterns**
+
    - Visitor: Node traversal
    - Strategy: Format adapters
    - Builder: Document construction (future)
    - Pipe operator: Fluent composition
 
-4. **Modern Python**
+1. **Modern Python**
+
    - Type annotations with generics
    - Dataclasses for nodes
    - Abstract base classes
    - Operator overloading (`__or__`)
 
-5. **Professional Practices**
+1. **Professional Practices**
+
    - Comprehensive testing
    - Type hints for LSP support
    - Documentation-driven development
@@ -1867,16 +1883,17 @@ See [docs/SPECIFICATION.md](SPECIFICATION.md) Phase 1: Core Enhancement
 ### Common Pitfalls to Avoid
 
 1. **Don't mutate nodes**: Always return new nodes from transformations
-2. **Don't skip tests**: They're your safety net for refactoring
-3. **Don't ignore type hints**: They enable better IDE support
-4. **Don't commit without clear messages**: Future you will thank present you
-5. **Don't optimize prematurely**: Get it working, then make it fast
+1. **Don't skip tests**: They're your safety net for refactoring
+1. **Don't ignore type hints**: They enable better IDE support
+1. **Don't commit without clear messages**: Future you will thank present you
+1. **Don't optimize prematurely**: Get it working, then make it fast
 
----
+______________________________________________________________________
 
 ## Resources
 
 ### Internal
+
 - [Design Document](design/01-initial-design.md)
 - [POC Summary](POC-SUMMARY.md)
 - [Specification](SPECIFICATION.md)
@@ -1884,6 +1901,7 @@ See [docs/SPECIFICATION.md](SPECIFICATION.md) Phase 1: Core Enhancement
 - [Contributing Guide](../CONTRIBUTING.md)
 
 ### External
+
 - [Category Theory for Programmers](https://bartoszmilewski.com/)
 - [uv Documentation](https://docs.astral.sh/uv/)
 - [markdown-it-py](https://markdown-it-py.readthedocs.io/)
@@ -1891,7 +1909,7 @@ See [docs/SPECIFICATION.md](SPECIFICATION.md) Phase 1: Core Enhancement
 - [Pandoc](https://pandoc.org/)
 - [unified](https://unifiedjs.com/)
 
----
+______________________________________________________________________
 
 **End of Reproduction Guide**
 

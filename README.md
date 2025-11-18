@@ -48,9 +48,12 @@ doctk help
 ```
 
 Current CLI commands (v0.1):
-- `doctk outline <file>` - View document structure
-- `doctk demo` - Interactive demonstration
-- `doctk help` - Show help
+
+```bash
+doctk outline <file>  # View document structure
+doctk demo            # Interactive demonstration
+doctk help            # Show help
+```
 
 ## Python API
 
@@ -114,6 +117,7 @@ doc1.diff(doc2)       # Unique to doc1
 **Version**: 0.1.0 (Alpha - POC Complete)
 
 ✅ **Implemented**:
+
 - Core abstractions (Document, Node, operations)
 - Markdown parser and writer
 - Document outliner with tree visualization
@@ -123,11 +127,13 @@ doc1.diff(doc2)       # Unique to doc1
 - Comprehensive test suite (12 tests passing)
 
 🚧 **In Progress** (v0.2):
+
 - Enhanced node types (Section, Table, Inline)
 - Structure operations (lift, lower, nest, unnest)
 - Location tracking for error reporting
 
 📋 **Planned**:
+
 - Path/CSS/XPath selection system
 - reStructuredText, HTML, Confluence support
 - Advanced tools (differ, validator, stats)
@@ -136,20 +142,78 @@ doc1.diff(doc2)       # Unique to doc1
 
 See [docs/SPECIFICATION.md](docs/SPECIFICATION.md) for the complete roadmap.
 
-## Documentation
+## Development
 
+### Quick Setup
+
+Get started with development in one command:
+
+```bash
+./scripts/setup-environment.sh
+```
+
+This installs all dependencies, external tools, and sets up pre-commit hooks.
+
+### Running Tests
+
+```bash
+# Run all tests
+uv run pytest
+
+# Run specific test categories
+uv run pytest tests/unit/      # Unit tests
+uv run pytest tests/e2e/       # End-to-end tests
+uv run pytest tests/quality/   # Quality checks
+
+# Run with coverage
+uv run pytest --cov=doctk --cov-report=html
+```
+
+### Code Quality Tools
+
+doctk uses comprehensive quality tooling:
+
+```bash
+# Run all quality checks
+tox
+
+# Run specific checks
+tox -e ruff          # Python linting
+tox -e shellcheck    # Shell script linting
+tox -e docs          # Documentation checks
+
+# Auto-fix issues
+tox -e ruff-fix      # Fix Python formatting
+tox -e docs-fix      # Fix documentation formatting
+```
+
+Pre-commit hooks run automatically on commit to catch issues early.
+
+### Documentation
+
+Full documentation is available at the [MkDocs site](https://tommcd.github.io/doctk/):
+
+- **[Getting Started](docs/getting-started/)**: Installation and quick start
+- **[Development Setup](docs/development/setup.md)**: Complete development environment setup
+- **[Testing Guide](docs/development/testing.md)**: Test structure and best practices
+- **[Tool Management](docs/development/tooling.md)**: External tool plugin system
 - **[Design](docs/design/01-initial-design.md)**: Design rationale and principles
 - **[POC Summary](docs/POC-SUMMARY.md)**: Proof-of-concept validation
 - **[Specification](docs/SPECIFICATION.md)**: Complete specification and roadmap
-- **[Contributing](CONTRIBUTING.md)**: Development guidelines
 
 ## Contributing
 
 Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+Quick start for contributors:
+
+1. Run `./scripts/setup-environment.sh` to set up your environment
+1. Make your changes and add tests
+1. Run `tox` to verify all checks pass
+1. Submit a pull request
+
 ## License
 
 MIT - see [LICENSE](LICENSE) for details
-
 
 <!-- GPG signing test from Windows -->

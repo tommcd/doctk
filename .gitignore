@@ -35,12 +35,31 @@ env/
 
 # Testing
 .pytest_cache/
+.tox/
 .coverage
+.coverage.*
 htmlcov/
+reports/
+*.cover
 
 # uv
 uv.lock
 
+# Build tools
+.ruff_cache/
+.mypy_cache/
+
+# MkDocs
+site/
+
 # OS
 .DS_Store
 Thumbs.db
+*:Zone.Identifier
+
+# Copier
+.copier-answers.yml
+
+# Temporary clones (used during integration, not part of project)
+python-project-template/
+sstdf-python-standards/

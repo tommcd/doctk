@@ -5,7 +5,8 @@ Operations are morphisms in the document category.
 They compose naturally following category theory laws.
 """
 
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from doctk.core import CodeBlock, Document, Heading, List, Node, Paragraph
 

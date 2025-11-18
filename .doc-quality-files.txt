@@ -1,0 +1,17 @@
+# Important files that should be linked in README.md
+# Lines starting with # are comments and will be ignored
+# List one file path per line (relative to project root)
+
+# Core documentation
+docs/SPECIFICATION.md
+docs/POC-SUMMARY.md
+docs/design/01-initial-design.md
+
+# Contributing and development
+CONTRIBUTING.md
+LICENSE
+
+# Configuration files (optional - uncomment if you want to enforce linking these)
+# pyproject.toml
+# tox.ini
+# .pre-commit-config.yaml

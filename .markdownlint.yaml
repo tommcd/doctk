@@ -1,0 +1,48 @@
+# markdownlint configuration
+# https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+
+# Default state for all rules
+default: true
+
+# MD013/line-length - Line length (disabled for now - many existing violations)
+MD013: false
+
+# MD001/heading-increment - Heading levels should increment by one
+MD001: false  # Disabled for now - has violations in existing docs
+
+# MD024/no-duplicate-heading - Allow duplicate headings in different sections
+MD024:
+  siblings_only: true  # Only flag duplicates that are siblings (same parent)
+
+# MD026/no-trailing-punctuation - Trailing punctuation in heading
+MD026: false  # Allow colons in headings (common in design docs)
+
+# MD029/ol-prefix - Ordered list numbering style
+MD029: false  # Allow flexible numbering (lazy "1." style is common)
+
+# MD036/no-emphasis-as-heading - Emphasis used instead of heading
+MD036: false  # Allow for special formatting cases
+
+# MD033/no-inline-html - Allow inline HTML (needed for some formatting)
+MD033: false
+
+# MD034/no-bare-urls - Allow bare URLs (lychee checks link validity)
+MD034: false
+
+# MD040/fenced-code-language - Require language for code blocks
+MD040: false  # Disabled for now - has a few violations (TODO: fix and re-enable)
+
+# MD041/first-line-heading - First line in file should be a heading
+MD041: false  # Allow flexibility in file structure
+
+# MD046/code-block-style - Code block style (fenced vs indented)
+MD046:
+  style: fenced  # Require fenced code blocks (```)
+
+# MD049/emphasis-style - Emphasis style
+MD049:
+  style: asterisk  # Use * for emphasis, not _
+
+# MD050/strong-style - Strong style
+MD050:
+  style: asterisk  # Use ** for strong, not __

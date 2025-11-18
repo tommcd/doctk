@@ -1,7 +1,5 @@
 """Basic tests for core functionality."""
 
-import pytest
-
 from doctk import Document, Heading, Paragraph, compose, demote, heading, promote, select, where
 
 

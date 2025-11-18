@@ -81,7 +81,9 @@ class MarkdownParser:
 
             elif token.type == "blockquote_open":
                 # Block quote: blockquote_open, ..., blockquote_close
-                content_tokens, consumed = self._extract_until_close(tokens, i + 1, "blockquote_close")
+                content_tokens, consumed = self._extract_until_close(
+                    tokens, i + 1, "blockquote_close"
+                )
                 content_nodes = self._convert_tokens(content_tokens)
 
                 nodes.append(BlockQuote(content=content_nodes))

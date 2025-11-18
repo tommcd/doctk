@@ -867,7 +867,7 @@ class StructureOperations:
         # Extract the section and adjust all heading levels
         new_nodes = list(document.nodes)
         section_nodes = new_nodes[section_start : section_end + 1]
-        adjusted_section = []
+        adjusted_section: list[Node] = []
 
         for section_node in section_nodes:
             if isinstance(section_node, Heading):

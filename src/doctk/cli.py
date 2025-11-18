@@ -43,6 +43,8 @@ def main():
         run_outline(console, sys.argv[2:])
     elif command == "demo":
         run_demo(console)
+    elif command == "repl":
+        run_repl()
     else:
         console.print(f"[red]Unknown command: {command}[/red]")
         console.print("\nRun 'doctk help' for usage information.")
@@ -60,6 +62,7 @@ def show_help(console: Console):
 [bold]Commands:[/bold]
     [cyan]outline[/cyan] <file>           Show document structure
     [cyan]demo[/cyan]                    Run interactive demo
+    [cyan]repl[/cyan]                    Start interactive REPL
     [cyan]help[/cyan]                    Show this help message
     [cyan]version[/cyan]                 Show version information
 
@@ -236,6 +239,14 @@ Try it out!
     console.print("[bold green]Demo complete![/bold green]")
     console.print("Try: doctk outline <your-file.md>")
     console.print()
+
+
+def run_repl():
+    """Start the interactive REPL."""
+    from doctk.dsl.repl import REPL
+
+    repl = REPL()
+    repl.start()
 
 
 if __name__ == "__main__":

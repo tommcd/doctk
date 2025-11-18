@@ -21,7 +21,7 @@ class ExtensionBridge:
     document operations from the TypeScript extension.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the extension bridge."""
         self.operations = StructureOperations()
 
@@ -358,7 +358,7 @@ class ExtensionBridge:
             "error": {"code": code, "message": message},
         }
 
-    def run(self):
+    def run(self) -> None:
         """
         Run the bridge, reading requests from stdin and writing responses to stdout.
 
@@ -382,7 +382,7 @@ class ExtensionBridge:
                 print(json.dumps(error_response), flush=True)
 
 
-def main():
+def main() -> None:
     """Main entry point for the extension bridge."""
     bridge = ExtensionBridge()
     bridge.run()

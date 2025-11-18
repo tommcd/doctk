@@ -1035,3 +1035,104 @@ class StructureOperations:
 
         # Unnest is always valid (at level 1 it's identity)
         return ValidationResult(valid=True)
+
+    @staticmethod
+    def delete(document: Document[Node], node_id: str) -> OperationResult:
+        """
+        Delete a section (heading and all its content/subsections).
+
+        Args:
+            document: The document to operate on
+            node_id: The ID of the node to delete
+
+        Returns:
+            Operation result
+        """
+        tree_builder = DocumentTreeBuilder(document)
+        node = tree_builder.find_node(node_id)
+
+        if node is None:
+            return OperationResult(success=False, error=f"Node not found: {node_id}")
+
+        if not isinstance(node, Heading):
+            return OperationResult(success=False, error=f"Node {node_id} is not a heading")
+
+        # Get the section range (start and end indices in document.nodes)
+        section_range = tree_builder.get_section_range(node_id)
+        if section_range is None:
+            return OperationResult(success=False, error=f"Could not determine section range for {node_id}")
+
+        start_idx, end_idx = section_range
+
+        # Create new document with the section removed
+        # Note: end_idx is inclusive, so we use end_idx + 1 for the slice
+        new_nodes = document.nodes[:start_idx] + document.nodes[end_idx + 1 :]
+        modified_doc = Document(nodes=new_nodes)
+
+        # Compute modified ranges for granular edits
+        # For delete operations, we need to manually compute the range because
+        # DiffComputer only processes individual nodes, not entire sections
+        modified_ranges: list[ModifiedRange] = []
+
+        # Get the line range for the entire section being deleted
+        first_node = document.nodes[start_idx]
+        last_node = document.nodes[end_idx]
+
+        first_node_range = DiffComputer._get_node_line_range(document, first_node, tree_builder)
+        last_node_range = DiffComputer._get_node_line_range(document, last_node, tree_builder)
+
+        if first_node_range is not None and last_node_range is not None:
+            # Get the full document text for column calculation
+            original_text = document.to_string()
+            original_lines = original_text.splitlines(keepends=True)
+
+            start_line = first_node_range[0]
+            end_line = last_node_range[1]
+
+            # Extend to include trailing blank line that markdown writer adds
+            # The markdown writer appends a blank line after each node (markdown.py:41-50)
+            # We need to delete this separator to avoid doubled blank lines
+            if end_line + 1 < len(original_lines):
+                end_line = end_line + 1
+                end_column = 0  # Start of next line
+            else:
+                end_column = len(original_lines[end_line]) if end_line < len(original_lines) else 0
+
+            # Create a deletion range (empty new_text)
+            modified_ranges.append(
+                ModifiedRange(
+                    start_line=start_line,
+                    start_column=0,
+                    end_line=end_line,
+                    end_column=end_column,
+                    new_text="",
+                )
+            )
+
+        return OperationResult(
+            success=True, document=modified_doc.to_string(), modified_ranges=modified_ranges
+        )
+
+    @staticmethod
+    def validate_delete(document: Document[Node], node_id: str) -> ValidationResult:
+        """
+        Validate that a delete operation can be executed.
+
+        Args:
+            document: The document to validate against
+            node_id: The ID of the node to delete
+
+        Returns:
+            ValidationResult indicating whether the operation is valid
+        """
+        tree_builder = DocumentTreeBuilder(document)
+        node = tree_builder.find_node(node_id)
+
+        if node is None:
+            return ValidationResult(valid=False, error=f"Node not found: {node_id}")
+
+        if not isinstance(node, Heading):
+            return ValidationResult(valid=False, error=f"Node {node_id} is not a heading")
+
+        # Delete is always valid for any heading
+        return ValidationResult(valid=True)

@@ -48,6 +48,11 @@
         "icon": "$(chevron-down)"
       },
       {
+        "command": "doctk.delete",
+        "title": "doctk: Delete Section",
+        "icon": "$(trash)"
+      },
+      {
         "command": "doctk.refresh",
         "title": "doctk: Refresh Outline",
         "icon": "$(refresh)"
@@ -81,6 +86,11 @@
           "command": "doctk.moveDown",
           "when": "view == doctkOutline",
           "group": "reorder@2"
+        },
+        {
+          "command": "doctk.delete",
+          "when": "view == doctkOutline",
+          "group": "edit@1"
         }
       ]
     },
@@ -107,6 +117,12 @@
         "command": "doctk.moveDown",
         "key": "alt+down",
         "mac": "alt+down",
+        "when": "focusedView == doctkOutline"
+      },
+      {
+        "command": "doctk.delete",
+        "key": "delete",
+        "mac": "delete",
         "when": "focusedView == doctkOutline"
       }
     ],

@@ -43,35 +43,36 @@ This implementation plan breaks down the VS Code outliner extension into discret
     - Test refresh and update logic
     - _Requirements: 1_
 
-- [ ] 3. Implement context menu operations
+- [x] 3. Implement context menu operations
 
-  - [ ] 3.1 Create OperationHandler class
+  - [x] 3.1 Create OperationHandler class
 
     - Implement `executeOperation()` method
     - Add operation-to-API mapping (promote, demote, move_up, move_down, delete)
     - Create workspace edits from operation results
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-  - [ ] 3.2 Register context menu commands
+  - [x] 3.2 Register context menu commands
 
     - Register commands in package.json (promote, demote, move_up, move_down, delete)
     - Implement command handlers that call OperationHandler
     - Add command enablement conditions (when tree view is focused)
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-  - [ ] 3.3 Integrate with undo/redo system
+  - [x] 3.3 Integrate with undo/redo system
 
     - Use WorkspaceEdit for all document modifications
     - Ensure operations are added to VS Code undo stack
     - Test undo/redo functionality
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 3.7_
 
-  - [ ] 3.4 Write integration tests for operations
+  - [x] 3.4 Write integration tests for operations
 
     - Test each operation end-to-end
     - Test undo/redo for all operations
     - Test error handling for invalid operations
     - _Requirements: 3, 6_
+    - NOTE: Added 7 comprehensive tests for delete operation in tests/unit/test_lsp_operations.py
 
 - [ ] 4. Implement drag-and-drop support
 

@@ -42,7 +42,7 @@ class OperationResult:
 class DocumentOperation(Protocol):
     """Protocol for all document operations."""
 
-    def execute(self, doc: Document, target: Node) -> Document:
+    def execute(self, doc: Document[Node], target: Node) -> Document[Node]:
         """
         Execute the operation on the document.
 
@@ -55,7 +55,7 @@ class DocumentOperation(Protocol):
         """
         ...
 
-    def validate(self, doc: Document, target: Node) -> ValidationResult:
+    def validate(self, doc: Document[Node], target: Node) -> ValidationResult:
         """
         Validate that the operation can be executed.
 

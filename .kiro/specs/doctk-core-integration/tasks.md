@@ -122,35 +122,38 @@ This implementation plan breaks down the core integration layer and execution ca
     - Test tree serialization
     - _PR #6 Issue #5 (Medium)_
 
-- [ ] 6. Implement REPL for interactive DSL execution
+- [x] 6. Implement REPL for interactive DSL execution
 
-  - [ ] 6.1 Create DoctkREPL class
+  - [x] 6.1 Create DoctkREPL class
 
     - Implement main REPL loop with prompt
     - Handle user input and command parsing
     - Maintain document state across commands
     - _Requirements: 12.1, 12.4_
 
-  - [ ] 6.2 Add REPL commands
+  - [x] 6.2 Add REPL commands
 
     - Implement `load <file>` command to load documents
     - Implement `help` command to show available operations
     - Implement `exit` command to quit REPL
-    - Execute DSL commands and display results
+    - Execute operation commands (promote, demote, move_up, move_down, nest, unnest)
+    - Added additional commands: `save`, `tree`, `list`
     - _Requirements: 12.2, 12.5_
 
-  - [ ] 6.3 Add error handling for REPL
+  - [x] 6.3 Add error handling for REPL
 
     - Display syntax errors with helpful messages
     - Handle execution errors gracefully
     - Maintain REPL state after errors
     - _Requirements: 12.3_
 
-  - [ ] 6.4 Write tests for REPL
+  - [x] 6.4 Write tests for REPL
 
-    - Test command execution
+    - Test command execution (25 comprehensive tests)
     - Test state management
     - Test error handling
+    - Test all operations (promote, demote, move_up, move_down, nest, unnest)
+    - Achieved 83.26% code coverage
     - _Requirements: 12_
 
 - [ ] 7. Implement script file execution

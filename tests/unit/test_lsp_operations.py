@@ -1172,3 +1172,102 @@ class TestGranularEdits:
             # For non-deletion operations, new_text should not be empty
             if modified_range.end_line >= modified_range.start_line:
                 assert len(modified_range.new_text) > 0
+
+    def test_delete_simple_heading(self):
+        """Test deleting a simple heading."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Title"),
+                Heading(level=2, text="Section to delete"),
+            ]
+        )
+
+        result = StructureOperations.delete(doc, "h2-0")
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
+
+        assert result.success is True
+        assert len(new_doc.nodes) == 1
+        assert new_doc.nodes[0].text == "Title"
+
+    def test_delete_heading_with_content(self):
+        """Test deleting a heading with content."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Title"),
+                Heading(level=2, text="Section to delete"),
+                Paragraph(content="Content under section"),
+            ]
+        )
+
+        result = StructureOperations.delete(doc, "h2-0")
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
+
+        assert result.success is True
+        assert len(new_doc.nodes) == 1
+        assert new_doc.nodes[0].text == "Title"
+
+    def test_delete_heading_with_subsections(self):
+        """Test deleting a heading with subsections."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Title"),
+                Heading(level=2, text="Section to delete"),
+                Heading(level=3, text="Subsection"),
+                Heading(level=2, text="Another section"),
+            ]
+        )
+
+        result = StructureOperations.delete(doc, "h2-0")
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
+
+        assert result.success is True
+        assert len(new_doc.nodes) == 2
+        assert new_doc.nodes[0].text == "Title"
+        assert new_doc.nodes[1].text == "Another section"
+
+    def test_delete_nonexistent_node(self):
+        """Test deleting a non-existent node."""
+        doc = Document(nodes=[Heading(level=1, text="Title")])
+
+        result = StructureOperations.delete(doc, "h99-0")
+
+        assert result.success is False
+        assert "not found" in result.error.lower()
+
+    def test_delete_returns_modified_ranges(self):
+        """Test that delete operation returns modified ranges."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Title"),
+                Heading(level=2, text="Section to delete"),
+            ]
+        )
+
+        result = StructureOperations.delete(doc, "h2-0")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+
+    def test_validate_delete_valid(self):
+        """Test that validate_delete returns valid for existing heading."""
+        doc = Document(nodes=[Heading(level=1, text="Title")])
+
+        result = StructureOperations.validate_delete(doc, "h1-0")
+
+        assert result.valid is True
+        assert result.error is None
+
+    def test_validate_delete_nonexistent_node(self):
+        """Test that validate_delete returns invalid for non-existent node."""
+        doc = Document(nodes=[Heading(level=1, text="Title")])
+
+        result = StructureOperations.validate_delete(doc, "h99-0")
+
+        assert result.valid is False
+        assert "not found" in result.error.lower()

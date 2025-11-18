@@ -1035,3 +1035,71 @@ class StructureOperations:
 
         # Unnest is always valid (at level 1 it's identity)
         return ValidationResult(valid=True)
+
+    @staticmethod
+    def delete(document: Document[Node], node_id: str) -> OperationResult:
+        """
+        Delete a section (heading and all its content/subsections).
+
+        Args:
+            document: The document to operate on
+            node_id: The ID of the node to delete
+
+        Returns:
+            Operation result
+        """
+        tree_builder = DocumentTreeBuilder(document)
+        node = tree_builder.find_node(node_id)
+
+        if node is None:
+            return OperationResult(success=False, error=f"Node not found: {node_id}")
+
+        if not isinstance(node, Heading):
+            return OperationResult(success=False, error=f"Node {node_id} is not a heading")
+
+        # Get the section range (start and end indices in document.nodes)
+        section_range = tree_builder.get_section_range(node_id)
+        if section_range is None:
+            return OperationResult(success=False, error=f"Could not determine section range for {node_id}")
+
+        start_idx, end_idx = section_range
+
+        # Create new document with the section removed
+        # Note: end_idx is inclusive, so we use end_idx + 1 for the slice
+        new_nodes = document.nodes[:start_idx] + document.nodes[end_idx + 1 :]
+        modified_doc = Document(nodes=new_nodes)
+
+        # Compute modified ranges for granular edits
+        modified_ranges = DiffComputer.compute_ranges(
+            original_doc=document,
+            modified_doc=modified_doc,
+            affected_node_ids=[node_id],
+        )
+
+        return OperationResult(
+            success=True, document=modified_doc.to_string(), modified_ranges=modified_ranges
+        )
+
+    @staticmethod
+    def validate_delete(document: Document[Node], node_id: str) -> ValidationResult:
+        """
+        Validate that a delete operation can be executed.
+
+        Args:
+            document: The document to validate against
+            node_id: The ID of the node to delete
+
+        Returns:
+            ValidationResult indicating whether the operation is valid
+        """
+        tree_builder = DocumentTreeBuilder(document)
+        node = tree_builder.find_node(node_id)
+
+        if node is None:
+            return ValidationResult(valid=False, error=f"Node not found: {node_id}")
+
+        if not isinstance(node, Heading):
+            return ValidationResult(valid=False, error=f"Node {node_id} is not a heading")
+
+        # Delete is always valid for any heading
+        return ValidationResult(valid=True)

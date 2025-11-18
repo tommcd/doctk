@@ -87,6 +87,12 @@ export async function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand('doctk.delete', async (node: OutlineNode) => {
+      await executeOperation('delete', node);
+    })
+  );
+
   // Listen for active editor changes
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
@@ -155,6 +161,9 @@ async function executeOperation(operation: string, node: OutlineNode): Promise<v
         break;
       case 'move_down':
         result = await pythonBridge.moveDown(documentText, node.id);
+        break;
+      case 'delete':
+        result = await pythonBridge.delete(documentText, node.id);
         break;
       default:
         throw new Error(`Unknown operation: ${operation}`);

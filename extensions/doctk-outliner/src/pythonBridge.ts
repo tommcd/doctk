@@ -221,6 +221,13 @@ export class PythonBridge {
   }
 
   /**
+   * Execute a delete operation.
+   */
+  async delete(document: string, nodeId: string): Promise<OperationResult> {
+    return this.call<OperationResult>('delete', { document, node_id: nodeId });
+  }
+
+  /**
    * Validate a promote operation.
    */
   async validatePromote(document: string, nodeId: string): Promise<ValidationResult> {
@@ -232,6 +239,13 @@ export class PythonBridge {
    */
   async validateDemote(document: string, nodeId: string): Promise<ValidationResult> {
     return this.call<ValidationResult>('validate_demote', { document, node_id: nodeId });
+  }
+
+  /**
+   * Validate a delete operation.
+   */
+  async validateDelete(document: string, nodeId: string): Promise<ValidationResult> {
+    return this.call<ValidationResult>('validate_delete', { document, node_id: nodeId });
   }
 
   /**

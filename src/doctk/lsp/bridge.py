@@ -84,12 +84,14 @@ class ExtensionBridge:
             "move_down": self._handle_move_down,
             "nest": self._handle_nest,
             "unnest": self._handle_unnest,
+            "delete": self._handle_delete,
             "validate_promote": self._handle_validate_promote,
             "validate_demote": self._handle_validate_demote,
             "validate_move_up": self._handle_validate_move_up,
             "validate_move_down": self._handle_validate_move_down,
             "validate_nest": self._handle_validate_nest,
             "validate_unnest": self._handle_validate_unnest,
+            "validate_delete": self._handle_validate_delete,
             "get_document_tree": self._handle_get_document_tree,
         }
 
@@ -254,6 +256,32 @@ class ExtensionBridge:
 
         doc = Document.from_string(document_text)
         result = self.operations.validate_unnest(doc, node_id)
+
+        return {"valid": result.valid, "error": result.error}
+
+    def _handle_delete(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Handle delete operation."""
+        document_text = params.get("document")
+        node_id = params.get("node_id")
+
+        if not document_text or not node_id:
+            raise ValueError("Missing required parameters: document, node_id")
+
+        doc = Document.from_string(document_text)
+        result = self.operations.delete(doc, node_id)
+
+        return self._operation_result_to_dict(result)
+
+    def _handle_validate_delete(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Handle validate_delete operation."""
+        document_text = params.get("document")
+        node_id = params.get("node_id")
+
+        if not document_text or not node_id:
+            raise ValueError("Missing required parameters: document, node_id")
+
+        doc = Document.from_string(document_text)
+        result = self.operations.validate_delete(doc, node_id)
 
         return {"valid": result.valid, "error": result.error}
 

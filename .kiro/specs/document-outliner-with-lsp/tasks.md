@@ -642,6 +642,80 @@ This implementation plan breaks down the feature into discrete, actionable codin
     - Test installation from .vsix file
     - _Requirements: 7.1_
 
+- [ ] 22.5. Implement granular document edits (CRITICAL from PR #6 review)
+
+  - [ ] 22.5.1 Add ModifiedRange dataclass to protocols.py
+
+    - Define ModifiedRange with start_line, start_column, end_line, end_column, new_text
+    - Update OperationResult to include optional List[ModifiedRange]
+    - Maintain backward compatibility with full document field
+    - _PR #6 Issue #1 (Critical)_
+
+  - [ ] 22.5.2 Implement DiffComputer in operations.py
+
+    - Create DiffComputer class to compute modified ranges
+    - Implement `compute_ranges(original_doc, modified_doc, affected_node_ids)` method
+    - Calculate line/column positions for changed nodes
+    - Handle multi-node operations (move, nest)
+    - _PR #6 Issue #1 (Critical)_
+
+  - [ ] 22.5.3 Update all operation methods to return modified ranges
+
+    - Update promote() to compute and return modified ranges
+    - Update demote() to compute and return modified ranges
+    - Update move_up(), move_down() to return ranges for moved sections
+    - Update nest(), unnest() to return ranges for level-adjusted nodes
+    - _PR #6 Issue #1 (Critical)_
+
+  - [ ] 22.5.4 Update TypeScript extension to use granular edits
+
+    - Modify executeOperation() in extension.ts to check for modifiedRanges
+    - Create WorkspaceEdit with granular ranges when available
+    - Keep fallback to full document replacement
+    - Test cursor position preservation
+    - Test undo/redo stack preservation
+    - _PR #6 Issue #1 (Critical)_
+
+  - [ ] 22.5.5 Write tests for granular edits
+
+    - Test ModifiedRange computation for each operation type
+    - Test frontend applies granular edits correctly
+    - Test cursor position is preserved after operations
+    - Test undo/redo works with granular edits
+    - _PR #6 Issue #1 (Critical)_
+
+- [ ] 22.6. Centralize node ID generation in backend (MEDIUM from PR #6 review)
+
+  - [ ] 22.6.1 Add TreeNode dataclass and tree building method
+
+    - Define TreeNode dataclass with id, label, level, line, column, children
+    - Add `build_tree_with_ids()` method to DocumentTreeBuilder
+    - Return hierarchical tree structure with all IDs assigned
+    - _PR #6 Issue #5 (Medium)_
+
+  - [ ] 22.6.2 Add get_document_tree RPC method to bridge
+
+    - Implement `get_document_tree()` in ExtensionBridge
+    - Add tree serialization helper method
+    - Return JSON-serializable tree structure
+    - _PR #6 Issue #5 (Medium)_
+
+  - [ ] 22.6.3 Update frontend to request tree from backend
+
+    - Add `getDocumentTree()` method to PythonBridge TypeScript class
+    - Update `updateFromDocument()` in DocumentOutlineProvider to use backend tree
+    - Remove local ID generation logic from outlineProvider.ts
+    - Add tree deserialization method
+    - _PR #6 Issue #5 (Medium)_
+
+  - [ ] 22.6.4 Write tests for centralized ID generation
+
+    - Test backend tree building with various document structures
+    - Test frontend correctly deserializes backend tree
+    - Test IDs are consistent between operations
+    - Verify no duplicate ID generation logic remains
+    - _PR #6 Issue #5 (Medium)_
+
 - [ ] 23. End-to-end integration and testing
 
   - [ ] 23.1 Write end-to-end tests for outliner workflows

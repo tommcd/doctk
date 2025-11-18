@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 import traceback
 from typing import Any
 
 from doctk.core import Document
-from doctk.lsp.operations import StructureOperations
-from doctk.lsp.protocols import OperationResult
+from doctk.lsp.operations import DocumentTreeBuilder, StructureOperations
+from doctk.lsp.protocols import OperationResult, TreeNode
 
 
 class ExtensionBridge:
@@ -89,6 +90,7 @@ class ExtensionBridge:
             "validate_move_down": self._handle_validate_move_down,
             "validate_nest": self._handle_validate_nest,
             "validate_unnest": self._handle_validate_unnest,
+            "get_document_tree": self._handle_get_document_tree,
         }
 
         handler = method_map.get(method)
@@ -255,6 +257,45 @@ class ExtensionBridge:
 
         return {"valid": result.valid, "error": result.error}
 
+    def _handle_get_document_tree(self, params: dict[str, Any]) -> dict[str, Any]:
+        """
+        Handle get_document_tree operation.
+
+        Returns the complete document tree structure with backend-assigned IDs.
+        """
+        if "document" not in params:
+            raise ValueError("Missing required parameter: document")
+
+        document_text = params["document"]
+
+        doc = Document.from_string(document_text)
+        tree_builder = DocumentTreeBuilder(doc)
+        tree = tree_builder.build_tree_with_ids()
+
+        return {
+            "root": self._serialize_tree_node(tree),
+            "version": int(time.time() * 1000),
+        }
+
+    def _serialize_tree_node(self, node: TreeNode) -> dict[str, Any]:
+        """
+        Serialize a TreeNode to a JSON-serializable dictionary.
+
+        Args:
+            node: TreeNode to serialize
+
+        Returns:
+            Dictionary representation of the tree node
+        """
+        return {
+            "id": node.id,
+            "label": node.label,
+            "level": node.level,
+            "line": node.line,
+            "column": node.column,
+            "children": [self._serialize_tree_node(child) for child in node.children],
+        }
+
     def _operation_result_to_dict(self, result: OperationResult) -> dict[str, Any]:
         """
         Convert OperationResult to dictionary for JSON serialization.
@@ -333,15 +374,11 @@ class ExtensionBridge:
                 print(json.dumps(response), flush=True)
             except json.JSONDecodeError as e:
                 # Send parse error response
-                error_response = self._error_response(
-                    None, -32700, f"Parse error: {str(e)}"
-                )
+                error_response = self._error_response(None, -32700, f"Parse error: {str(e)}")
                 print(json.dumps(error_response), flush=True)
             except Exception as e:
                 # Send internal error response
-                error_response = self._error_response(
-                    None, -32603, f"Internal error: {str(e)}"
-                )
+                error_response = self._error_response(None, -32603, f"Internal error: {str(e)}")
                 print(json.dumps(error_response), flush=True)
 
 

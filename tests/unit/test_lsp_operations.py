@@ -1,8 +1,8 @@
 """Tests for LSP structure operations."""
 
-
 from doctk.core import Document, Heading, Paragraph
 from doctk.lsp.operations import DocumentTreeBuilder, StructureOperations
+from doctk.lsp.protocols import TreeNode
 
 
 class TestDocumentTreeBuilder:
@@ -63,6 +63,222 @@ class TestDocumentTreeBuilder:
         index = builder.get_node_index("h2-0")
         assert index == 1
 
+    def test_build_tree_with_ids_single_heading(self):
+        """Test building tree with a single heading."""
+        doc = Document(nodes=[Heading(level=1, text="Title")])
+        builder = DocumentTreeBuilder(doc)
+
+        tree = builder.build_tree_with_ids()
+
+        assert tree.id == "root"
+        assert len(tree.children) == 1
+        assert tree.children[0].id == "h1-0"
+        assert tree.children[0].label == "Title"
+        assert tree.children[0].level == 1
+
+    def test_build_tree_with_ids_flat_structure(self):
+        """Test building tree with flat heading structure (all same level)."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="First"),
+                Heading(level=1, text="Second"),
+                Heading(level=1, text="Third"),
+            ]
+        )
+        builder = DocumentTreeBuilder(doc)
+
+        tree = builder.build_tree_with_ids()
+
+        assert tree.id == "root"
+        assert len(tree.children) == 3
+        assert tree.children[0].id == "h1-0"
+        assert tree.children[0].label == "First"
+        assert tree.children[1].id == "h1-1"
+        assert tree.children[1].label == "Second"
+        assert tree.children[2].id == "h1-2"
+        assert tree.children[2].label == "Third"
+
+    def test_build_tree_with_ids_nested_structure(self):
+        """Test building tree with nested heading structure."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Chapter 1"),
+                Heading(level=2, text="Section 1.1"),
+                Heading(level=2, text="Section 1.2"),
+                Heading(level=1, text="Chapter 2"),
+            ]
+        )
+        builder = DocumentTreeBuilder(doc)
+
+        tree = builder.build_tree_with_ids()
+
+        assert tree.id == "root"
+        assert len(tree.children) == 2
+
+        # Chapter 1 should have 2 children
+        chapter1 = tree.children[0]
+        assert chapter1.id == "h1-0"
+        assert chapter1.label == "Chapter 1"
+        assert len(chapter1.children) == 2
+        assert chapter1.children[0].id == "h2-0"
+        assert chapter1.children[0].label == "Section 1.1"
+        assert chapter1.children[1].id == "h2-1"
+        assert chapter1.children[1].label == "Section 1.2"
+
+        # Chapter 2 should have no children
+        chapter2 = tree.children[1]
+        assert chapter2.id == "h1-1"
+        assert chapter2.label == "Chapter 2"
+        assert len(chapter2.children) == 0
+
+    def test_build_tree_with_ids_deep_nesting(self):
+        """Test building tree with deep nesting (h1 -> h2 -> h3 -> h4)."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Level 1"),
+                Heading(level=2, text="Level 2"),
+                Heading(level=3, text="Level 3"),
+                Heading(level=4, text="Level 4"),
+            ]
+        )
+        builder = DocumentTreeBuilder(doc)
+
+        tree = builder.build_tree_with_ids()
+
+        assert tree.id == "root"
+        assert len(tree.children) == 1
+
+        level1 = tree.children[0]
+        assert level1.id == "h1-0"
+        assert level1.label == "Level 1"
+        assert len(level1.children) == 1
+
+        level2 = level1.children[0]
+        assert level2.id == "h2-0"
+        assert level2.label == "Level 2"
+        assert len(level2.children) == 1
+
+        level3 = level2.children[0]
+        assert level3.id == "h3-0"
+        assert level3.label == "Level 3"
+        assert len(level3.children) == 1
+
+        level4 = level3.children[0]
+        assert level4.id == "h4-0"
+        assert level4.label == "Level 4"
+        assert len(level4.children) == 0
+
+    def test_build_tree_with_ids_complex_structure(self):
+        """Test building tree with complex mixed structure."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Title"),
+                Heading(level=2, text="Section 1"),
+                Heading(level=3, text="Subsection 1.1"),
+                Heading(level=3, text="Subsection 1.2"),
+                Heading(level=2, text="Section 2"),
+                Heading(level=1, text="Appendix"),
+            ]
+        )
+        builder = DocumentTreeBuilder(doc)
+
+        tree = builder.build_tree_with_ids()
+
+        assert tree.id == "root"
+        assert len(tree.children) == 2
+
+        # Title should have 2 sections
+        title = tree.children[0]
+        assert title.id == "h1-0"
+        assert title.label == "Title"
+        assert len(title.children) == 2
+
+        # Section 1 should have 2 subsections
+        section1 = title.children[0]
+        assert section1.id == "h2-0"
+        assert section1.label == "Section 1"
+        assert len(section1.children) == 2
+        assert section1.children[0].id == "h3-0"
+        assert section1.children[0].label == "Subsection 1.1"
+        assert section1.children[1].id == "h3-1"
+        assert section1.children[1].label == "Subsection 1.2"
+
+        # Section 2 should have no children
+        section2 = title.children[1]
+        assert section2.id == "h2-1"
+        assert section2.label == "Section 2"
+        assert len(section2.children) == 0
+
+        # Appendix should have no children
+        appendix = tree.children[1]
+        assert appendix.id == "h1-1"
+        assert appendix.label == "Appendix"
+        assert len(appendix.children) == 0
+
+    def test_build_tree_with_ids_skipped_levels(self):
+        """Test building tree when heading levels are skipped (h1 -> h3)."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Title"),
+                Heading(level=3, text="Subsection"),  # Skipped h2
+            ]
+        )
+        builder = DocumentTreeBuilder(doc)
+
+        tree = builder.build_tree_with_ids()
+
+        assert tree.id == "root"
+        assert len(tree.children) == 1
+
+        title = tree.children[0]
+        assert title.id == "h1-0"
+        assert title.label == "Title"
+        # h3 should still be nested under h1
+        assert len(title.children) == 1
+        assert title.children[0].id == "h3-0"
+        assert title.children[0].label == "Subsection"
+
+    def test_build_tree_with_ids_empty_document(self):
+        """Test building tree with empty document."""
+        doc = Document(nodes=[])
+        builder = DocumentTreeBuilder(doc)
+
+        tree = builder.build_tree_with_ids()
+
+        assert tree.id == "root"
+        assert tree.label == "Document"
+        assert len(tree.children) == 0
+
+    def test_build_tree_with_ids_consistency_with_node_map(self):
+        """Test that build_tree_with_ids generates same IDs as node_map."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Title"),
+                Heading(level=2, text="Section 1"),
+                Heading(level=2, text="Section 2"),
+                Heading(level=3, text="Subsection"),
+            ]
+        )
+        builder = DocumentTreeBuilder(doc)
+
+        tree = builder.build_tree_with_ids()
+
+        # Collect all IDs from the tree
+        def collect_ids(node: TreeNode, ids: list[str]) -> None:
+            if node.id != "root":
+                ids.append(node.id)
+            for child in node.children:
+                collect_ids(child, ids)
+
+        tree_ids = []
+        collect_ids(tree, tree_ids)
+
+        # Compare with node_map IDs
+        node_map_ids = set(builder.node_map.keys())
+
+        assert set(tree_ids) == node_map_ids
+        assert len(tree_ids) == len(node_map_ids)  # No duplicates
+
 
 class TestPromote:
     """Tests for promote operation."""
@@ -72,7 +288,9 @@ class TestPromote:
         doc = Document(nodes=[Heading(level=2, text="Section")])
 
         result = StructureOperations.promote(doc, "h2-0")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
 
         assert result.success is True
         assert len(new_doc.nodes) == 1
@@ -84,7 +302,9 @@ class TestPromote:
         doc = Document(nodes=[Heading(level=1, text="Title")])
 
         result = StructureOperations.promote(doc, "h1-0")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
 
         assert result.success is True
         assert len(new_doc.nodes) == 1
@@ -120,7 +340,9 @@ class TestPromote:
         doc = Document(nodes=[original_heading])
 
         result = StructureOperations.promote(doc, "h2-0")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
 
         # Original should be unchanged
         assert original_heading.level == 2
@@ -147,7 +369,9 @@ class TestDemote:
         doc = Document(nodes=[Heading(level=1, text="Title")])
 
         result = StructureOperations.demote(doc, "h1-0")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
 
         assert result.success is True
         assert len(new_doc.nodes) == 1
@@ -159,7 +383,9 @@ class TestDemote:
         doc = Document(nodes=[Heading(level=6, text="Deepest")])
 
         result = StructureOperations.demote(doc, "h6-0")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
 
         assert result.success is True
         assert len(new_doc.nodes) == 1
@@ -197,7 +423,9 @@ class TestMoveUp:
         )
 
         result = StructureOperations.move_up(doc, "h2-1")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
 
         assert result.success is True
         assert new_doc.nodes[0].text == "Section 2"
@@ -213,7 +441,9 @@ class TestMoveUp:
         )
 
         result = StructureOperations.move_up(doc, "h1-0")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
 
         assert result.success is True
         assert new_doc.nodes[0].text == "First"
@@ -253,7 +483,9 @@ class TestMoveDown:
         )
 
         result = StructureOperations.move_down(doc, "h2-0")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
 
         assert result.success is True
         assert new_doc.nodes[0].text == "Section 2"
@@ -269,7 +501,9 @@ class TestMoveDown:
         )
 
         result = StructureOperations.move_down(doc, "h1-1")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
 
         assert result.success is True
         assert new_doc.nodes[1].text == "Last"
@@ -301,7 +535,9 @@ class TestNest:
         )
 
         result = StructureOperations.nest(doc, "h1-1", "h1-0")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
 
         assert result.success is True
         # Child should now be h2 (parent.level + 1)
@@ -320,7 +556,9 @@ class TestNest:
         )
 
         result = StructureOperations.nest(doc, "h1-0", "h2-0")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
 
         assert result.success is True
         # Child should become h3 (parent.level + 1)
@@ -336,7 +574,9 @@ class TestNest:
         )
 
         result = StructureOperations.nest(doc, "h1-0", "h6-0")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
 
         assert result.success is True
         # Child should be capped at level 6
@@ -391,7 +631,9 @@ class TestUnnest:
         doc = Document(nodes=[Heading(level=3, text="Nested")])
 
         result = StructureOperations.unnest(doc, "h3-0")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
 
         assert result.success is True
         assert new_doc.nodes[0].level == 2
@@ -402,7 +644,9 @@ class TestUnnest:
         doc = Document(nodes=[Heading(level=1, text="Top")])
 
         result = StructureOperations.unnest(doc, "h1-0")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
 
         assert result.success is True
         assert new_doc.nodes[0].level == 1
@@ -434,21 +678,27 @@ class TestOperationImmutability:
 
         # Test promote
         result = StructureOperations.promote(doc, "h2-0")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
         assert original_heading.level == 2
         assert doc.nodes[0].level == 2
         assert new_doc.nodes[0].level == 1
 
         # Test demote
         result = StructureOperations.demote(doc, "h2-0")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
         assert original_heading.level == 2
         assert doc.nodes[0].level == 2
         assert new_doc.nodes[0].level == 3
 
         # Test unnest
         result = StructureOperations.unnest(doc, "h2-0")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
         assert original_heading.level == 2
         assert doc.nodes[0].level == 2
         assert new_doc.nodes[0].level == 1
@@ -471,7 +721,9 @@ class TestComplexScenarios:
 
         # Promote second h2
         result = StructureOperations.promote(doc, "h2-1")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
 
         assert result.success is True
         # Find the promoted heading (should be at index 4, level 1)
@@ -490,7 +742,9 @@ class TestComplexScenarios:
         )
 
         result = StructureOperations.move_down(doc, "h1-0")
-        new_doc = Document.from_string(result.document) if result.success and result.document else doc
+        new_doc = (
+            Document.from_string(result.document) if result.success and result.document else doc
+        )
 
         assert result.success is True
         # Verify the headings were swapped
@@ -597,9 +851,7 @@ class TestGranularEdits:
         assert result.success is True
         assert result.modified_ranges is not None
         # The moved heading should be in the results
-        heading_range = next(
-            (r for r in result.modified_ranges if "Section 2" in r.new_text), None
-        )
+        heading_range = next((r for r in result.modified_ranges if "Section 2" in r.new_text), None)
         assert heading_range is not None
         # Verify it's a heading (should have ##)
         assert "##" in heading_range.new_text
@@ -638,9 +890,7 @@ class TestGranularEdits:
         assert result.success is True
         assert result.modified_ranges is not None
         # The moved heading should be in the results
-        heading_range = next(
-            (r for r in result.modified_ranges if "Section 1" in r.new_text), None
-        )
+        heading_range = next((r for r in result.modified_ranges if "Section 1" in r.new_text), None)
         assert heading_range is not None
         # Verify start_line and end_line are valid
         assert heading_range.start_line >= 0
@@ -676,9 +926,7 @@ class TestGranularEdits:
         assert result.success is True
         assert result.modified_ranges is not None
         # The child should now be level 2 (h2 -> ##)
-        child_range = next(
-            (r for r in result.modified_ranges if "Child" in r.new_text), None
-        )
+        child_range = next((r for r in result.modified_ranges if "Child" in r.new_text), None)
         assert child_range is not None
         # Should show level 2 heading
         assert "##" in child_range.new_text

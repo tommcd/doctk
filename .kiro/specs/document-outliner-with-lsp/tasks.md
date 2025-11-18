@@ -4,7 +4,7 @@ This implementation plan breaks down the feature into discrete, actionable codin
 
 ## Task List
 
-- [ ] 1. Set up project structure and core interfaces
+- [x] 1. Set up project structure and core interfaces
 
   - Create directory structure for VS Code extension (`extensions/doctk-outliner/`)
   - Create directory structure for language server (`src/doctk/lsp/`)

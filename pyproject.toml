@@ -142,3 +142,27 @@ output = "reports/coverage/coverage.xml"
 
 [tool.coverage.json]
 output = "reports/coverage/coverage.json"
+
+# ---- mypy configuration ----
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Gradual typing - enable later
+ignore_missing_imports = true  # Allow third-party libraries without type stubs
+strict_optional = true
+check_untyped_defs = true
+
+# Exclude pre-existing files with type errors (to be fixed in future tasks)
+[[tool.mypy.overrides]]
+module = [
+    "doctk.core",
+    "doctk.parsers.markdown",
+    "doctk.writers.markdown",
+    "doctk.operations",
+    "doctk.outliner",
+    "doctk.tools.registry",
+    "doctk.tools.plugin",
+    "doctk.tools.manager"
+]
+ignore_errors = true

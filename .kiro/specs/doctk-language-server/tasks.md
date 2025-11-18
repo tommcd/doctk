@@ -39,28 +39,31 @@ This implementation plan breaks down the language server into discrete, actionab
     - _Requirements: 8_
     - _Tests in: tests/unit/test_dsl_parser.py, tests/unit/test_language_server.py_
 
-- [ ] 2. Create operation registry for LSP
+- [x] 2. Create operation registry for LSP
 
-  - [ ] 2.1 Implement OperationRegistry class
+  - [x] 2.1 Implement OperationRegistry class
 
     - Create data structures for operation metadata
     - Implement dynamic operation loading from doctk core
     - Store operation signatures, parameters, and documentation
     - _Requirements: 9.1, 10.1, 20.4_
+    - _Implemented in: src/doctk/lsp/registry.py_
 
-  - [ ] 2.2 Add operation introspection
+  - [x] 2.2 Add operation introspection
 
     - Introspect doctk module to discover operations
     - Extract parameter information and types
     - Load documentation strings
     - _Requirements: 20.4_
+    - _Implemented in: src/doctk/lsp/registry.py:_load_operations_from_doctk()_
 
-  - [ ] 2.3 Write tests for operation registry
+  - [x] 2.3 Write tests for operation registry
 
     - Test operation discovery
     - Test metadata extraction
     - Test registry queries
     - _Requirements: 20_
+    - _Tests in: tests/unit/test_operation_registry.py (22 tests, all passing)_
 
 - [ ] 3. Implement LSP completion provider
 

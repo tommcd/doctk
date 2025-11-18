@@ -116,13 +116,15 @@ class Lexer:
         """Skip whitespace and comments."""
         while True:
             # Skip whitespace
-            while self.peek() and self.peek() in " \t\r\n":
+            char = self.peek()
+            while char is not None and char in " \t\r\n":
                 # Track newlines but skip them for now (may add NEWLINE tokens later)
                 self.advance()
+                char = self.peek()
 
             # Skip comments (# to end of line)
             if self.peek() == "#":
-                while self.peek() and self.peek() != "\n":
+                while self.peek() is not None and self.peek() != "\n":
                     self.advance()
                 # Continue loop to skip the newline after the comment
             else:
@@ -134,7 +136,8 @@ class Lexer:
         quote = self.advance()  # Opening quote
         value = ""
 
-        while self.peek() and self.peek() != quote:
+        peek_char = self.peek()
+        while peek_char is not None and peek_char != quote:
             char = self.advance()
             if char == "\\":
                 # Handle escape sequences
@@ -146,11 +149,12 @@ class Lexer:
                 elif next_char == "\\":
                     value += "\\"
                 elif next_char == quote:
-                    value += quote
-                else:
+                    value += str(quote)
+                elif next_char is not None:
                     value += next_char
-            else:
+            elif char is not None:
                 value += char
+            peek_char = self.peek()
 
         if self.peek() == quote:
             self.advance()  # Closing quote
@@ -162,14 +166,17 @@ class Lexer:
         value = ""
         has_dot = False
 
-        while self.peek() and (self.peek().isdigit() or self.peek() == "."):
-            char = self.peek()
+        char = self.peek()
+        while char is not None and (char.isdigit() or char == "."):
             if char == ".":
                 if has_dot:
                     # Multiple dots - stop parsing
                     break
                 has_dot = True
-            value += self.advance()
+            next_char = self.advance()
+            if next_char is not None:
+                value += next_char
+            char = self.peek()
 
         return value
 
@@ -177,8 +184,12 @@ class Lexer:
         """Read an identifier or keyword."""
         value = ""
 
-        while self.peek() and (self.peek().isalnum() or self.peek() in "_-"):
-            value += self.advance()
+        char = self.peek()
+        while char is not None and (char.isalnum() or char in "_-"):
+            next_char = self.advance()
+            if next_char is not None:
+                value += next_char
+            char = self.peek()
 
         return value
 
@@ -195,6 +206,8 @@ class Lexer:
             return Token(TokenType.EOF, "", line, column)
 
         char = self.peek()
+        if char is None:
+            return Token(TokenType.EOF, "", line, column)
 
         # String literals
         if char in "\"'":
@@ -225,7 +238,9 @@ class Lexer:
 
         # Two-character operators
         if char in "!~^$*" and self.peek(1) == "=":
-            op_char = self.advance()
+            op_char_token = self.advance()
+            if op_char_token is None:
+                raise LexerError(f"Unexpected end of input after '{char}'", line, column)
             self.advance()  # =
             op_map = {
                 "!": TokenType.NOT_EQUALS,
@@ -234,14 +249,17 @@ class Lexer:
                 "$": TokenType.DOLLAR_EQUALS,
                 "*": TokenType.STAR_EQUALS,
             }
-            return Token(op_map[op_char], op_char + "=", line, column)
+            return Token(op_map[op_char_token], op_char_token + "=", line, column)
 
         # >= and <=
         if char in "><" and self.peek(1) == "=":
-            op_char = self.advance()
+            op_char_token = self.advance()
+            if op_char_token is None:
+                raise LexerError(f"Unexpected end of input after '{char}'", line, column)
             self.advance()  # =
-            op_type = TokenType.GREATER_EQUAL if op_char == ">" else TokenType.LESS_EQUAL
-            return Token(op_type, op_char + "=", line, column)
+            # S105: False positive - comparing operator character, not a password
+            op_type = TokenType.GREATER_EQUAL if op_char_token == ">" else TokenType.LESS_EQUAL  # noqa: S105
+            return Token(op_type, op_char_token + "=", line, column)
 
         # Single-character tokens
         single_char_map = {

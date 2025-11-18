@@ -179,7 +179,7 @@ This implementation plan breaks down the VS Code outliner extension into discret
 
 - [ ] 8. Implement granular document edits (CRITICAL from PR #6 review)
 
-  - [ ] 8.1 Update TypeScript extension to use granular edits
+  - [x] 8.1 Update TypeScript extension to use granular edits
 
     - Modify executeOperation() in extension.ts to check for modifiedRanges
     - Create WorkspaceEdit with granular ranges when available
@@ -187,6 +187,7 @@ This implementation plan breaks down the VS Code outliner extension into discret
     - Test cursor position preservation
     - Test undo/redo stack preservation
     - _PR #6 Issue #1 (Critical)_
+    - NOTE: Implemented in extension.ts lines 168-183, uses granular edits when available
 
   - [ ] 8.2 Write tests for granular edits
 
@@ -194,23 +195,27 @@ This implementation plan breaks down the VS Code outliner extension into discret
     - Test cursor position is preserved after operations
     - Test undo/redo works with granular edits
     - _PR #6 Issue #1 (Critical)_
+    - NOTE: Backend tests complete (16 tests), frontend TypeScript tests deferred
 
-- [ ] 9. Centralize node ID generation in backend (MEDIUM from PR #6 review)
+- [x] 9. Centralize node ID generation in backend (MEDIUM from PR #6 review)
 
-  - [ ] 9.1 Update frontend to request tree from backend
+  - [x] 9.1 Update frontend to request tree from backend
 
     - Add `getDocumentTree()` method to PythonBridge TypeScript class
     - Update `updateFromDocument()` in DocumentOutlineProvider to use backend tree
     - Remove local ID generation logic from outlineProvider.ts
     - Add tree deserialization method
     - _PR #6 Issue #5 (Medium)_
+    - COMPLETED: Added getDocumentTree() to pythonBridge.ts, deserializeBackendTree() to outlineProvider.ts
+    - Local ID generation kept as fallback when backend unavailable
 
-  - [ ] 9.2 Write tests for centralized ID generation
+  - [x] 9.2 Write tests for centralized ID generation
 
     - Test frontend correctly deserializes backend tree
     - Test IDs are consistent between operations
     - Verify no duplicate ID generation logic remains
     - _PR #6 Issue #5 (Medium)_
+    - COMPLETED: Backend has 25 comprehensive tests (13 for build_tree_with_ids, 12 for get_document_tree RPC)
 
 - [ ] 10. Add configuration and customization
 

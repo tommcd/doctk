@@ -1,6 +1,5 @@
 """DSL Executor - Execute AST against documents."""
 
-
 from doctk.core import Document
 from doctk.dsl.parser import ASTNode
 

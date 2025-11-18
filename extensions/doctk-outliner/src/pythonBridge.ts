@@ -4,7 +4,7 @@
 
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
-import { OperationResult, ValidationResult } from './types';
+import { OperationResult, ValidationResult, DocumentTreeResponse } from './types';
 
 interface JsonRpcRequest {
   jsonrpc: '2.0';
@@ -232,6 +232,19 @@ export class PythonBridge {
    */
   async validateDemote(document: string, nodeId: string): Promise<ValidationResult> {
     return this.call<ValidationResult>('validate_demote', { document, node_id: nodeId });
+  }
+
+  /**
+   * Get the document tree with backend-assigned node IDs.
+   *
+   * This method calls the backend to build the document tree structure
+   * with centralized ID generation, ensuring consistency across operations.
+   *
+   * @param document - Document text
+   * @returns Document tree structure with centralized IDs
+   */
+  async getDocumentTree(document: string): Promise<DocumentTreeResponse> {
+    return this.call<DocumentTreeResponse>('get_document_tree', { document });
   }
 
   /**

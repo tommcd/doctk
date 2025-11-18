@@ -3,7 +3,8 @@
  */
 
 import * as vscode from 'vscode';
-import { OutlineNode, DocumentTree } from './types';
+import { OutlineNode, DocumentTree, BackendTreeNode } from './types';
+import { PythonBridge } from './pythonBridge';
 
 /**
  * Provides a tree view of document structure.
@@ -21,8 +22,11 @@ export class DocumentOutlineProvider implements vscode.TreeDataProvider<OutlineN
   private document: vscode.TextDocument | null = null;
   private debounceTimer: NodeJS.Timeout | null = null;
   private readonly debounceDelay = 300; // milliseconds
+  private pythonBridge: PythonBridge | null = null;
 
-  constructor() {}
+  constructor(pythonBridge?: PythonBridge) {
+    this.pythonBridge = pythonBridge || null;
+  }
 
   /**
    * Get tree item representation for a node.
@@ -117,15 +121,112 @@ export class DocumentOutlineProvider implements vscode.TreeDataProvider<OutlineN
       clearTimeout(this.debounceTimer);
     }
 
-    this.debounceTimer = setTimeout(() => {
+    this.debounceTimer = setTimeout(async () => {
       this.document = document;
+
+      // Try to use backend tree with centralized IDs if bridge is available
+      if (this.pythonBridge && this.pythonBridge.isRunning()) {
+        try {
+          const documentText = document.getText();
+          const treeResponse = await this.pythonBridge.getDocumentTree(documentText);
+          this.documentTree = this.deserializeBackendTree(treeResponse.root, document, treeResponse.version);
+          this.refresh();
+          return;
+        } catch (error) {
+          console.warn('Failed to get tree from backend, falling back to local parsing:', error);
+          // Fall through to local parsing
+        }
+      }
+
+      // Fallback to local parsing if backend is unavailable
       this.documentTree = this.parseDocument(document);
       this.refresh();
     }, this.debounceDelay);
   }
 
   /**
-   * Parse a document to build the outline tree.
+   * Deserialize backend tree into frontend OutlineNode format.
+   *
+   * Converts the backend TreeNode structure (with line/column positions)
+   * into the frontend OutlineNode structure (with VS Code Ranges).
+   *
+   * @param backendNode - Backend tree node
+   * @param document - VS Code text document for creating ranges
+   * @param version - Tree version number
+   * @returns DocumentTree structure
+   */
+  private deserializeBackendTree(
+    backendNode: BackendTreeNode,
+    document: vscode.TextDocument,
+    version: number
+  ): DocumentTree {
+    const nodeMap = new Map<string, OutlineNode>();
+
+    // Convert backend node to outline node
+    const convertNode = (bNode: BackendTreeNode, parentNode?: OutlineNode): OutlineNode => {
+      // Create range from line/column positions
+      // Warn if backend returns out-of-bounds line numbers
+      if (bNode.line >= document.lineCount) {
+        console.warn(
+          `Backend returned out-of-bounds line number: ${bNode.line} for node "${bNode.label}". ` +
+          `Document has ${document.lineCount} lines. Clamping to last line.`
+        );
+      }
+      const line = Math.min(bNode.line, document.lineCount - 1);
+      const lineText = document.lineAt(line).text;
+      const endColumn = lineText.length;
+
+      // Clamp column to prevent out-of-bounds access
+      const column = Math.min(bNode.column, lineText.length);
+
+      const range = new vscode.Range(
+        new vscode.Position(line, column),
+        new vscode.Position(line, endColumn)
+      );
+
+      // Create outline node
+      const outlineNode: OutlineNode = {
+        id: bNode.id,
+        label: bNode.label,
+        level: bNode.level,
+        range,
+        children: [],
+        parent: parentNode,
+        // Note: Metadata is not provided by backend and would require
+        // document content analysis to calculate accurately. Omitted to
+        // avoid displaying incorrect placeholder values in tooltips.
+        // TODO: Consider calculating content metadata from document ranges
+      };
+
+      // Add to node map (skip root node)
+      if (bNode.id !== 'root') {
+        nodeMap.set(bNode.id, outlineNode);
+      }
+
+      // Recursively convert children
+      for (const bChild of bNode.children) {
+        const childNode = convertNode(bChild, outlineNode);
+        outlineNode.children.push(childNode);
+      }
+
+      return outlineNode;
+    };
+
+    // Convert the tree starting from root
+    const root = convertNode(backendNode);
+
+    return {
+      root,
+      nodeMap,
+      version,
+    };
+  }
+
+  /**
+   * Parse a document to build the outline tree (local fallback).
+   *
+   * This method is used as a fallback when the backend is unavailable.
+   * It performs local ID generation which may differ from backend IDs.
    *
    * @param document - The text document to parse
    * @returns DocumentTree structure

@@ -19,16 +19,7 @@ let treeView: vscode.TreeView<any>;
 export async function activate(context: vscode.ExtensionContext) {
   console.log('doctk outliner extension is now active');
 
-  // Initialize outline provider
-  outlineProvider = new DocumentOutlineProvider();
-
-  // Register tree data provider
-  treeView = vscode.window.createTreeView('doctkOutline', {
-    treeDataProvider: outlineProvider,
-    showCollapseAll: true,
-  });
-
-  // Initialize Python bridge
+  // Initialize Python bridge first
   const config = vscode.workspace.getConfiguration('doctk');
   pythonBridge = new PythonBridge({
     pythonCommand: config.get('lsp.pythonCommand', 'python3'),
@@ -42,6 +33,15 @@ export async function activate(context: vscode.ExtensionContext) {
     console.error('Failed to start Python bridge:', error);
     vscode.window.showErrorMessage('Failed to start doctk backend. Some features may not work.');
   }
+
+  // Initialize outline provider with Python bridge for centralized ID generation
+  outlineProvider = new DocumentOutlineProvider(pythonBridge);
+
+  // Register tree data provider
+  treeView = vscode.window.createTreeView('doctkOutline', {
+    treeDataProvider: outlineProvider,
+    showCollapseAll: true,
+  });
 
   // Register commands
   context.subscriptions.push(

@@ -11,6 +11,7 @@ dependencies = [
   "rich>=13.0.0",
   "pyyaml>=6.0",
   "tomli>=2.0.0; python_version < '3.11'",
+  "pygls>=1.0.0",
 ]
 
 # Note: This project uses [dependency-groups] (PEP 735) for all development

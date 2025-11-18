@@ -4,36 +4,40 @@ This implementation plan breaks down the language server into discrete, actionab
 
 ## Task List
 
-- [ ] 1. Set up language server foundation
+- [x] 1. Set up language server foundation
 
-  - [ ] 1.1 Create DoctkLanguageServer class using pygls
+  - [x] 1.1 Create DoctkLanguageServer class using pygls
 
     - Set up basic language server with pygls
     - Implement server initialization
     - Add document lifecycle handlers (didOpen, didChange, didClose)
     - _Requirements: 7.1, 7.3, 7.5_
+    - _Implemented in: src/doctk/lsp/server.py_
 
-  - [ ] 1.2 Implement DSL parser
+  - [x] 1.2 Implement DSL parser
 
     - Create `DSLParser` class to parse doctk DSL syntax
     - Build AST from DSL text
     - Handle parse errors gracefully
     - _Requirements: 8.1, 8.2_
+    - _Implemented in: src/doctk/dsl/parser.py_
 
-  - [ ] 1.3 Add syntax validation
+  - [x] 1.3 Add syntax validation
 
     - Implement `validate_syntax()` method
-    - Check for unknown operations
+    - Check for unknown operations (stub for future work)
     - Validate operation arguments
     - Generate diagnostic messages with line/column positions
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
+    - _Implemented in: src/doctk/lsp/server.py:validate_syntax()_
 
-  - [ ] 1.4 Write tests for parser and validator
+  - [x] 1.4 Write tests for parser and validator
 
     - Test parsing valid DSL syntax
     - Test error handling for invalid syntax
     - Test diagnostic generation
     - _Requirements: 8_
+    - _Tests in: tests/unit/test_dsl_parser.py, tests/unit/test_language_server.py_
 
 - [ ] 2. Create operation registry for LSP
 

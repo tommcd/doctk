@@ -2,885 +2,1517 @@
 
 ## Overview
 
-This design document outlines a phased approach to implementing document outliner and LSP capabilities for doctk. The implementation is split into phases, with Phase 1 focusing on the foundational Python components that enable DSL execution, REPL interaction, and core document operations.
+This design document describes the architecture and implementation approach for a Document Outliner with Language Server Protocol (LSP) support for the doctk project. The system consists of three main components:
 
-Future phases will add the VS Code extension, LSP server, and visual outliner interface.
+1. **VS Code Extension (Outliner UI)** - Provides a tree-based visual interface for document structure manipulation
+1. **Language Server** - Provides intelligent code completion, validation, and documentation for the doctk DSL
+1. **Core Integration Layer** - Bridges the UI and LSP components with the existing doctk core API
+
+The design follows a pluggable architecture pattern, separating interface concerns from core document manipulation logic. This enables future support for additional interfaces (e.g., JupyterLab) without rewriting core functionality.
+
+### Design Principles
+
+- **Separation of Concerns**: UI logic is decoupled from document manipulation logic
+- **Reusability**: Core doctk API is the single source of truth for all operations
+- **Extensibility**: Pluggable architecture supports multiple interface implementations
+- **Performance**: Optimized for documents with up to 1000 headings
+- **Resilience**: Graceful error handling and automatic recovery mechanisms
 
 ## Architecture
 
-### High-Level Structure
+### High-Level Architecture
 
 ```
-doctk/
-├── src/doctk/
-│   ├── dsl/                    # NEW: DSL parser and execution engine
-│   │   ├── __init__.py
-│   │   ├── lexer.py            # Tokenize DSL syntax
-│   │   ├── parser.py           # Parse tokens into AST
-│   │   ├── executor.py         # Execute DSL commands
-│   │   └── repl.py             # Interactive REPL
-│   ├── operations.py           # ENHANCED: Add lift, lower, nest, unnest
-│   ├── core.py
-│   ├── cli.py                  # ENHANCED: Add repl and run commands
-│   └── ...
-├── tests/
-│   ├── unit/dsl/               # NEW: DSL unit tests
-│   ├── e2e/                    # ENHANCED: Add DSL e2e tests
-│   └── ...
-├── examples/
-│   ├── sample.md
-│   └── transformations/        # NEW: Example .tk scripts
-│       ├── promote-h3.tk
-│       ├── nest-sections.tk
-│       └── reorder-toc.tk
-└── docs/
-    ├── user-guide/
-    │   └── dsl-reference.md    # NEW: DSL documentation
-    └── ...
+┌─────────────────────────────────────────────────────────────┐
+│                     VS Code Extension                        │
+│  ┌──────────────────┐         ┌─────────────────────────┐  │
+│  │  Outliner View   │         │   Language Client       │  │
+│  │  (Tree Provider) │         │   (LSP Client)          │  │
+│  └────────┬─────────┘         └──────────┬──────────────┘  │
+│           │                               │                  │
+│           │                               │                  │
+└───────────┼───────────────────────────────┼──────────────────┘
+            │                               │
+            │                               │ JSON-RPC
+            │                               │
+            │                               │
+            │                               ▼
+            │                    ┌─────────────────────┐
+            │                    │  Language Server    │
+            │                    │  (Python Process)   │
+            │                    └──────────┬──────────┘
+            │                               │
+            ▼                               │
+┌───────────────────────────────────────────┼──────────────────┐
+│              doctk Core Integration       │                  │
+│  ┌────────────────────────────────────────▼───────────────┐ │
+│  │           Document Manipulation API                     │ │
+│  │  (Operations: promote, demote, nest, unnest, etc.)     │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │              doctk Core (Existing)                      │ │
+│  │  - Document/Node abstractions                           │ │
+│  │  - UDAST representation                                 │ │
+│  │  - Markdown parser/serializer                           │ │
+│  └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## Phase 1: Core DSL and Execution Engine (Current Spec)
+### Component Responsibilities
 
-Phase 1 establishes the foundation by implementing:
+#### VS Code Extension
 
-1. **DSL Syntax Parser** - Parse doctk operation syntax
-2. **Structure Operations** - lift, lower, nest, unnest operations
-3. **DSL Executor** - Execute parsed DSL commands on documents
-4. **REPL** - Interactive command-line interface
-5. **Script Execution** - Run .tk files with DSL commands
-6. **CLI Integration** - Add `repl` and `run` commands
+- Renders tree view of document structure
+- Handles user interactions (drag-drop, context menus, keyboard shortcuts)
+- Manages document synchronization between tree view and editor
+- Hosts the Language Client for LSP communication
+- Provides command palette integration
 
-### 1. DSL Syntax
+#### Language Server
 
-#### 1.1 DSL Grammar
+- Validates doctk DSL syntax in real-time
+- Provides auto-completion for operations and arguments
+- Supplies hover documentation for operations
+- Exposes structured information for AI agents
+- Maintains document state for validation context
 
-The doctk DSL uses a pipe-based syntax similar to Unix pipes:
+#### Core Integration Layer
 
-```
-# Basic selection and transformation
-doc | select heading | where level=3 | promote
+- Translates UI operations to doctk API calls
+- Manages document state and change tracking
+- Handles undo/redo integration with VS Code
+- Provides operation metadata for LSP
+- Ensures consistency across all interfaces
 
-# Multiple filters
-doc | select heading | where level>2 | where text~="Introduction" | demote
+## Components and Interfaces
 
-# Structure operations
-doc | select heading | where level=2 | lift
-doc | select paragraph | where text~="Note:" | nest under previous
+### 1. VS Code Extension (TypeScript)
 
-# Composition
-let promoted = doc | select heading | where level=3 | promote
-promoted | where text~="API" | demote
-```
+#### Tree Data Provider
 
-**Grammar (EBNF)**:
+The tree view is implemented using VS Code's `TreeDataProvider` API.
 
-```ebnf
-program      ::= statement+
-statement    ::= assignment | pipeline
-assignment   ::= "let" IDENTIFIER "=" pipeline
-pipeline     ::= source ("|" operation)*
-source       ::= "doc" | IDENTIFIER
-operation    ::= function_call | method_call
-function_call ::= IDENTIFIER ("(" arguments ")")?
-arguments    ::= argument ("," argument)*
-argument     ::= IDENTIFIER "=" value | value
-value        ::= STRING | NUMBER | BOOLEAN | IDENTIFIER
-method_call  ::= IDENTIFIER
-```
+```typescript
+interface OutlineNode {
+  id: string;              // Unique identifier for the node
+  label: string;           // Heading text
+  level: number;           // Heading level (1-6)
+  range: Range;            // Position in document
+  children: OutlineNode[]; // Child nodes
+  parent?: OutlineNode;    // Parent reference
+}
 
-**Examples**:
+class DocumentOutlineProvider implements TreeDataProvider<OutlineNode>, TreeDragAndDropController<OutlineNode> {
+  // TreeDataProvider methods
+  getTreeItem(element: OutlineNode): TreeItem;
+  getChildren(element?: OutlineNode): OutlineNode[];
+  getParent(element: OutlineNode): OutlineNode | undefined;
 
-```doctk
-# Simple pipeline
-doc | select heading | promote
+  // Drag and drop support
+  handleDrag(source: OutlineNode[], dataTransfer: DataTransfer): void;
+  handleDrop(target: OutlineNode, dataTransfer: DataTransfer, token: CancellationToken): void;
 
-# With arguments
-doc | select heading | where level=3
-
-# With string matching
-doc | where text~="Introduction"
-
-# Variable assignment
-let headings = doc | select heading
-headings | where level=2 | promote
+  // Custom methods
+  refresh(): void;
+  updateFromDocument(document: TextDocument): void;
+  applyOperation(node: OutlineNode, operation: Operation): Promise<void>;
+}
 ```
 
-#### 1.2 Supported Operations
+**Design Rationale**: Using VS Code's native `TreeDataProvider` ensures consistency with other VS Code tree views and provides built-in support for drag-and-drop, which is a core requirement.
 
-**Selection Operations**:
-- `select <type>` - Select nodes of specific type (heading, paragraph, list, etc.)
-- `where <condition>` - Filter nodes by condition
+#### Document Synchronization Manager
 
-**Transformation Operations**:
-- `promote` - Decrease heading level (h3 → h2)
-- `demote` - Increase heading level (h2 → h3)
-- `lift` - Move section up in hierarchy (sibling of parent)
-- `lower` - Move section down in hierarchy (child of previous sibling)
-- `nest under <target>` - Nest section under target
-- `unnest` - Remove one level of nesting
+Manages bidirectional synchronization between the tree view and editor.
 
-**Utility Operations**:
-- `count` - Count nodes
-- `first <n>` - Take first n nodes
-- `last <n>` - Take last n nodes
+```typescript
+class DocumentSyncManager {
+  private debounceTimer: NodeJS.Timeout | null = null;
+  private readonly DEBOUNCE_DELAY = 300; // milliseconds
 
-#### 1.3 Condition Syntax
+  onDocumentChange(document: TextDocument): void;
+  onTreeViewChange(operation: TreeOperation): Promise<void>;
+  applyEdit(edit: WorkspaceEdit): Promise<boolean>;
 
-**Comparison Operators**:
-- `=` - Equality
-- `!=` - Inequality
-- `>`, `<`, `>=`, `<=` - Numeric comparison
-
-**Text Matching**:
-- `~=` - Regex match
-- `^=` - Starts with
-- `$=` - Ends with
-- `*=` - Contains
-
-**Examples**:
-```
-where level=3
-where level>2
-where text~="Introduction"
-where text^="Chapter"
+  private debounceUpdate(callback: () => void): void;
+}
 ```
 
-### 2. Structure Operations
+**Design Rationale**: Debouncing prevents excessive updates during rapid typing or multiple operations. The 300ms delay balances responsiveness (500ms requirement) with performance.
 
-#### 2.1 Lift Operation
+#### Operation Handler
 
-**Purpose**: Move a section up in the hierarchy (make it a sibling of its parent)
+Translates user actions into doctk operations.
 
-**Before**:
+```typescript
+interface Operation {
+  type: 'promote' | 'demote' | 'move_up' | 'move_down' | 'nest' | 'unnest' | 'delete';
+  targetNode: OutlineNode;
+  params?: Record<string, any>;
+}
+
+class OperationHandler {
+  async executeOperation(operation: Operation): Promise<OperationResult>;
+  async executeWithUndo(operation: Operation): Promise<void>;
+
+  private async callDoctkAPI(operation: Operation): Promise<string>;
+  private createWorkspaceEdit(oldText: string, newText: string): WorkspaceEdit;
+}
 ```
-# Chapter 1
-## Section 1.1
-### Subsection 1.1.1
+
+**Design Rationale**: The operation handler abstracts the complexity of calling the Python doctk API and converting results back to VS Code edits. This separation allows for easier testing and future optimization (e.g., batching operations).
+
+#### Language Client Setup
+
+```typescript
+class DoctkLanguageClient {
+  private client: LanguageClient | null = null;
+
+  async activate(context: ExtensionContext): Promise<void> {
+    const serverModule = context.asAbsolutePath(
+      path.join('server', 'doctk_lsp.py')
+    );
+
+    const serverOptions: ServerOptions = {
+      command: 'uv',
+      args: ['run', 'python', serverModule],
+      options: { cwd: workspaceRoot }
+    };
+
+    const clientOptions: LanguageClientOptions = {
+      documentSelector: [
+        { scheme: 'file', language: 'doctk' },
+        { scheme: 'file', pattern: '**/*.tk' }
+      ],
+      synchronize: {
+        fileEvents: workspace.createFileSystemWatcher('**/*.tk')
+      }
+    };
+
+    this.client = new LanguageClient(
+      'doctkLanguageServer',
+      'doctk Language Server',
+      serverOptions,
+      clientOptions
+    );
+
+    await this.client.start();
+  }
+
+  async deactivate(): Promise<void> {
+    if (this.client) {
+      await this.client.stop();
+    }
+  }
+}
 ```
 
-**After `doc | select heading | where level=3 | lift`**:
-```
-# Chapter 1
-## Section 1.1
-## Subsection 1.1.1  (promoted from h3 to h2, became sibling of parent)
-```
+**Design Rationale**: Using `uv run` ensures the language server runs in the correct Python environment with all dependencies available. The client activates for both `.tk` files and `doctk` language identifiers in code blocks.
 
-**Implementation**:
+### 2. Language Server (Python)
+
+The language server is implemented using the `pygls` (Python Generic Language Server) library.
+
+#### Server Architecture
+
 ```python
-def lift() -> Operation:
-    """Move section up in hierarchy (sibling of parent)."""
-    def transform(doc: Document) -> Document:
-        result_nodes = []
-        for node in doc.nodes:
-            if isinstance(node, Heading):
-                # Decrease level (promote) and maintain sibling relationship
-                result_nodes.append(node.promote())
-            else:
-                result_nodes.append(node)
-        return Document(nodes=result_nodes)
-    return transform
+from pygls.server import LanguageServer
+from pygls.lsp.types import (
+    CompletionParams, CompletionList, CompletionItem,
+    Hover, HoverParams,
+    Diagnostic, DiagnosticSeverity,
+    DidOpenTextDocumentParams, DidChangeTextDocumentParams
+)
+
+class DoctkLanguageServer(LanguageServer):
+    def __init__(self):
+        super().__init__('doctk-lsp', 'v0.1.0')
+        self.documents: Dict[str, DocumentState] = {}
+        self.operation_registry = OperationRegistry()
+
+    def parse_document(self, uri: str, text: str) -> DocumentState:
+        """Parse doctk DSL and maintain document state."""
+        pass
+
+    def validate_syntax(self, uri: str) -> List[Diagnostic]:
+        """Validate DSL syntax and return diagnostics."""
+        pass
 ```
 
-#### 2.2 Lower Operation
+**Design Rationale**: `pygls` provides a robust foundation for LSP implementation with built-in support for all LSP features. It handles JSON-RPC communication, allowing us to focus on doctk-specific logic.
 
-**Purpose**: Move a section down in the hierarchy (make it a child of the previous sibling)
+#### Operation Registry
 
-**Before**:
-```
-## Section 1
-## Section 2
-```
+Maintains metadata about all available doctk operations.
 
-**After `doc | select heading | where text="Section 2" | lower`**:
-```
-## Section 1
-### Section 2  (demoted from h2 to h3, became child of previous sibling)
-```
-
-**Implementation**:
-```python
-def lower() -> Operation:
-    """Move section down in hierarchy (child of previous sibling)."""
-    def transform(doc: Document) -> Document:
-        result_nodes = []
-        for node in doc.nodes:
-            if isinstance(node, Heading):
-                # Increase level (demote) to become child
-                result_nodes.append(node.demote())
-            else:
-                result_nodes.append(node)
-        return Document(nodes=result_nodes)
-    return transform
-```
-
-#### 2.3 Nest Operation
-
-**Purpose**: Nest selected sections under a target section
-
-**Syntax**: `nest under <selector>`
-
-**Example**:
-```
-doc | select heading | where level=2 | nest under (where text="Parent")
-```
-
-#### 2.4 Unnest Operation
-
-**Purpose**: Remove one level of nesting
-
-**Example**:
-```
-doc | select heading | where level=3 | unnest
-```
-
-### 3. DSL Parser
-
-#### 3.1 Lexer
-
-**Purpose**: Tokenize DSL source code into tokens
-
-**Location**: `src/doctk/dsl/lexer.py`
-
-**Token Types**:
-```python
-from enum import Enum, auto
-
-class TokenType(Enum):
-    # Literals
-    IDENTIFIER = auto()  # variable names, operation names
-    STRING = auto()      # "text"
-    NUMBER = auto()      # 123, 3.14
-    BOOLEAN = auto()     # true, false
-
-    # Operators
-    PIPE = auto()        # |
-    EQUALS = auto()      # =
-    NOT_EQUALS = auto()  # !=
-    GREATER = auto()     # >
-    LESS = auto()        # <
-    GREATER_EQUAL = auto()  # >=
-    LESS_EQUAL = auto()  # <=
-    TILDE_EQUALS = auto()  # ~= (regex match)
-    CARET_EQUALS = auto()  # ^= (starts with)
-    DOLLAR_EQUALS = auto()  # $= (ends with)
-    STAR_EQUALS = auto()  # *= (contains)
-
-    # Keywords
-    LET = auto()         # let
-    DOC = auto()         # doc
-    WHERE = auto()       # where
-    SELECT = auto()      # select
-
-    # Delimiters
-    LPAREN = auto()      # (
-    RPAREN = auto()      # )
-    COMMA = auto()       # ,
-
-    # Special
-    EOF = auto()
-    NEWLINE = auto()
-```
-
-**Lexer Class**:
 ```python
 @dataclass
-class Token:
-    type: TokenType
-    value: str
-    line: int
-    column: int
+class OperationMetadata:
+    name: str
+    description: str
+    parameters: List[ParameterInfo]
+    return_type: str
+    examples: List[str]
+    category: str  # e.g., "structure", "selection", "transformation"
 
-class Lexer:
-    def __init__(self, source: str):
-        self.source = source
-        self.pos = 0
-        self.line = 1
-        self.column = 1
+class OperationRegistry:
+    def __init__(self):
+        self.operations: Dict[str, OperationMetadata] = {}
+        self._load_operations_from_doctk()
 
-    def next_token(self) -> Token:
-        """Get next token from source."""
-        # Skip whitespace
-        # Tokenize identifiers, strings, numbers, operators
-        # Return Token
-        ...
+    def _load_operations_from_doctk(self):
+        """Dynamically load operations from doctk core API."""
+        # Introspect doctk module to discover operations
+        pass
 
-    def tokenize(self) -> list[Token]:
-        """Tokenize entire source."""
-        tokens = []
-        while True:
-            token = self.next_token()
-            tokens.append(token)
-            if token.type == TokenType.EOF:
-                break
-        return tokens
+    def get_operation(self, name: str) -> Optional[OperationMetadata]:
+        pass
+
+    def get_completions(self, context: CompletionContext) -> List[CompletionItem]:
+        pass
 ```
 
-#### 3.2 Parser
+**Design Rationale**: Dynamic operation loading ensures the LSP automatically supports new operations added to doctk core without manual updates. This satisfies Requirement 20 (Integration with doctk Core API).
 
-**Purpose**: Parse tokens into Abstract Syntax Tree (AST)
+#### DSL Parser and Validator
 
-**Location**: `src/doctk/dsl/parser.py`
-
-**AST Node Types**:
 ```python
-from dataclasses import dataclass
-from abc import ABC, abstractmethod
+class DSLParser:
+    def parse(self, text: str) -> ParseResult:
+        """Parse doctk DSL into an AST."""
+        pass
 
-class ASTNode(ABC):
-    """Base class for AST nodes."""
-    @abstractmethod
-    def accept(self, visitor: "ASTVisitor") -> Any:
+    def validate(self, ast: DSLNode) -> List[ValidationError]:
+        """Validate AST against operation signatures."""
         pass
 
 @dataclass
-class Pipeline(ASTNode):
-    source: "Source"
-    operations: list["FunctionCall"]
-
-    def accept(self, visitor: "ASTVisitor") -> Any:
-        return visitor.visit_pipeline(self)
+class ParseResult:
+    ast: Optional[DSLNode]
+    errors: List[ParseError]
 
 @dataclass
-class Source(ASTNode):
-    name: str  # "doc" or variable name
-
-    def accept(self, visitor: "ASTVisitor") -> Any:
-        return visitor.visit_source(self)
-
-@dataclass
-class FunctionCall(ASTNode):
-    name: str
-    arguments: dict[str, Any]
-
-    def accept(self, visitor: "ASTVisitor") -> Any:
-        return visitor.visit_function_call(self)
-
-@dataclass
-class Assignment(ASTNode):
-    variable: str
-    pipeline: Pipeline
-
-    def accept(self, visitor: "ASTVisitor") -> Any:
-        return visitor.visit_assignment(self)
+class ValidationError:
+    line: int
+    column: int
+    message: str
+    severity: DiagnosticSeverity
 ```
 
-**Parser Class**:
+**Design Rationale**: Separating parsing from validation allows for partial parsing when syntax errors exist, enabling better error recovery and more helpful diagnostics.
+
+#### Completion Provider
+
 ```python
-class Parser:
-    def __init__(self, tokens: list[Token]):
-        self.tokens = tokens
-        self.pos = 0
+class CompletionProvider:
+    def __init__(self, registry: OperationRegistry):
+        self.registry = registry
 
-    def parse(self) -> list[ASTNode]:
-        """Parse tokens into AST."""
-        statements = []
-        while not self.is_at_end():
-            statements.append(self.parse_statement())
-        return statements
+    def provide_completions(
+        self,
+        document: str,
+        position: Position
+    ) -> CompletionList:
+        context = self._analyze_context(document, position)
 
-    def parse_statement(self) -> ASTNode:
-        """Parse a single statement."""
-        if self.match(TokenType.LET):
-            return self.parse_assignment()
-        return self.parse_pipeline()
+        if context.after_pipe:
+            return self._operation_completions(context)
+        elif context.in_operation:
+            return self._parameter_completions(context)
+        else:
+            return self._keyword_completions(context)
 
-    def parse_pipeline(self) -> Pipeline:
-        """Parse a pipeline expression."""
-        source = self.parse_source()
-        operations = []
-        while self.match(TokenType.PIPE):
-            operations.append(self.parse_operation())
-        return Pipeline(source, operations)
-
-    def parse_operation(self) -> FunctionCall:
-        """Parse an operation (function call)."""
-        name = self.consume(TokenType.IDENTIFIER)
-        arguments = {}
-        if self.match(TokenType.LPAREN):
-            arguments = self.parse_arguments()
-            self.consume(TokenType.RPAREN)
-        return FunctionCall(name.value, arguments)
+    def _analyze_context(self, document: str, position: Position) -> CompletionContext:
+        """Analyze cursor position to determine completion context."""
+        pass
 ```
 
-#### 3.3 Executor
+**Design Rationale**: Context-aware completions provide relevant suggestions based on cursor position, improving usability and meeting the 200ms response time requirement through targeted filtering.
 
-**Purpose**: Execute parsed AST against documents
+### 3. Core Integration Layer (Python)
 
-**Location**: `src/doctk/dsl/executor.py`
+#### Document Manipulation API
 
-**Executor Class**:
+Provides a high-level interface for document operations used by both the extension and LSP.
+
 ```python
-class Executor:
-    def __init__(self, document: Document):
-        self.document = document
-        self.variables: dict[str, Document] = {"doc": document}
+from doctk import Document, Node
+from typing import Protocol
 
-    def execute(self, ast: list[ASTNode]) -> Document:
-        """Execute AST statements."""
-        result = self.document
-        for node in ast:
-            if isinstance(node, Assignment):
-                self.execute_assignment(node)
-            elif isinstance(node, Pipeline):
-                result = self.execute_pipeline(node)
-        return result
+class DocumentOperation(Protocol):
+    """Protocol for all document operations."""
+    def execute(self, doc: Document, target: Node) -> Document:
+        ...
 
-    def execute_pipeline(self, pipeline: Pipeline) -> Document:
-        """Execute a pipeline."""
-        # Get source document
-        doc = self.variables.get(pipeline.source.name, self.document)
+    def validate(self, doc: Document, target: Node) -> ValidationResult:
+        ...
 
-        # Apply operations in sequence
-        for op in pipeline.operations:
-            operation_fn = self.get_operation(op.name, op.arguments)
-            doc = operation_fn(doc)
+class StructureOperations:
+    """High-level operations for document structure manipulation."""
 
+    @staticmethod
+    def promote(doc: Document, node_id: str) -> Document:
+        """Decrease heading level by one."""
+        node = doc.find_node(node_id)
+        if node.level > 1:
+            return doc.update_node(node_id, level=node.level - 1)
         return doc
 
-    def get_operation(self, name: str, args: dict[str, Any]) -> Operation:
-        """Get operation function by name."""
-        # Import from doctk.operations
-        from doctk.operations import (
-            select, where, promote, demote, lift, lower, nest, unnest
-        )
+    @staticmethod
+    def demote(doc: Document, node_id: str) -> Document:
+        """Increase heading level by one."""
+        node = doc.find_node(node_id)
+        if node.level < 6:
+            return doc.update_node(node_id, level=node.level + 1)
+        return doc
 
-        operation_map = {
-            "select": lambda: select(self.get_predicate(args.get("type"))),
-            "where": lambda: where(**args),
-            "promote": lambda: promote(),
-            "demote": lambda: demote(),
-            "lift": lambda: lift(),
-            "lower": lambda: lower(),
-            "nest": lambda: nest(**args),
-            "unnest": lambda: unnest(),
-        }
+    @staticmethod
+    def move_up(doc: Document, node_id: str) -> Document:
+        """Move node up in sibling order."""
+        pass
 
-        if name not in operation_map:
-            raise ValueError(f"Unknown operation: {name}")
+    @staticmethod
+    def move_down(doc: Document, node_id: str) -> Document:
+        """Move node down in sibling order."""
+        pass
 
-        return operation_map[name]()
+    @staticmethod
+    def nest(doc: Document, node_id: str, parent_id: str) -> Document:
+        """Nest node under a new parent."""
+        pass
+
+    @staticmethod
+    def unnest(doc: Document, node_id: str) -> Document:
+        """Move node up one level in hierarchy."""
+        pass
 ```
 
-### 4. REPL
+**Design Rationale**: Immutable document operations (returning new Document instances) simplify undo/redo implementation and prevent state inconsistencies. This aligns with functional programming principles used in doctk core.
 
-#### 4.1 REPL Interface
+#### Bridge API for Extension
 
-**Purpose**: Provide interactive command-line interface for DSL
+Provides a simple interface for the TypeScript extension to call Python operations.
 
-**Location**: `src/doctk/dsl/repl.py`
-
-**REPL Class**:
 ```python
-class REPL:
+class ExtensionBridge:
+    """Bridge between VS Code extension and doctk core."""
+
     def __init__(self):
-        self.document: Document | None = None
-        self.history: list[str] = []
+        self.operations = StructureOperations()
 
-    def start(self):
-        """Start REPL loop."""
-        console.print("[bold]doctk REPL[/bold]")
-        console.print("Type 'help' for commands, 'exit' to quit\n")
+    def execute_operation(
+        self,
+        operation_type: str,
+        document_text: str,
+        node_id: str,
+        params: Optional[Dict[str, Any]] = None
+    ) -> OperationResult:
+        """Execute an operation and return the modified document."""
+        try:
+            doc = Document.from_markdown(document_text)
 
-        while True:
-            try:
-                # Read input
-                line = input("doctk> ")
-                if not line.strip():
-                    continue
+            operation_map = {
+                'promote': self.operations.promote,
+                'demote': self.operations.demote,
+                'move_up': self.operations.move_up,
+                'move_down': self.operations.move_down,
+                'nest': self.operations.nest,
+                'unnest': self.operations.unnest,
+            }
 
-                # Handle special commands
-                if line == "exit":
-                    break
-                elif line == "help":
-                    self.show_help()
-                    continue
-                elif line.startswith("load "):
-                    self.load_document(line[5:].strip())
-                    continue
-                elif line.startswith("save "):
-                    self.save_document(line[5:].strip())
-                    continue
+            operation = operation_map.get(operation_type)
+            if not operation:
+                return OperationResult(success=False, error=f"Unknown operation: {operation_type}")
 
-                # Execute DSL command
-                self.execute(line)
+            result_doc = operation(doc, node_id, **(params or {}))
+            return OperationResult(
+                success=True,
+                document=result_doc.to_markdown(),
+                modified_ranges=self._compute_diff(doc, result_doc)
+            )
+        except Exception as e:
+            return OperationResult(success=False, error=str(e))
 
-            except KeyboardInterrupt:
-                console.print("\nUse 'exit' to quit")
-            except Exception as e:
-                console.print(f"[red]Error: {e}[/red]")
-
-    def execute(self, source: str):
-        """Execute DSL source."""
-        if not self.document:
-            console.print("[yellow]No document loaded. Use 'load <file>'[/yellow]")
-            return
-
-        # Parse and execute
-        lexer = Lexer(source)
-        tokens = lexer.tokenize()
-        parser = Parser(tokens)
-        ast = parser.parse()
-        executor = Executor(self.document)
-        result = executor.execute(ast)
-
-        # Update document
-        self.document = result
-
-        # Show result
-        console.print(f"[green]✓[/green] Result: {len(result.nodes)} nodes")
-
-    def load_document(self, path: str):
-        """Load document from file."""
-        self.document = Document.from_file(path)
-        console.print(f"[green]✓[/green] Loaded {path}")
-
-    def save_document(self, path: str):
-        """Save document to file."""
-        if not self.document:
-            console.print("[yellow]No document to save[/yellow]")
-            return
-        self.document.to_file(path)
-        console.print(f"[green]✓[/green] Saved to {path}")
-
-    def show_help(self):
-        """Show help message."""
-        console.print("""
-[bold]Commands:[/bold]
-  load <file>     - Load a document
-  save <file>     - Save the current document
-  help            - Show this help
-  exit            - Exit REPL
-
-[bold]DSL Syntax:[/bold]
-  doc | select heading | where level=3 | promote
-  doc | select heading | where text~="Chapter" | demote
-  let headings = doc | select heading
-  headings | where level=2 | lift
-
-[bold]Operations:[/bold]
-  select <type>   - Select nodes by type
-  where <cond>    - Filter by condition
-  promote         - Decrease heading level
-  demote          - Increase heading level
-  lift            - Move up in hierarchy
-  lower           - Move down in hierarchy
-        """)
+@dataclass
+class OperationResult:
+    success: bool
+    document: Optional[str] = None
+    modified_ranges: Optional[List[Range]] = None
+    error: Optional[str] = None
 ```
 
-#### 4.2 CLI Integration
-
-**Purpose**: Add REPL and script execution to CLI
-
-**Location**: `src/doctk/cli.py`
-
-**New Commands**:
-```python
-@app.command()
-def repl() -> None:
-    """
-    Start interactive REPL for doctk commands.
-
-    The REPL provides an interactive environment for experimenting
-    with document transformations using the doctk DSL.
-    """
-    from doctk.dsl.repl import REPL
-
-    repl = REPL()
-    repl.start()
-
-@app.command()
-def run(
-    script_path: str = typer.Argument(..., help="Path to .tk script file"),
-    input_path: str = typer.Argument(..., help="Input document path"),
-    output_path: str = typer.Option(None, "--output", "-o", help="Output path"),
-) -> None:
-    """
-    Execute a .tk script file on a document.
-
-    Args:
-        script_path: Path to .tk file with DSL commands
-        input_path: Path to input Markdown document
-        output_path: Path to save output (default: overwrite input)
-    """
-    try:
-        # Load document
-        doc = Document.from_file(input_path)
-
-        # Read script
-        with open(script_path) as f:
-            source = f.read()
-
-        # Parse and execute
-        from doctk.dsl.lexer import Lexer
-        from doctk.dsl.parser import Parser
-        from doctk.dsl.executor import Executor
-
-        lexer = Lexer(source)
-        tokens = lexer.tokenize()
-        parser = Parser(tokens)
-        ast = parser.parse()
-        executor = Executor(doc)
-        result = executor.execute(ast)
-
-        # Save result
-        output = output_path or input_path
-        result.to_file(output)
-
-        console.print(f"[green]✓[/green] Executed {script_path}")
-        console.print(f"[green]✓[/green] Saved to {output}")
-
-    except Exception as e:
-        console.print(f"[red]✗[/red] Error: {e}")
-        raise typer.Exit(1)
-```
-
-### 5. Example Scripts
-
-#### 5.1 promote-h3.tk
-
-```doctk
-# Promote all h3 headings to h2
-doc | select heading | where level=3 | promote
-```
-
-#### 5.2 nest-sections.tk
-
-```doctk
-# Nest all "Note:" paragraphs under the previous heading
-doc | select paragraph | where text^="Note:" | nest under previous
-```
-
-#### 5.3 reorder-toc.tk
-
-```doctk
-# Reorder table of contents
-let toc = doc | select heading | where level=2
-toc | where text~="Introduction" | lift
-toc | where text~="Conclusion" | lower
-```
-
-## Phase 2: LSP Server (Future)
-
-Phase 2 will implement the Language Server Protocol server:
-
-1. **LSP Server** (TypeScript) - Implement language server
-2. **Syntax Validation** - Real-time error checking
-3. **Auto-Completion** - Context-aware suggestions
-4. **Hover Documentation** - Inline help
-5. **Signature Help** - Parameter hints
-
-**Technologies**:
-- TypeScript
-- vscode-languageserver
-- vscode-languageclient
-
-## Phase 3: VS Code Extension (Future)
-
-Phase 3 will implement the VS Code extension with outliner:
-
-1. **Tree View** - Document structure visualization
-2. **Drag-and-Drop** - Interactive restructuring
-3. **Context Menu** - Operation shortcuts
-4. **Inline Editing** - Edit headings in tree
-5. **Keyboard Shortcuts** - Power user features
-6. **Document Sync** - Bidirectional updates
-
-**Technologies**:
-- TypeScript
-- VS Code Extension API
-- Tree View API
+**Design Rationale**: The bridge API provides a simple, JSON-serializable interface that can be called from TypeScript via child process or HTTP. Computing diffs allows the extension to apply minimal edits, improving performance and preserving cursor position.
 
 ## Data Models
 
-### DSL AST Nodes
+### Document Tree Representation
 
-```python
-@dataclass
-class Pipeline(ASTNode):
-    source: Source
-    operations: list[FunctionCall]
+The outliner uses a tree structure that mirrors the document's heading hierarchy.
 
-@dataclass
-class Source(ASTNode):
-    name: str  # "doc" or variable name
+```typescript
+// TypeScript (Extension)
+interface DocumentTree {
+  root: OutlineNode;
+  nodeMap: Map<string, OutlineNode>;  // Fast lookup by ID
+  version: number;                     // For change tracking
+}
 
-@dataclass
-class FunctionCall(ASTNode):
-    name: str
-    arguments: dict[str, Any]
+interface OutlineNode {
+  id: string;              // Unique identifier (e.g., "h1-0", "h2-3")
+  label: string;           // Heading text
+  level: number;           // 1-6 for headings
+  range: Range;            // Start/end position in document
+  children: OutlineNode[];
+  parent?: OutlineNode;
+  metadata?: NodeMetadata;
+}
 
-@dataclass
-class Assignment(ASTNode):
-    variable: str
-    pipeline: Pipeline
+interface NodeMetadata {
+  hasContent: boolean;     // Whether node has body content
+  contentLength: number;   // Character count of content
+  lastModified: number;    // Timestamp
+}
 ```
 
-### Execution Context
+**Design Rationale**: The `nodeMap` provides O(1) lookup for operations, critical for performance with large documents. The `version` field enables optimistic concurrency control for synchronization.
+
+### DSL Abstract Syntax Tree
 
 ```python
+# Python (Language Server)
 @dataclass
-class ExecutionContext:
-    document: Document
-    variables: dict[str, Document]
-    history: list[Document]  # For undo
+class DSLNode:
+    type: str  # 'operation', 'pipe', 'argument', etc.
+    value: Any
+    children: List['DSLNode']
+    range: Range
+
+@dataclass
+class OperationNode(DSLNode):
+    operation_name: str
+    arguments: Dict[str, Any]
+
+@dataclass
+class PipelineNode(DSLNode):
+    operations: List[OperationNode]
 ```
+
+**Design Rationale**: A simple AST structure is sufficient for the doctk DSL, which has a linear pipeline structure. This keeps parsing fast and validation straightforward.
+
+### Configuration Schema
+
+```typescript
+interface DoctkConfiguration {
+  outliner: {
+    autoRefresh: boolean;
+    refreshDelay: number;        // milliseconds
+    showContentPreview: boolean;
+    maxPreviewLength: number;
+  };
+
+  keybindings: {
+    promote: string;
+    demote: string;
+    moveUp: string;
+    moveDown: string;
+    delete: string;
+  };
+
+  lsp: {
+    enabled: boolean;
+    trace: 'off' | 'messages' | 'verbose';
+    maxCompletionItems: number;
+  };
+
+  performance: {
+    largeDocumentThreshold: number;  // Number of headings
+    enableVirtualization: boolean;
+  };
+}
+```
+
+**Design Rationale**: Comprehensive configuration allows users to tune performance and behavior. The `largeDocumentThreshold` enables automatic optimization strategies for large documents (Requirement 17).
 
 ## Error Handling
 
-### Parse Errors
+### Error Recovery Strategy
 
-**Strategy**: Provide helpful error messages with line/column positions
+The system implements a multi-layered error handling approach:
 
-**Example**:
+1. **Graceful Degradation**: When parsing fails, display partial tree view with available structure
+1. **Automatic Retry**: Network/file system errors retry up to 3 times with exponential backoff
+1. **Server Recovery**: Language server crashes trigger automatic restart within 5 seconds
+1. **User Notification**: Critical errors display actionable messages with recovery options
+
+```typescript
+class ErrorHandler {
+  async handleOperationError(error: Error, operation: Operation): Promise<void> {
+    if (error instanceof NetworkError) {
+      await this.retryWithBackoff(operation, 3);
+    } else if (error instanceof ValidationError) {
+      this.showValidationMessage(error);
+    } else {
+      this.logError(error);
+      this.showGenericError(operation.type);
+    }
+  }
+
+  private async retryWithBackoff(
+    operation: Operation,
+    maxRetries: number
+  ): Promise<void> {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        await this.executeOperation(operation);
+        return;
+      } catch (error) {
+        if (i === maxRetries - 1) throw error;
+        await this.delay(Math.pow(2, i) * 1000);
+      }
+    }
+  }
+}
 ```
-Error at line 2, column 15:
-  doc | select heading | where level=
-                                     ^
-Expected: value after '='
+
+**Design Rationale**: Exponential backoff prevents overwhelming the system during transient failures. Distinguishing error types enables appropriate recovery strategies.
+
+### Language Server Error Handling
+
+```python
+class DoctkLanguageServer(LanguageServer):
+    def __init__(self):
+        super().__init__('doctk-lsp', 'v0.1.0')
+        self.setup_error_handlers()
+
+    def setup_error_handlers(self):
+        @self.feature(TEXT_DOCUMENT_DID_OPEN)
+        async def did_open(ls: LanguageServer, params: DidOpenTextDocumentParams):
+            try:
+                uri = params.text_document.uri
+                text = params.text_document.text
+                await self.parse_and_validate(uri, text)
+            except Exception as e:
+                self.show_message(f"Error parsing document: {str(e)}", MessageType.Error)
+                self.log_error(e)
+
+    def log_error(self, error: Exception):
+        """Log detailed error information for troubleshooting."""
+        import traceback
+        self.show_message_log(
+            f"Error: {str(error)}\n{traceback.format_exc()}",
+            MessageType.Log
+        )
 ```
 
-### Runtime Errors
-
-**Strategy**: Catch exceptions and provide context
-
-**Example**:
-```
-Runtime Error in 'where level=3':
-  No nodes match the condition
-```
-
-### File Errors
-
-**Strategy**: Validate file existence and format
-
-**Example**:
-```
-Error: Cannot read file 'document.md'
-  File does not exist
-```
+**Design Rationale**: Comprehensive logging ensures errors can be diagnosed without disrupting the user experience. The LSP continues functioning even when individual operations fail.
 
 ## Testing Strategy
 
-### Unit Tests
+### Unit Testing
 
-**Scope**: Test individual DSL components
+Each component has isolated unit tests:
 
-**Examples**:
-- Test Lexer.tokenize() with various inputs
-- Test Parser.parse() with valid/invalid syntax
-- Test Executor.execute() with different operations
-- Test lift/lower/nest/unnest operations
+- **Extension**: Mock VS Code API, test tree provider logic
+- **Language Server**: Test parsing, validation, and completion logic
+- **Core Integration**: Test operation execution and document transformations
 
-### E2E Tests
+```typescript
+// Example: Tree Provider Tests
+describe('DocumentOutlineProvider', () => {
+  it('should build tree from markdown headings', () => {
+    const markdown = '# Title\n## Section\n### Subsection';
+    const provider = new DocumentOutlineProvider();
+    const tree = provider.buildTree(markdown);
 
-**Scope**: Test complete DSL workflows
+    expect(tree.root.children).toHaveLength(1);
+    expect(tree.root.children[0].level).toBe(1);
+    expect(tree.root.children[0].children[0].level).toBe(2);
+  });
 
-**Examples**:
-- Parse and execute complete .tk script
-- Test REPL command execution
-- Test CLI `run` command
+  it('should handle drag-drop reordering', async () => {
+    const provider = new DocumentOutlineProvider();
+    const result = await provider.handleDrop(targetNode, sourceNode);
 
-### Integration Tests
+    expect(result.success).toBe(true);
+    expect(result.newOrder).toEqual(['node1', 'node3', 'node2']);
+  });
+});
+```
 
-**Scope**: Test DSL with real documents
+```python
+# Example: Language Server Tests
+def test_completion_after_pipe():
+    server = DoctkLanguageServer()
+    text = "select heading |"
+    position = Position(line=0, character=17)
 
-**Examples**:
-- Execute transformation on sample.md
-- Verify output matches expected structure
-- Test error handling with malformed documents
+    completions = server.provide_completions(text, position)
 
-## Performance Considerations
+    assert len(completions.items) > 0
+    assert any(item.label == 'promote' for item in completions.items)
+    assert any(item.label == 'demote' for item in completions.items)
 
-### Parser Performance
+def test_validation_unknown_operation():
+    server = DoctkLanguageServer()
+    text = "select heading | invalid_op"
 
-**Optimization**: Use recursive descent parser (fast for simple grammars)
+    diagnostics = server.validate(text)
 
-**Expected**: Parse 1000-line script in <100ms
+    assert len(diagnostics) == 1
+    assert 'unknown operation' in diagnostics[0].message.lower()
+```
 
-### Executor Performance
+### Integration Testing
 
-**Optimization**: Apply operations in single pass where possible
+Test interactions between components:
 
-**Expected**: Execute 100 operations on 1000-node document in <1s
+- Extension ↔ Core Integration: Test operation execution end-to-end
+- Language Server ↔ Core Integration: Test operation metadata loading
+- Extension ↔ Language Server: Test LSP communication
 
-### REPL Responsiveness
+```typescript
+describe('Extension Integration', () => {
+  it('should execute promote operation and update document', async () => {
+    const doc = await workspace.openTextDocument(testFile);
+    const provider = new DocumentOutlineProvider();
+    const node = provider.getNodeAtLine(2);
 
-**Optimization**: Parse and execute immediately (no batching needed)
+    await provider.applyOperation(node, { type: 'promote' });
 
-**Expected**: Execute simple command in <50ms
+    const updatedDoc = workspace.textDocuments.find(d => d.uri === doc.uri);
+    expect(updatedDoc.getText()).toContain('# Promoted Heading');
+  });
+});
+```
+
+### End-to-End Testing
+
+Automated tests simulating real user workflows:
+
+- Open document → View outliner → Drag-drop → Verify changes
+- Type DSL code → Trigger completion → Accept suggestion → Validate syntax
+- Execute operation → Undo → Redo → Verify state
+
+**Design Rationale**: Comprehensive testing at all levels ensures reliability. E2E tests catch integration issues that unit tests might miss, particularly around synchronization and state management.
+
+## Performance Optimization
+
+### Large Document Handling
+
+For documents exceeding 1000 headings, the system implements several optimizations:
+
+1. **Virtual Scrolling**: Only render visible tree nodes
+1. **Lazy Loading**: Load child nodes on expansion
+1. **Incremental Parsing**: Parse only changed sections
+1. **Debounced Updates**: Batch rapid changes
+
+```typescript
+class VirtualTreeRenderer {
+  private visibleRange: { start: number; end: number };
+  private nodeHeight = 22; // pixels
+
+  render(nodes: OutlineNode[], scrollTop: number, viewportHeight: number): void {
+    const startIndex = Math.floor(scrollTop / this.nodeHeight);
+    const endIndex = Math.ceil((scrollTop + viewportHeight) / this.nodeHeight);
+
+    this.visibleRange = { start: startIndex, end: endIndex };
+    const visibleNodes = nodes.slice(startIndex, endIndex);
+
+    this.renderNodes(visibleNodes, startIndex);
+  }
+}
+```
+
+**Design Rationale**: Virtual scrolling is essential for maintaining responsiveness with large documents. Rendering only visible nodes keeps memory usage constant regardless of document size.
+
+### Language Server Performance
+
+```python
+class CachingCompletionProvider:
+    def __init__(self):
+        self.completion_cache: Dict[str, CompletionList] = {}
+        self.cache_ttl = 5000  # milliseconds
+
+    def provide_completions(self, context: CompletionContext) -> CompletionList:
+        cache_key = self._compute_cache_key(context)
+
+        if cache_key in self.completion_cache:
+            cached = self.completion_cache[cache_key]
+            if not self._is_expired(cached):
+                return cached
+
+        completions = self._compute_completions(context)
+        self.completion_cache[cache_key] = completions
+        return completions
+```
+
+**Design Rationale**: Caching completions reduces computation for repeated queries. A 5-second TTL balances freshness with performance, ensuring the 200ms response time requirement is met.
+
+### Memory Management
+
+```python
+class DocumentStateManager:
+    def __init__(self, max_memory_mb: int = 500):
+        self.documents: Dict[str, DocumentState] = {}
+        self.max_memory = max_memory_mb * 1024 * 1024
+        self.lru_cache = LRUCache(maxsize=100)
+
+    def get_document(self, uri: str) -> DocumentState:
+        if uri in self.lru_cache:
+            return self.lru_cache[uri]
+
+        if self._memory_usage() > self.max_memory:
+            self._evict_least_recently_used()
+
+        doc = self._load_document(uri)
+        self.lru_cache[uri] = doc
+        return doc
+
+    def _evict_least_recently_used(self):
+        """Remove least recently used documents to free memory."""
+        evicted = self.lru_cache.popitem(last=False)
+        del self.documents[evicted[0]]
+```
+
+**Design Rationale**: LRU caching with memory limits prevents unbounded memory growth. The 500MB threshold (Requirement 17) triggers optimization before system resources are exhausted.
+
+## Communication Protocols
+
+### Extension ↔ Python Bridge
+
+The extension communicates with Python operations via a simple JSON-RPC interface over stdin/stdout.
+
+```typescript
+class PythonBridge {
+  private process: ChildProcess;
+
+  async call(method: string, params: any): Promise<any> {
+    const request = {
+      jsonrpc: '2.0',
+      id: this.nextId++,
+      method,
+      params
+    };
+
+    this.process.stdin.write(JSON.stringify(request) + '\n');
+
+    return new Promise((resolve, reject) => {
+      this.pendingRequests.set(request.id, { resolve, reject });
+    });
+  }
+}
+```
+
+**Design Rationale**: JSON-RPC over stdio is simple, reliable, and doesn't require network configuration. It's the same protocol used by LSP, providing consistency.
+
+### Language Server Protocol
+
+The language server implements standard LSP methods:
+
+- `textDocument/completion`: Provide completions
+- `textDocument/hover`: Provide hover information
+- `textDocument/didOpen`: Document opened
+- `textDocument/didChange`: Document changed
+- `textDocument/publishDiagnostics`: Send validation errors
+
+**Design Rationale**: Using standard LSP ensures compatibility with any LSP client and enables future support for other editors (e.g., Neovim, Emacs).
+
+## Undo/Redo Implementation
+
+### Strategy
+
+The extension integrates with VS Code's native undo stack by using `WorkspaceEdit` for all document modifications.
+
+```typescript
+class UndoableOperationHandler {
+  async executeWithUndo(operation: Operation): Promise<void> {
+    const document = this.getCurrentDocument();
+    const originalText = document.getText();
+
+    // Execute operation
+    const result = await this.bridge.executeOperation(operation);
+
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+
+    // Create workspace edit
+    const edit = new WorkspaceEdit();
+    const fullRange = new Range(
+      document.positionAt(0),
+      document.positionAt(originalText.length)
+    );
+    edit.replace(document.uri, fullRange, result.document);
+
+    // Apply edit (automatically adds to undo stack)
+    await workspace.applyEdit(edit);
+
+    // Refresh tree view
+    this.treeProvider.refresh();
+  }
+}
+```
+
+**Design Rationale**: Using `WorkspaceEdit` ensures undo/redo works consistently with other VS Code operations. The editor's undo stack handles all the complexity of state management.
+
+### Optimized Edits
+
+For better performance and cursor preservation, compute minimal edits:
+
+```typescript
+class DiffComputer {
+  computeMinimalEdit(oldText: string, newText: string): TextEdit[] {
+    const diffs = this.computeDiff(oldText, newText);
+    const edits: TextEdit[] = [];
+
+    for (const diff of diffs) {
+      if (diff.type === 'delete' || diff.type === 'replace') {
+        edits.push(TextEdit.delete(diff.range));
+      }
+      if (diff.type === 'insert' || diff.type === 'replace') {
+        edits.push(TextEdit.insert(diff.position, diff.text));
+      }
+    }
+
+    return edits;
+  }
+}
+```
+
+**Design Rationale**: Minimal edits preserve cursor position and reduce the amount of text that needs to be re-rendered, improving perceived performance.
+
+## Pluggable Architecture
+
+### Interface Abstraction
+
+The core integration layer defines interfaces that any UI can implement:
+
+```python
+from abc import ABC, abstractmethod
+
+class DocumentInterface(ABC):
+    """Abstract interface for document manipulation UIs."""
+
+    @abstractmethod
+    def display_tree(self, tree: DocumentTree) -> None:
+        """Display document structure as a tree."""
+        pass
+
+    @abstractmethod
+    def get_user_selection(self) -> Optional[NodeSelection]:
+        """Get currently selected node(s)."""
+        pass
+
+    @abstractmethod
+    def apply_operation(self, operation: Operation) -> OperationResult:
+        """Apply an operation and update the display."""
+        pass
+
+    @abstractmethod
+    def show_error(self, message: str) -> None:
+        """Display error message to user."""
+        pass
+
+class VSCodeInterface(DocumentInterface):
+    """VS Code implementation of document interface."""
+    # Implementation specific to VS Code
+    pass
+
+class JupyterLabInterface(DocumentInterface):
+    """Future JupyterLab implementation."""
+    # To be implemented
+    pass
+```
+
+**Design Rationale**: The abstract interface ensures all UI implementations provide the same core functionality. New interfaces only need to implement display and interaction logic, reusing all document manipulation code.
+
+### Shared Core
+
+All interfaces share the same core components:
+
+- Document manipulation API (operations)
+- Language server (LSP)
+- Operation registry
+- Validation logic
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    UI Layer (Pluggable)                  │
+│  ┌──────────────────┐         ┌──────────────────────┐ │
+│  │  VS Code         │         │  JupyterLab          │ │
+│  │  Interface       │         │  Interface (Future)  │ │
+│  └────────┬─────────┘         └──────────┬───────────┘ │
+└───────────┼────────────────────────────────┼────────────┘
+            │                                │
+            └────────────┬───────────────────┘
+                         │
+            ┌────────────▼─────────────┐
+            │   Shared Core Layer      │
+            │  - Operations API        │
+            │  - Language Server       │
+            │  - Validation            │
+            └──────────────────────────┘
+```
+
+**Design Rationale**: This architecture satisfies Requirement 15 (Pluggable Interface Architecture) by ensuring new interfaces can be added without modifying core logic.
+
+## REPL and Script Execution
+
+### Interactive REPL
+
+The REPL provides an interactive command-line interface for experimenting with doctk operations.
+
+```python
+class DoctkREPL:
+    def __init__(self):
+        self.document: Optional[Document] = None
+        self.history: List[str] = []
+        self.parser = DSLParser()
+
+    def run(self):
+        print("doctk REPL v0.1.0")
+        print("Type 'help' for available commands")
+
+        while True:
+            try:
+                command = input("doctk> ")
+                if command == 'exit':
+                    break
+                elif command == 'help':
+                    self.show_help()
+                elif command.startswith('load '):
+                    self.load_document(command[5:])
+                else:
+                    self.execute_command(command)
+            except KeyboardInterrupt:
+                print("\nUse 'exit' to quit")
+            except Exception as e:
+                print(f"Error: {e}")
+
+    def execute_command(self, command: str):
+        if not self.document:
+            print("No document loaded. Use 'load <file>' first.")
+            return
+
+        result = self.parser.parse(command)
+        if result.errors:
+            for error in result.errors:
+                print(f"Syntax error: {error.message}")
+            return
+
+        # Execute operation pipeline
+        self.document = self.execute_pipeline(result.ast, self.document)
+        print("Operation completed successfully")
+        self.history.append(command)
+```
+
+**Design Rationale**: The REPL maintains document state across commands, allowing users to build up transformations incrementally. This supports exploratory workflows and rapid prototyping.
+
+### Script File Execution
+
+```python
+class ScriptExecutor:
+    def __init__(self):
+        self.parser = DSLParser()
+
+    def execute_file(self, script_path: str, document_path: str) -> ExecutionResult:
+        with open(script_path, 'r') as f:
+            script = f.read()
+
+        document = Document.from_file(document_path)
+
+        result = self.parser.parse(script)
+        if result.errors:
+            return ExecutionResult(
+                success=False,
+                errors=[f"Line {e.line}: {e.message}" for e in result.errors]
+            )
+
+        try:
+            transformed = self.execute_pipeline(result.ast, document)
+            transformed.save(document_path)
+            return ExecutionResult(success=True, document=transformed)
+        except Exception as e:
+            return ExecutionResult(success=False, errors=[str(e)])
+```
+
+**Design Rationale**: Script execution is stateless (unlike REPL), making it suitable for automation and batch processing. Error reporting includes line numbers for easy debugging.
+
+### Code Block Execution in Markdown
+
+````typescript
+class CodeBlockExecutor {
+  async executeCodeBlock(document: TextDocument, range: Range): Promise<void> {
+    const codeBlock = document.getText(range);
+    const code = this.extractCode(codeBlock);
+
+    if (!code) {
+      window.showErrorMessage('No doctk code found in selection');
+      return;
+    }
+
+    const result = await this.bridge.executeScript(code, document.getText());
+
+    if (result.success) {
+      // Apply transformation to document
+      const edit = new WorkspaceEdit();
+      edit.replace(
+        document.uri,
+        new Range(document.positionAt(0), document.positionAt(document.getText().length)),
+        result.document
+      );
+      await workspace.applyEdit(edit);
+      window.showInformationMessage('Code block executed successfully');
+    } else {
+      this.outputChannel.appendLine(`Execution failed: ${result.error}`);
+      this.outputChannel.show();
+    }
+  }
+
+  private extractCode(codeBlock: string): string | null {
+    const match = codeBlock.match(/```doctk\n([\s\S]*?)\n```/);
+    return match ? match[1] : null;
+  }
+}
+````
+
+**Design Rationale**: Code block execution enables literate programming workflows where documentation and transformation scripts coexist. This is particularly useful for documenting complex document processing pipelines.
+
+## AI Agent Support
+
+### Structured Information Exposure
+
+The language server exposes structured information specifically designed for AI consumption:
+
+```python
+class AIAgentSupport:
+    """Provides structured information for AI agents."""
+
+    def get_operation_catalog(self) -> Dict[str, OperationMetadata]:
+        """Return complete catalog of available operations."""
+        return {
+            op.name: {
+                'description': op.description,
+                'parameters': [
+                    {
+                        'name': p.name,
+                        'type': p.type,
+                        'required': p.required,
+                        'description': p.description
+                    }
+                    for p in op.parameters
+                ],
+                'return_type': op.return_type,
+                'examples': op.examples
+            }
+            for op in self.registry.operations.values()
+        }
+
+    def get_context_aware_suggestions(
+        self,
+        document_state: DocumentState,
+        intent: str
+    ) -> List[OperationSuggestion]:
+        """Suggest operations based on document state and user intent."""
+        pass
+```
+
+**Design Rationale**: Providing a complete operation catalog allows AI agents to discover capabilities programmatically. Context-aware suggestions help agents generate more relevant code.
+
+### Machine-Readable Documentation
+
+```python
+@dataclass
+class StructuredDocumentation:
+    """Machine-readable documentation format."""
+    operation: str
+    summary: str
+    description: str
+    parameters: List[ParameterDoc]
+    returns: ReturnDoc
+    examples: List[Example]
+    related_operations: List[str]
+
+@dataclass
+class Example:
+    description: str
+    input: str
+    output: str
+    explanation: str
+
+class DocumentationProvider:
+    def get_structured_docs(self, operation: str) -> StructuredDocumentation:
+        """Return documentation in machine-readable format."""
+        metadata = self.registry.get_operation(operation)
+
+        return StructuredDocumentation(
+            operation=operation,
+            summary=metadata.description,
+            description=self._get_detailed_description(operation),
+            parameters=self._format_parameters(metadata.parameters),
+            returns=self._format_return_type(metadata.return_type),
+            examples=self._get_examples(operation),
+            related_operations=self._find_related(operation)
+        )
+```
+
+**Design Rationale**: Structured documentation enables AI agents to understand operations deeply, including relationships between operations and usage patterns. This supports Requirement 11 (AI-Friendly Language Server).
 
 ## Security Considerations
 
-### Script Execution
-
-**Risk**: Malicious .tk scripts could delete or modify important documents
-
-**Mitigation**:
-1. DSL is sandboxed (no system commands)
-2. Only operates on specified input files
-3. No automatic file writing without explicit output path
-4. Preview mode available (--dry-run)
-
 ### Input Validation
 
-**Risk**: Malformed documents could cause crashes
+All user inputs are validated before processing:
 
-**Mitigation**:
-1. Validate document format before parsing
-2. Catch and handle parse errors gracefully
-3. Limit document size to prevent memory exhaustion
+```python
+class InputValidator:
+    def validate_operation_params(
+        self,
+        operation: str,
+        params: Dict[str, Any]
+    ) -> ValidationResult:
+        """Validate operation parameters against schema."""
+        schema = self.registry.get_operation(operation).parameter_schema
+
+        try:
+            jsonschema.validate(params, schema)
+            return ValidationResult(valid=True)
+        except jsonschema.ValidationError as e:
+            return ValidationResult(valid=False, error=str(e))
+```
+
+**Design Rationale**: Schema-based validation prevents injection attacks and ensures type safety. Using JSON Schema provides a standard, well-tested validation mechanism.
+
+### Sandboxing
+
+Script execution runs in a controlled environment:
+
+```python
+class SandboxedExecutor:
+    def __init__(self):
+        self.allowed_operations = set(self.registry.operations.keys())
+        self.max_execution_time = 30  # seconds
+
+    def execute(self, script: str, document: Document) -> Document:
+        # Parse and validate before execution
+        ast = self.parser.parse(script)
+        self._validate_operations(ast)
+
+        # Execute with timeout
+        with timeout(self.max_execution_time):
+            return self._execute_ast(ast, document)
+```
+
+**Design Rationale**: Limiting execution time and validating operations prevents malicious scripts from causing harm. This is essential for a system that executes user-provided code.
+
+## Deployment and Distribution
+
+### VS Code Extension Packaging
+
+The extension is packaged as a `.vsix` file containing:
+
+- TypeScript extension code (compiled to JavaScript)
+- Python language server and dependencies
+- Package manifest (`package.json`)
+- README and documentation
+
+```json
+{
+  "name": "doctk-outliner",
+  "displayName": "doctk Document Outliner",
+  "description": "Tree-based document outliner with LSP support",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "activationEvents": [
+    "onLanguage:markdown",
+    "onLanguage:doctk"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "doctkOutline",
+          "name": "Document Outline"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "doctk.promote",
+        "title": "Promote Section"
+      },
+      {
+        "command": "doctk.demote",
+        "title": "Demote Section"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "doctk.promote",
+        "key": "ctrl+shift+up",
+        "when": "doctkOutlineView.focused"
+      }
+    ],
+    "languages": [
+      {
+        "id": "doctk",
+        "extensions": [".tk"],
+        "aliases": ["doctk", "DocTK"]
+      }
+    ]
+  }
+}
+```
+
+**Design Rationale**: Standard VS Code extension packaging ensures easy installation via the marketplace. Including Python dependencies in the package eliminates external setup requirements.
+
+### Python Dependencies
+
+The language server uses `uv` for dependency management:
+
+```toml
+[project]
+name = "doctk-lsp"
+version = "0.1.0"
+dependencies = [
+    "pygls>=1.0.0",
+    "doctk>=0.1.0",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+]
+```
+
+**Design Rationale**: Using `uv` aligns with the project's existing tooling (per workspace rules) and ensures reproducible builds. The language server has minimal dependencies, reducing installation complexity.
 
 ## Future Enhancements
 
-### Phase 1 Enhancements
+### Phase 2: Advanced Features
 
-- **Syntax Highlighting**: Add syntax highlighting for .tk files in editors
-- **DSL Debugger**: Step through DSL execution
-- **Performance Profiling**: Identify slow operations
-- **Macro System**: Define reusable transformation patterns
+After the initial implementation, the following enhancements are planned:
 
-### Phase 2: LSP Server
+1. **Multi-document Operations**: Apply operations across multiple documents
+1. **Custom Operation Definitions**: Allow users to define custom operations
+1. **Visual Diff View**: Show before/after comparison for operations
+1. **Collaborative Editing**: Real-time synchronization for multiple users
+1. **Operation Macros**: Record and replay sequences of operations
 
-- **Real-time Validation**: Syntax errors as you type
-- **Auto-Completion**: Context-aware suggestions
-- **Refactoring**: Rename variables, extract pipelines
-- **Code Formatting**: Auto-format DSL code
+### JupyterLab Integration
 
-### Phase 3: VS Code Extension
+The pluggable architecture enables future JupyterLab support:
 
-- **Visual Outliner**: Tree view of document structure
-- **Drag-and-Drop**: Interactive restructuring
-- **Diff View**: Compare before/after transformations
-- **Collaborative Editing**: Multi-user document editing
+```python
+class JupyterLabInterface(DocumentInterface):
+    """JupyterLab implementation using ipywidgets."""
 
-## Migration Path
+    def __init__(self):
+        self.tree_widget = TreeWidget()
+        self.operations = StructureOperations()
 
-### Phase 1 Implementation Plan
+    def display_tree(self, tree: DocumentTree) -> None:
+        self.tree_widget.update(tree)
+        display(self.tree_widget)
 
-1. **Week 1**: DSL lexer and parser
-   - Implement Lexer class
-   - Implement Parser class
-   - Write unit tests
+    def apply_operation(self, operation: Operation) -> OperationResult:
+        # Execute operation and update notebook cell
+        pass
+```
 
-2. **Week 2**: Structure operations
-   - Implement lift/lower/nest/unnest
-   - Write operation tests
-   - Update operations.py
+**Design Rationale**: JupyterLab integration would enable document manipulation within computational notebooks, supporting data-driven document generation workflows.
 
-3. **Week 3**: DSL executor
-   - Implement Executor class
-   - Integrate with operations
-   - Write e2e tests
+### Performance Monitoring
 
-4. **Week 4**: REPL and CLI
-   - Implement REPL class
-   - Add CLI commands
-   - Write documentation
+Built-in telemetry for performance tracking:
 
-## References
+```typescript
+class PerformanceMonitor {
+  private metrics: Map<string, Metric[]> = new Map();
 
-- **Language Server Protocol**: https://microsoft.github.io/language-server-protocol/
-- **VS Code Extension API**: https://code.visualstudio.com/api
-- **Parser Combinators**: https://en.wikipedia.org/wiki/Parser_combinator
-- **Abstract Syntax Tree**: https://en.wikipedia.org/wiki/Abstract_syntax_tree
-- **REPL**: https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop
+  recordOperation(operation: string, duration: number): void {
+    if (!this.metrics.has(operation)) {
+      this.metrics.set(operation, []);
+    }
+    this.metrics.get(operation)!.push({
+      timestamp: Date.now(),
+      duration
+    });
+  }
+
+  getAverageTime(operation: string): number {
+    const metrics = this.metrics.get(operation) || [];
+    return metrics.reduce((sum, m) => sum + m.duration, 0) / metrics.length;
+  }
+
+  reportSlowOperations(): void {
+    for (const [operation, metrics] of this.metrics) {
+      const avg = this.getAverageTime(operation);
+      if (avg > 500) {  // Threshold from requirements
+        console.warn(`Operation ${operation} averaging ${avg}ms`);
+      }
+    }
+  }
+}
+```
+
+**Design Rationale**: Performance monitoring helps identify bottlenecks and ensures the system meets performance requirements over time.
+
+## Implementation Phases
+
+### Phase 1: Core Outliner (Weeks 1-3)
+
+**Goal**: Basic tree view with manual operations
+
+- Implement tree data provider
+- Add context menu operations (promote, demote, move)
+- Integrate with doctk core API
+- Basic document synchronization
+
+**Success Criteria**:
+
+- Tree view displays document structure
+- Context menu operations work correctly
+- Changes reflect in both tree and editor
+
+### Phase 2: Drag-and-Drop (Week 4)
+
+**Goal**: Interactive drag-and-drop reordering
+
+- Implement drag-and-drop controller
+- Add visual feedback for valid drop targets
+- Handle edge cases (invalid drops, nested operations)
+
+**Success Criteria**:
+
+- Users can drag sections to reorder
+- Visual feedback is clear and responsive
+- Invalid operations are prevented
+
+### Phase 3: Language Server Foundation (Weeks 5-6)
+
+**Goal**: Basic LSP with syntax validation
+
+- Set up pygls server
+- Implement DSL parser
+- Add syntax validation
+- Connect to VS Code extension
+
+**Success Criteria**:
+
+- Language server starts and connects
+- Syntax errors are highlighted
+- Diagnostics update in real-time
+
+### Phase 4: LSP Features (Weeks 7-8)
+
+**Goal**: Completion and hover support
+
+- Implement completion provider
+- Add hover documentation
+- Create operation registry
+- Support AI agent queries
+
+**Success Criteria**:
+
+- Completions appear after typing
+- Hover shows operation documentation
+- AI agents can query operation metadata
+
+### Phase 5: Advanced Features (Weeks 9-10)
+
+**Goal**: REPL, scripts, and optimization
+
+- Implement interactive REPL
+- Add script file execution
+- Optimize for large documents
+- Add performance monitoring
+
+**Success Criteria**:
+
+- REPL accepts and executes commands
+- Script files can be executed
+- Large documents remain responsive
+
+### Phase 6: Polish and Testing (Weeks 11-12)
+
+**Goal**: Production-ready release
+
+- Comprehensive testing
+- Error handling improvements
+- Documentation
+- Performance tuning
+
+**Success Criteria**:
+
+- All requirements met
+- Test coverage > 80%
+- Documentation complete
+- Performance benchmarks passed
+
+## Design Decisions Summary
+
+### Key Architectural Decisions
+
+1. **Pluggable Architecture**: Separating UI from core logic enables future interface implementations (JupyterLab, web) without code duplication.
+
+1. **Immutable Operations**: Document operations return new instances rather than mutating in place, simplifying undo/redo and preventing state inconsistencies.
+
+1. **LSP Standard**: Using standard LSP protocol ensures compatibility with multiple editors and provides a well-tested communication layer.
+
+1. **Dynamic Operation Loading**: The language server introspects doctk core to discover operations, ensuring automatic support for new operations without manual updates.
+
+1. **Virtual Scrolling**: For large documents, only rendering visible nodes maintains constant memory usage and ensures responsiveness.
+
+1. **Debounced Synchronization**: Batching rapid changes prevents excessive updates while maintaining the appearance of real-time synchronization.
+
+1. **JSON-RPC Bridge**: Using JSON-RPC for extension-to-Python communication provides a simple, reliable protocol that's easy to debug.
+
+1. **Schema-Based Validation**: Using JSON Schema for parameter validation provides type safety and prevents injection attacks.
+
+### Trade-offs
+
+1. **Full Document Replacement vs. Incremental Edits**
+
+   - **Decision**: Compute minimal edits when possible
+   - **Rationale**: Better cursor preservation and performance, worth the complexity
+
+1. **Synchronous vs. Asynchronous Operations**
+
+   - **Decision**: All operations are asynchronous
+   - **Rationale**: Prevents UI blocking, essential for large documents
+
+1. **Client-Side vs. Server-Side Parsing**
+
+   - **Decision**: Server-side parsing in language server
+   - **Rationale**: Centralizes logic, reduces duplication, easier to maintain
+
+1. **Caching Strategy**
+
+   - **Decision**: LRU cache with TTL for completions
+   - **Rationale**: Balances memory usage with performance, meets response time requirements
+
+1. **Error Recovery Approach**
+
+   - **Decision**: Graceful degradation with automatic retry
+   - **Rationale**: Provides best user experience while maintaining system stability
+
+### Requirements Coverage
+
+This design addresses all 20 requirements specified in the requirements document:
+
+- **Requirements 1-6**: Outliner UI features (tree view, drag-drop, context menu, editing, keyboard shortcuts, undo/redo)
+- **Requirements 7-11**: Language server features (activation, validation, completion, hover, AI support)
+- **Requirements 12-14**: Script execution (REPL, files, code blocks)
+- **Requirement 15**: Pluggable architecture
+- **Requirement 16**: Document synchronization
+- **Requirement 17**: Performance for large documents
+- **Requirement 18**: Error recovery and resilience
+- **Requirement 19**: Configuration and customization
+- **Requirement 20**: Integration with doctk core API
+
+Each component and interface has been designed to satisfy specific requirements while maintaining architectural coherence and extensibility.

@@ -248,6 +248,7 @@ class TestOperationMetadataDetails:
         assert demote_op.category == "structure"
         assert demote_op.description == "Demote heading levels (h2 -> h3)"
         assert len(demote_op.parameters) == 0  # No parameters
+        assert len(demote_op.examples) > 0
 
     def test_nest_operation_metadata(self):
         """Test metadata for nest operation."""
@@ -299,7 +300,8 @@ class TestRegistryIntegration:
 
         operations = registry.get_all_operations()
 
-        # Most operations should have at least one example
-        # (Some may not, but the majority should)
-        ops_with_examples = [op for op in operations if len(op.examples) > 0]
-        assert len(ops_with_examples) > 0
+        # All operations should have at least one example
+        ops_without_examples = [op.name for op in operations if not op.examples]
+        assert not ops_without_examples, (
+            f"Missing examples for operations: {', '.join(ops_without_examples)}"
+        )

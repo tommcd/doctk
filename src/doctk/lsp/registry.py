@@ -7,8 +7,11 @@ completion and hover documentation.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -34,6 +37,113 @@ class OperationMetadata:
     category: str = "general"
 
 
+# Known operations with their metadata
+# This could be made more dynamic with introspection in the future
+_KNOWN_OPERATIONS: dict[str, dict[str, Any]] = {
+    "select": {
+        "description": "Select nodes matching a predicate",
+        "category": "selection",
+        "parameters": [
+            ParameterInfo(
+                name="predicate",
+                type="Callable[[Node], bool]",
+                required=True,
+                description="Function that returns True for nodes to select",
+            )
+        ],
+        "examples": [
+            "doc | select heading",
+            "doc | select paragraph",
+        ],
+    },
+    "where": {
+        "description": "Filter nodes by attribute conditions",
+        "category": "selection",
+        "parameters": [
+            ParameterInfo(
+                name="conditions",
+                type="dict",
+                required=False,
+                description="Key-value pairs to match (e.g., level=2, text='foo')",
+            )
+        ],
+        "examples": [
+            "doc | where level=2",
+            "doc | where text='Introduction'",
+        ],
+    },
+    "promote": {
+        "description": "Promote heading levels (h3 -> h2)",
+        "category": "structure",
+        "parameters": [],
+        "examples": ["doc | select heading | promote"],
+    },
+    "demote": {
+        "description": "Demote heading levels (h2 -> h3)",
+        "category": "structure",
+        "parameters": [],
+        "examples": ["doc | select heading | demote"],
+    },
+    "lift": {
+        "description": "Lift sections up (alias for promote)",
+        "category": "structure",
+        "parameters": [],
+        "examples": ["doc | select heading | lift"],
+    },
+    "lower": {
+        "description": "Lower sections down (alias for demote)",
+        "category": "structure",
+        "parameters": [],
+        "examples": ["doc | select heading | lower"],
+    },
+    "nest": {
+        "description": "Nest sections under a target section",
+        "category": "structure",
+        "parameters": [
+            ParameterInfo(
+                name="under",
+                type="str | None",
+                required=False,
+                description="Target section identifier (default: previous section)",
+                default=None,
+            )
+        ],
+        "examples": ["doc | select heading | nest()"],
+    },
+    "unnest": {
+        "description": "Remove nesting (alias for promote)",
+        "category": "structure",
+        "parameters": [],
+        "examples": ["doc | select heading | unnest"],
+    },
+    "heading": {
+        "description": "Select all heading nodes",
+        "category": "selection",
+        "parameters": [],
+        "examples": ["doc | heading"],
+    },
+    "paragraph": {
+        "description": "Select all paragraph nodes",
+        "category": "selection",
+        "parameters": [],
+        "examples": ["doc | paragraph"],
+    },
+    "compose": {
+        "description": "Compose operations right-to-left",
+        "category": "composition",
+        "parameters": [
+            ParameterInfo(
+                name="operations",
+                type="*Callable",
+                required=True,
+                description="Operations to compose",
+            )
+        ],
+        "examples": ["compose(promote, select(heading))"],
+    },
+}
+
+
 class OperationRegistry:
     """Registry of available doctk operations."""
 
@@ -47,114 +157,8 @@ class OperationRegistry:
         try:
             import doctk.operations as ops_module
 
-            # Define known operations with their metadata
-            # This could be made more dynamic with introspection in the future
-            operations_to_load: dict[str, dict[str, Any]] = {
-                "select": {
-                    "description": "Select nodes matching a predicate",
-                    "category": "selection",
-                    "parameters": [
-                        ParameterInfo(
-                            name="predicate",
-                            type="Callable[[Node], bool]",
-                            required=True,
-                            description="Function that returns True for nodes to select",
-                        )
-                    ],
-                    "examples": [
-                        "doc | select heading",
-                        "doc | select paragraph",
-                    ],
-                },
-                "where": {
-                    "description": "Filter nodes by attribute conditions",
-                    "category": "selection",
-                    "parameters": [
-                        ParameterInfo(
-                            name="conditions",
-                            type="dict",
-                            required=False,
-                            description="Key-value pairs to match (e.g., level=2, text='foo')",
-                        )
-                    ],
-                    "examples": [
-                        "doc | where level=2",
-                        "doc | where text='Introduction'",
-                    ],
-                },
-                "promote": {
-                    "description": "Promote heading levels (h3 -> h2)",
-                    "category": "structure",
-                    "parameters": [],
-                    "examples": ["doc | select heading | promote"],
-                },
-                "demote": {
-                    "description": "Demote heading levels (h2 -> h3)",
-                    "category": "structure",
-                    "parameters": [],
-                    "examples": ["doc | select heading | demote"],
-                },
-                "lift": {
-                    "description": "Lift sections up (alias for promote)",
-                    "category": "structure",
-                    "parameters": [],
-                    "examples": ["doc | select heading | lift"],
-                },
-                "lower": {
-                    "description": "Lower sections down (alias for demote)",
-                    "category": "structure",
-                    "parameters": [],
-                    "examples": ["doc | select heading | lower"],
-                },
-                "nest": {
-                    "description": "Nest sections under a target section",
-                    "category": "structure",
-                    "parameters": [
-                        ParameterInfo(
-                            name="under",
-                            type="str | None",
-                            required=False,
-                            description="Target section identifier (default: previous section)",
-                            default=None,
-                        )
-                    ],
-                    "examples": ["doc | select heading | nest()"],
-                },
-                "unnest": {
-                    "description": "Remove nesting (alias for promote)",
-                    "category": "structure",
-                    "parameters": [],
-                    "examples": ["doc | select heading | unnest"],
-                },
-                "heading": {
-                    "description": "Select all heading nodes",
-                    "category": "selection",
-                    "parameters": [],
-                    "examples": ["doc | heading"],
-                },
-                "paragraph": {
-                    "description": "Select all paragraph nodes",
-                    "category": "selection",
-                    "parameters": [],
-                    "examples": ["doc | paragraph"],
-                },
-                "compose": {
-                    "description": "Compose operations right-to-left",
-                    "category": "composition",
-                    "parameters": [
-                        ParameterInfo(
-                            name="operations",
-                            type="*Callable",
-                            required=True,
-                            description="Operations to compose",
-                        )
-                    ],
-                    "examples": ["compose(promote, select(heading))"],
-                },
-            }
-
-            # Load each operation
-            for op_name, metadata in operations_to_load.items():
+            # Load each operation from the known operations dictionary
+            for op_name, metadata in _KNOWN_OPERATIONS.items():
                 # Check if operation exists in module
                 if hasattr(ops_module, op_name):
                     self.operations[op_name] = OperationMetadata(
@@ -168,7 +172,9 @@ class OperationRegistry:
 
         except ImportError:
             # doctk.operations not available - registry will be empty
-            pass
+            logger.warning(
+                "Could not import 'doctk.operations'. Operation registry will be empty."
+            )
 
     def get_operation(self, name: str) -> OperationMetadata | None:
         """

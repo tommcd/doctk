@@ -11,19 +11,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # Optimized matrix: Test actively maintained Python versions
-        # Total: 4 jobs (Python 3.12+ only - 3.10 and 3.11 are security-fix only)
-        include:
-          # Ubuntu: Test all actively maintained Python versions
-          - os: ubuntu-latest
-            python-version: '3.12'
-          - os: ubuntu-latest
-            python-version: '3.13'
-          - os: ubuntu-latest
-            python-version: '3.14'
-          # Windows: Test only latest Python version
-          - os: windows-latest
-            python-version: '3.14'
+        # Optimized matrix: Ubuntu-only, actively maintained Python versions
+        # Total: 3 jobs (dropped Windows due to slow builds and limited test suite)
+        os: [ubuntu-latest]
+        python-version: ['3.12', '3.13', '3.14']
 
     steps:
     - uses: actions/checkout@v4

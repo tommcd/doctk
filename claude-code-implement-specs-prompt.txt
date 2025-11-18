@@ -1,0 +1,118 @@
+I need you to implement all outstanding tasks in the Kiro specs located in `.kiro/specs/`. There are two specs with open tasks that need to be completed.
+
+## Your Mission
+
+Complete ALL outstanding tasks in both specifications:
+1. `.kiro/specs/integrate-python-project-template/`
+2. `.kiro/specs/document-outliner-with-lsp/`
+
+## Implementation Process
+
+Work through the following phases systematically:
+
+### Phase 1: Verification & Assessment
+
+1. **Read the spec guide**: Start by reading `claude-code-kiro-spec-prompt.md` to understand how to work with Kiro specifications
+
+2. **Analyze each spec**: For both specs, read in this order:
+   - `requirements.md` - understand what needs to be built
+   - `design.md` - understand how it should be built
+   - `tasks.md` - see the implementation plan
+
+3. **Verify completed tasks**: For all tasks marked complete `[x]`:
+   - Check that the code actually exists
+   - Verify it matches the requirements
+   - Ensure it follows the design document
+   - If anything is incomplete or incorrect, fix it before proceeding
+
+4. **Identify incomplete tasks**: List all tasks marked `[ ]` that need implementation
+
+### Phase 2: Implementation
+
+For EACH incomplete task, work through them systematically (one at a time, or in parallel if independent):
+
+1. **Implement the task** following the design document exactly
+
+2. **Run comprehensive quality checks** before marking complete:
+   ```bash
+   # Run all tests
+   uv run pytest -m "slow or not slow"
+
+   # Run all tox quality checks
+   tox -e ruff           # Python linting
+   tox -e shellcheck     # Shell script linting
+   tox -e docs           # Documentation checks
+
+   # Run mypy for type checking
+   uv run mypy src/doctk
+   ```
+
+3. **Fix ALL issues found**:
+   - All tests must pass (zero failures)
+   - All linting must pass (zero warnings/errors)
+   - All type checking must pass (zero mypy errors)
+   - All documentation checks must pass
+   - Zero errors, zero warnings, zero issues
+
+4. **Update tasks.md**: Only after everything passes, mark the task complete `[x]`
+
+5. **Proceed to next task**: Repeat this process for each remaining task
+
+### Phase 3: Final Verification
+
+After completing all tasks in both specs:
+
+1. Run complete test suite: `uv run pytest -m "slow or not slow"`
+2. Run all tox environments: `tox`
+3. Run mypy type checking: `uv run mypy src/doctk`
+4. Verify environment: `./scripts/check-environment.sh`
+5. Confirm all success criteria in each spec's `tasks.md` are met
+6. Update the Status Summary in each `tasks.md` to reflect completion
+
+## Quality Standards (CRITICAL)
+
+Before marking ANY task as complete, ensure:
+- ✅ All tests pass (unit, e2e, quality, docs) - zero failures
+- ✅ All linting passes (ruff, shellcheck, shfmt, markdownlint) - zero warnings/errors
+- ✅ All type checking passes (mypy) - zero errors
+- ✅ All documentation builds successfully
+- ✅ Code follows project conventions (see CLAUDE.md)
+- ✅ Absolutely zero warnings, errors, or issues
+
+## Mypy Configuration
+
+If mypy is not configured in tox.ini, add this section:
+
+```ini
+[testenv:mypy]
+description = Run mypy type checking
+deps = mypy
+commands = mypy src/doctk --strict
+```
+
+Then ensure it passes before marking tasks complete.
+
+## Implementation Guidelines
+
+- **Work incrementally**: Complete one task fully before starting the next
+- **Verify constantly**: Run quality checks after every significant change, not just at the end
+- **Fix everything**: Address all warnings and errors immediately - don't accumulate technical debt
+- **Follow design**: Implement exactly what's specified in design documents
+- **Meet requirements**: Satisfy all acceptance criteria from requirements.md
+- **Update documentation**: Keep tasks.md current with actual progress as you work
+- **Be thorough**: Verify that tasks marked as complete are actually complete before proceeding
+
+## Project Context
+
+The doctk project is a Python document manipulation toolkit with these characteristics:
+- Uses `uv` for Python package management
+- Uses `tox` for test orchestration and quality checks
+- Follows strict quality standards (documented in CLAUDE.md)
+- Values immutability, type safety, and composability
+- Requires comprehensive testing and documentation for all code
+
+## Getting Started
+
+Start by reading the spec guide (`claude-code-kiro-spec-prompt.md`), then assess the current state of both specs, then systematically implement all outstanding tasks with full quality checks at each step.
+
+As you work, feel free to show your progress, ask questions if requirements are unclear, and share any issues you encounter. The goal is to complete all tasks while maintaining the project's high quality standards.

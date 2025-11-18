@@ -153,20 +153,25 @@ export class DocumentOutlineProvider implements vscode.TreeDataProvider<OutlineN
    * @param backendNode - Backend tree node
    * @param document - VS Code text document for creating ranges
    * @param version - Tree version number
-   * @param parent - Parent outline node (for setting parent references)
    * @returns DocumentTree structure
    */
   private deserializeBackendTree(
     backendNode: BackendTreeNode,
     document: vscode.TextDocument,
-    version: number,
-    parent?: OutlineNode
+    version: number
   ): DocumentTree {
     const nodeMap = new Map<string, OutlineNode>();
 
     // Convert backend node to outline node
     const convertNode = (bNode: BackendTreeNode, parentNode?: OutlineNode): OutlineNode => {
       // Create range from line/column positions
+      // Warn if backend returns out-of-bounds line numbers
+      if (bNode.line >= document.lineCount) {
+        console.warn(
+          `Backend returned out-of-bounds line number: ${bNode.line} for node "${bNode.label}". ` +
+          `Document has ${document.lineCount} lines. Clamping to last line.`
+        );
+      }
       const line = Math.min(bNode.line, document.lineCount - 1);
       const lineText = document.lineAt(line).text;
       const endColumn = lineText.length;
@@ -184,11 +189,10 @@ export class DocumentOutlineProvider implements vscode.TreeDataProvider<OutlineN
         range,
         children: [],
         parent: parentNode,
-        metadata: {
-          hasContent: false,
-          contentLength: 0,
-          lastModified: Date.now(),
-        },
+        // Note: Metadata is not provided by backend and would require
+        // document content analysis to calculate accurately. Omitted to
+        // avoid displaying incorrect placeholder values in tooltips.
+        // TODO: Consider calculating content metadata from document ranges
       };
 
       // Add to node map (skip root node)

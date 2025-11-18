@@ -255,7 +255,15 @@ class TokenType(Enum):
     # Operators
     PIPE = auto()        # |
     EQUALS = auto()      # =
-    TILDE = auto()       # ~
+    NOT_EQUALS = auto()  # !=
+    GREATER = auto()     # >
+    LESS = auto()        # <
+    GREATER_EQUAL = auto()  # >=
+    LESS_EQUAL = auto()  # <=
+    TILDE_EQUALS = auto()  # ~= (regex match)
+    CARET_EQUALS = auto()  # ^= (starts with)
+    DOLLAR_EQUALS = auto()  # $= (ends with)
+    STAR_EQUALS = auto()  # *= (contains)
 
     # Keywords
     LET = auto()         # let
@@ -327,7 +335,7 @@ class ASTNode(ABC):
 @dataclass
 class Pipeline(ASTNode):
     source: "Source"
-    operations: list["Operation"]
+    operations: list["FunctionCall"]
 
     def accept(self, visitor: "ASTVisitor") -> Any:
         return visitor.visit_pipeline(self)

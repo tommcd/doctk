@@ -2,8 +2,8 @@
 
 import pytest
 
-from doctk import Document, Heading, Paragraph, lift, lower, nest, select, unnest, where
-from doctk.operations import heading, is_heading
+from doctk import Document, Heading, Paragraph, lift, lower, nest, unnest, where
+from doctk.operations import heading
 
 
 def test_lift_h3_to_h2():
@@ -106,18 +106,19 @@ def test_nest_demotes_heading():
 
 
 def test_nest_with_under_parameter():
-    """Test that nest() accepts under parameter."""
+    """Test that nest() raises NotImplementedError when under parameter is provided."""
     doc = Document(
         nodes=[
             Heading(level=2, text="Parent"),
             Heading(level=2, text="Child"),
         ]
     )
-    # Note: Full implementation would require hierarchical structure
-    # For now, just test that the parameter is accepted
-    result = doc | heading | where(text="Child") | nest(under="previous")
-    assert len(result.nodes) == 1
-    assert result.nodes[0].level == 3
+    # Hierarchical nesting is not yet implemented
+    with pytest.raises(NotImplementedError) as exc_info:
+        doc | heading | where(text="Child") | nest(under="previous")
+
+    assert "under" in str(exc_info.value).lower()
+    assert "not yet implemented" in str(exc_info.value).lower()
 
 
 def test_unnest_promotes_heading():

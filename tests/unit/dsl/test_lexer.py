@@ -2,7 +2,7 @@
 
 import pytest
 
-from doctk.dsl.lexer import Lexer, Token, TokenType
+from doctk.dsl.lexer import Lexer, TokenType
 
 
 def test_tokenize_identifiers():
@@ -100,7 +100,7 @@ def test_tokenize_pipeline():
     ]
 
     assert len(tokens) == len(expected)
-    for token, (exp_type, exp_value) in zip(tokens, expected):
+    for token, (exp_type, exp_value) in zip(tokens, expected, strict=True):
         assert token.type == exp_type
         assert token.value == exp_value
 
@@ -168,3 +168,27 @@ def test_whitespace_handling():
     # Should have doc, |, select, heading, EOF
     assert len(tokens) == 5
     assert all(t.type != TokenType.IDENTIFIER or t.value.strip() == t.value for t in tokens)
+
+
+def test_unknown_character_raises_error():
+    """Test that unknown characters raise ValueError."""
+    lexer = Lexer("doc @ select")
+
+    with pytest.raises(ValueError) as exc_info:
+        lexer.tokenize()
+
+    assert "Unknown character '@'" in str(exc_info.value)
+    assert "line 1" in str(exc_info.value)
+
+
+def test_invalid_number_format():
+    """Test that invalid number formats like 1.2.3 are rejected."""
+    # The lexer should stop at the second dot and raise an error
+    lexer = Lexer("1.2.3")
+
+    # Should tokenize NUMBER(1.2) successfully, then fail on the second '.'
+    with pytest.raises(ValueError) as exc_info:
+        lexer.tokenize()
+
+    assert "Unknown character '.'" in str(exc_info.value)
+    assert "column 4" in str(exc_info.value)

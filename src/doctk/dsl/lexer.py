@@ -97,14 +97,20 @@ class Lexer:
 
     def skip_whitespace(self) -> None:
         """Skip whitespace and comments."""
-        while self.peek() and self.peek() in " \t\r\n":
-            # Track newlines but skip them for now (may add NEWLINE tokens later)
-            self.advance()
-
-        # Skip comments (# to end of line)
-        if self.peek() == "#":
-            while self.peek() and self.peek() != "\n":
+        while True:
+            # Skip whitespace
+            while self.peek() and self.peek() in " \t\r\n":
+                # Track newlines but skip them for now (may add NEWLINE tokens later)
                 self.advance()
+
+            # Skip comments (# to end of line)
+            if self.peek() == "#":
+                while self.peek() and self.peek() != "\n":
+                    self.advance()
+                # Continue loop to skip the newline after the comment
+            else:
+                # No more whitespace or comments
+                break
 
     def read_string(self) -> str:
         """Read a string literal."""
@@ -137,8 +143,15 @@ class Lexer:
     def read_number(self) -> str:
         """Read a number literal."""
         value = ""
+        has_dot = False
 
         while self.peek() and (self.peek().isdigit() or self.peek() == "."):
+            char = self.peek()
+            if char == ".":
+                if has_dot:
+                    # Multiple dots - stop parsing
+                    break
+                has_dot = True
             value += self.advance()
 
         return value
@@ -174,8 +187,6 @@ class Lexer:
         # Numbers
         if char.isdigit():
             value = self.read_number()
-            if "." in value:
-                return Token(TokenType.NUMBER, value, line, column)
             return Token(TokenType.NUMBER, value, line, column)
 
         # Identifiers and keywords
@@ -230,9 +241,8 @@ class Lexer:
             self.advance()
             return Token(single_char_map[char], char, line, column)
 
-        # Unknown character - skip it and try again
-        self.advance()
-        return self.next_token()
+        # Unknown character - raise error
+        raise ValueError(f"Unknown character '{char}' at line {line}, column {column}")
 
     def tokenize(self) -> list[Token]:
         """

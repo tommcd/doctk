@@ -122,25 +122,51 @@ class DiffComputer:
         original_lines = original_text.splitlines(keepends=True)
         modified_lines = modified_text.splitlines(keepends=True)
 
-        # Build node maps for both documents
+        # Build node map for original document
         original_builder = DocumentTreeBuilder(original_doc)
-        modified_builder = DocumentTreeBuilder(modified_doc)
 
         ranges: list[ModifiedRange] = []
 
         # For each affected node, compute the text range that changed
         for node_id in affected_node_ids:
-            # Find the node in both documents
+            # Find the node in the original document
             original_node = original_builder.find_node(node_id)
-            modified_node = modified_builder.find_node(node_id)
+            if original_node is None:
+                continue  # Node doesn't exist in original document
 
-            if original_node is None and modified_node is None:
-                continue  # Node doesn't exist in either document
+            # Get the index of the node in the original document
+            node_index = original_builder.get_node_index(node_id)
+            if node_index is None:
+                continue
+
+            # Get the corresponding node in the modified document (same index)
+            # This works because operations preserve node positions, only changing content
+            if node_index >= len(modified_doc.nodes):
+                # Node was deleted
+                original_range = DiffComputer._get_node_line_range(
+                    original_doc, original_node, original_builder
+                )
+                if original_range is not None:
+                    start_line, end_line = original_range
+                    ranges.append(
+                        ModifiedRange(
+                            start_line=start_line,
+                            start_column=0,
+                            end_line=end_line,
+                            end_column=len(original_lines[end_line]) if end_line < len(original_lines) else 0,
+                            new_text="",
+                        )
+                    )
+                continue
+
+            modified_node = modified_doc.nodes[node_index]
 
             # Get line ranges for the node in both documents
             original_range = DiffComputer._get_node_line_range(
                 original_doc, original_node, original_builder
             )
+            # Create a temporary builder for computing the modified node's position
+            modified_builder = DocumentTreeBuilder(modified_doc)
             modified_range = DiffComputer._get_node_line_range(
                 modified_doc, modified_node, modified_builder
             )
@@ -160,34 +186,6 @@ class DiffComputer:
                         start_column=0,
                         end_line=end_line,
                         end_column=len(original_lines[end_line]) if end_line < len(original_lines) else 0,
-                        new_text=new_text,
-                    )
-                )
-            elif original_range is not None:
-                # Node was deleted
-                start_line, end_line = original_range
-                ranges.append(
-                    ModifiedRange(
-                        start_line=start_line,
-                        start_column=0,
-                        end_line=end_line,
-                        end_column=len(original_lines[end_line]) if end_line < len(original_lines) else 0,
-                        new_text="",
-                    )
-                )
-            elif modified_range is not None:
-                # Node was added
-                mod_start_line, mod_end_line = modified_range
-                new_text = "".join(modified_lines[mod_start_line : mod_end_line + 1])
-
-                # Insert at the position in the original document
-                # This is a simplified approach - inserting at line 0
-                ranges.append(
-                    ModifiedRange(
-                        start_line=0,
-                        start_column=0,
-                        end_line=0,
-                        end_column=0,
                         new_text=new_text,
                     )
                 )

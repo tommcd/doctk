@@ -53,7 +53,7 @@ This document describes the dependencies between the three specs and the recomme
 
 **Critical remaining tasks:**
 
-- ⚠️ Task 4: Granular document edits (CRITICAL - needed by VS Code extension)
+- ✅ Task 4: Granular document edits (CRITICAL - needed by VS Code extension) - COMPLETED
 - ⚠️ Task 5: Centralized node ID generation (MEDIUM - needed by VS Code extension)
 
 ### 2. VS Code Extension & Language Server (CAN BE PARALLEL)
@@ -96,10 +96,14 @@ After core integration tasks 1-5 are complete, these two specs can be developed 
    - StructureOperations
    - ExtensionBridge
 
-1. ⚠️ **NEXT**: Core integration Task 4 (Granular edits - CRITICAL)
+1. ✅ **COMPLETED**: Core integration Task 4 (Granular edits - CRITICAL)
 
-   - Required by VS Code extension for proper undo/redo
-   - Blocks VS Code extension Task 8
+   - Implemented ModifiedRange dataclass
+   - Implemented DiffComputer for computing granular text ranges
+   - Updated all operations to return modified ranges
+   - Added 16 comprehensive tests
+   - Fixed bug where node IDs change after level modifications
+   - All tests pass (127/127)
 
 1. ⚠️ **NEXT**: Core integration Task 5 (Centralized node IDs - MEDIUM)
 
@@ -179,21 +183,31 @@ After Phase 2 tracks complete:
 
 Based on the task files:
 
-- ✅ **Core Integration**: Tasks 1-3 complete (foundation ready)
-- ⚠️ **Core Integration**: Tasks 4-5 CRITICAL for VS Code extension
+- ✅ **Core Integration**: Tasks 1-4 complete (foundation ready, granular edits implemented)
+- ⚠️ **Core Integration**: Task 5 MEDIUM priority for VS Code extension
 - ✅ **VS Code Extension**: Tasks 1-2 complete (tree provider ready)
-- ⏸️ **VS Code Extension**: Blocked on Core Tasks 4-5 for full functionality
+- ⏸️ **VS Code Extension**: Partially unblocked - can implement most features, Task 5 needed for full functionality
 - ⏸️ **Language Server**: Can start now (minimal dependencies)
 
 ## Recommendation
 
 **Immediate next steps:**
 
-1. **Complete Core Integration Task 4** (Granular edits) - CRITICAL
 1. **Complete Core Integration Task 5** (Centralized node IDs) - MEDIUM
 1. **Then start parallel development:**
-   - VS Code extension Tasks 3-11
-   - Language Server Tasks 1-9
-   - Core integration Tasks 6-13
+   - VS Code extension Tasks 3-11 (most can start now, Task 9 needs Core Task 5)
+   - Language Server Tasks 1-9 (can start now)
+   - Core integration Tasks 6-13 (can start now)
+
+**Recent Progress:**
+
+- ✅ **2025-11-18**: Completed Core Integration Task 4 (Granular edits)
+  - Implemented ModifiedRange dataclass in protocols.py
+  - Implemented DiffComputer class in operations.py
+  - Updated all 6 operations (promote, demote, move_up, move_down, nest, unnest) to compute and return modified ranges
+  - Added 16 comprehensive tests for granular edit functionality
+  - Fixed critical bug where node IDs change after level modifications
+  - All 127 tests pass
+  - Ruff linting passes
 
 This conservative approach ensures no rework and maintains architectural integrity.

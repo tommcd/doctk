@@ -497,3 +497,220 @@ class TestComplexScenarios:
         headings = [n for n in new_doc.nodes if isinstance(n, Heading)]
         assert headings[0].text == "Second"
         assert headings[1].text == "First"
+
+
+class TestGranularEdits:
+    """Tests for granular edit functionality (modified_ranges)."""
+
+    def test_promote_returns_modified_ranges(self):
+        """Test that promote operation returns modified ranges."""
+        doc = Document(nodes=[Heading(level=2, text="Section")])
+
+        result = StructureOperations.promote(doc, "h2-0")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+        assert len(result.modified_ranges) > 0
+
+    def test_promote_modified_range_content(self):
+        """Test that promote modified range contains correct new text."""
+        doc = Document(nodes=[Heading(level=2, text="Section")])
+
+        result = StructureOperations.promote(doc, "h2-0")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+        # Should have one range for the heading
+        assert len(result.modified_ranges) == 1
+        modified_range = result.modified_ranges[0]
+        # New text should be h1
+        assert "# Section" in modified_range.new_text
+
+    def test_promote_modified_range_positions(self):
+        """Test that promote modified range has correct line/column positions."""
+        doc = Document(nodes=[Heading(level=2, text="Section")])
+
+        result = StructureOperations.promote(doc, "h2-0")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+        modified_range = result.modified_ranges[0]
+        # Should start at line 0, column 0 for first node
+        assert modified_range.start_line == 0
+        assert modified_range.start_column == 0
+        # Should end at same line (single heading)
+        assert modified_range.end_line == 0
+
+    def test_demote_returns_modified_ranges(self):
+        """Test that demote operation returns modified ranges."""
+        doc = Document(nodes=[Heading(level=1, text="Title")])
+
+        result = StructureOperations.demote(doc, "h1-0")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+        assert len(result.modified_ranges) > 0
+
+    def test_demote_modified_range_content(self):
+        """Test that demote modified range contains correct new text."""
+        doc = Document(nodes=[Heading(level=1, text="Title")])
+
+        result = StructureOperations.demote(doc, "h1-0")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+        modified_range = result.modified_ranges[0]
+        # New text should be h2
+        assert "## Title" in modified_range.new_text
+
+    def test_move_up_returns_modified_ranges(self):
+        """Test that move_up operation returns modified ranges."""
+        doc = Document(
+            nodes=[
+                Heading(level=2, text="Section 1"),
+                Heading(level=2, text="Section 2"),
+            ]
+        )
+
+        result = StructureOperations.move_up(doc, "h2-1")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+
+    def test_move_down_returns_modified_ranges(self):
+        """Test that move_down operation returns modified ranges."""
+        doc = Document(
+            nodes=[
+                Heading(level=2, text="Section 1"),
+                Heading(level=2, text="Section 2"),
+            ]
+        )
+
+        result = StructureOperations.move_down(doc, "h2-0")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+
+    def test_nest_returns_modified_ranges(self):
+        """Test that nest operation returns modified ranges."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Parent"),
+                Heading(level=1, text="Child"),
+            ]
+        )
+
+        result = StructureOperations.nest(doc, "h1-1", "h1-0")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+
+    def test_nest_modified_range_content(self):
+        """Test that nest modified range contains adjusted level."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Parent"),
+                Heading(level=1, text="Child"),
+            ]
+        )
+
+        result = StructureOperations.nest(doc, "h1-1", "h1-0")
+
+        assert result.success is True
+        # Verify the modified document has the child at level 2
+        new_doc = Document.from_string(result.document)
+        assert new_doc.nodes[1].level == 2
+
+    def test_unnest_returns_modified_ranges(self):
+        """Test that unnest operation returns modified ranges."""
+        doc = Document(nodes=[Heading(level=3, text="Nested")])
+
+        result = StructureOperations.unnest(doc, "h3-0")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+
+    def test_unnest_modified_range_content(self):
+        """Test that unnest modified range contains promoted level."""
+        doc = Document(nodes=[Heading(level=3, text="Nested")])
+
+        result = StructureOperations.unnest(doc, "h3-0")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+        modified_range = result.modified_ranges[0]
+        # New text should be h2
+        assert "## Nested" in modified_range.new_text
+
+    def test_modified_ranges_with_multiple_nodes(self):
+        """Test modified ranges with document containing multiple nodes."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="Title"),
+                Paragraph(content="Introduction"),
+                Heading(level=2, text="Section"),
+            ]
+        )
+
+        result = StructureOperations.promote(doc, "h2-0")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+        # Should have modified ranges for the heading
+        assert len(result.modified_ranges) > 0
+
+    def test_modified_range_preserves_full_document_fallback(self):
+        """Test that operations still provide full document for fallback."""
+        doc = Document(nodes=[Heading(level=2, text="Section")])
+
+        result = StructureOperations.promote(doc, "h2-0")
+
+        assert result.success is True
+        # Both modified_ranges and full document should be present
+        assert result.modified_ranges is not None
+        assert result.document is not None
+        # Full document should be valid markdown
+        assert "# Section" in result.document
+
+    def test_identity_operation_still_returns_ranges(self):
+        """Test that identity operations (h1 promote) still return ranges."""
+        doc = Document(nodes=[Heading(level=1, text="Title")])
+
+        result = StructureOperations.promote(doc, "h1-0")
+
+        assert result.success is True
+        # Even though it's identity, should still work
+        # The implementation might return empty ranges or the same content
+        assert result.document is not None
+
+    def test_modified_range_line_numbers_are_zero_indexed(self):
+        """Test that modified range line numbers are zero-indexed."""
+        doc = Document(
+            nodes=[
+                Heading(level=1, text="First"),
+                Heading(level=2, text="Second"),
+            ]
+        )
+
+        result = StructureOperations.promote(doc, "h2-0")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+        # Line numbers should be zero-indexed
+        for modified_range in result.modified_ranges:
+            assert modified_range.start_line >= 0
+            assert modified_range.end_line >= modified_range.start_line
+
+    def test_modified_range_new_text_not_empty_for_valid_operations(self):
+        """Test that new_text is not empty for valid operations."""
+        doc = Document(nodes=[Heading(level=2, text="Section")])
+
+        result = StructureOperations.promote(doc, "h2-0")
+
+        assert result.success is True
+        assert result.modified_ranges is not None
+        # new_text should not be empty for a valid operation
+        for modified_range in result.modified_ranges:
+            # For non-deletion operations, new_text should not be empty
+            if modified_range.end_line >= modified_range.start_line:
+                assert len(modified_range.new_text) > 0

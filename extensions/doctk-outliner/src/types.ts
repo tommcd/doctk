@@ -113,6 +113,34 @@ export interface ValidationResult {
 }
 
 /**
+ * Tree node structure as returned by the backend.
+ */
+export interface BackendTreeNode {
+  /** Unique identifier for the node (e.g., "h1-0", "h2-3") */
+  id: string;
+  /** Heading text */
+  label: string;
+  /** Heading level (1-6, or 0 for root) */
+  level: number;
+  /** Line number in document (0-indexed) */
+  line: number;
+  /** Column number in document (0-indexed) */
+  column: number;
+  /** Child nodes */
+  children: BackendTreeNode[];
+}
+
+/**
+ * Response from get_document_tree RPC method.
+ */
+export interface DocumentTreeResponse {
+  /** Root node of the tree */
+  root: BackendTreeNode;
+  /** Version number for change tracking */
+  version: number;
+}
+
+/**
  * Configuration for the doctk outliner.
  */
 export interface DoctkConfiguration {

@@ -180,7 +180,7 @@ class Lexer:
         char = self.peek()
 
         # String literals
-        if char in '"\'':
+        if char in "\"'":
             value = self.read_string()
             return Token(TokenType.STRING, value, line, column)
 

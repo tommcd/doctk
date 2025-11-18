@@ -176,9 +176,12 @@ export class DocumentOutlineProvider implements vscode.TreeDataProvider<OutlineN
       const lineText = document.lineAt(line).text;
       const endColumn = lineText.length;
 
+      // Clamp column to prevent out-of-bounds access
+      const column = Math.min(bNode.column, lineText.length);
+
       const range = new vscode.Range(
-        new vscode.Position(bNode.line, bNode.column),
-        new vscode.Position(bNode.line, endColumn)
+        new vscode.Position(line, column),
+        new vscode.Position(line, endColumn)
       );
 
       // Create outline node

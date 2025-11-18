@@ -65,24 +65,25 @@ This implementation plan breaks down the core integration layer and execution ca
     - Test process restart on failure
     - _Requirements: 18_
 
-- [ ] 4. Implement granular document edits (CRITICAL from PR #6 review)
+- [x] 4. Implement granular document edits (CRITICAL from PR #6 review)
 
-  - [ ] 4.1 Add ModifiedRange dataclass to protocols.py
+  - [x] 4.1 Add ModifiedRange dataclass to protocols.py
 
     - Define ModifiedRange with start_line, start_column, end_line, end_column, new_text
     - Update OperationResult to include optional List[ModifiedRange]
     - Maintain backward compatibility with full document field
     - _PR #6 Issue #1 (Critical)_
 
-  - [ ] 4.2 Implement DiffComputer in operations.py
+  - [x] 4.2 Implement DiffComputer in operations.py
 
     - Create DiffComputer class to compute modified ranges
     - Implement `compute_ranges(original_doc, modified_doc, affected_node_ids)` method
     - Calculate line/column positions for changed nodes
     - Handle multi-node operations (move, nest)
+    - Fixed bug where node IDs change after level modifications
     - _PR #6 Issue #1 (Critical)_
 
-  - [ ] 4.3 Update all operation methods to return modified ranges
+  - [x] 4.3 Update all operation methods to return modified ranges
 
     - Update promote() to compute and return modified ranges
     - Update demote() to compute and return modified ranges
@@ -90,11 +91,12 @@ This implementation plan breaks down the core integration layer and execution ca
     - Update nest(), unnest() to return ranges for level-adjusted nodes
     - _PR #6 Issue #1 (Critical)_
 
-  - [ ] 4.4 Write tests for granular edits
+  - [x] 4.4 Write tests for granular edits
 
     - Test ModifiedRange computation for each operation type
     - Test multi-node operations
     - Verify line/column accuracy
+    - Added 16 comprehensive tests for granular edit functionality
     - _PR #6 Issue #1 (Critical)_
 
 - [ ] 5. Centralize node ID generation in backend (MEDIUM from PR #6 review)

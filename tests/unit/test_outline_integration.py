@@ -1,6 +1,5 @@
 """Tests for outline tree building and integration."""
 
-
 from doctk.core import Document, Heading, Paragraph
 from doctk.lsp.operations import DocumentTreeBuilder
 

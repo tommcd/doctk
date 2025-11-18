@@ -97,9 +97,7 @@ class Parser:
         """Expect a specific token type and consume it."""
         token = self.current_token()
         if token.type != token_type:
-            raise ParseError(
-                f"Expected {token_type.name}, got {token.type.name}", token
-            )
+            raise ParseError(f"Expected {token_type.name}, got {token.type.name}", token)
         return self.advance()
 
     def parse(self) -> list[ASTNode]:
@@ -187,9 +185,7 @@ class Parser:
         }
 
         if name_token.type not in allowed_token_types:
-            raise ParseError(
-                f"Expected operation name, got {name_token.type.name}", name_token
-            )
+            raise ParseError(f"Expected operation name, got {name_token.type.name}", name_token)
 
         name = name_token.value
         self.advance()

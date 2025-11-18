@@ -229,12 +229,16 @@ class REPL:
                 result = self.operations.unnest(self.document, node_id)
             elif operation == "nest":
                 if "parent_id" not in params:
-                    console.print("[yellow]Nest requires parent_id: nest <node_id> <parent_id>[/yellow]")
+                    console.print(
+                        "[yellow]Nest requires parent_id: nest <node_id> <parent_id>[/yellow]"
+                    )
                     return
                 result = self.operations.nest(self.document, node_id, params["parent_id"])
             else:
                 console.print(f"[yellow]Unknown operation: {operation}[/yellow]")
-                console.print("Available operations: promote, demote, move_up, move_down, nest, unnest")
+                console.print(
+                    "Available operations: promote, demote, move_up, move_down, nest, unnest"
+                )
                 return
 
             # Check result

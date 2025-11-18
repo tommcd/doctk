@@ -281,7 +281,7 @@ _OPERATION_METADATA: dict[str, dict[str, Any]] = {
 class OperationRegistry:
     """Registry of available doctk operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the operation registry."""
         self.operations: dict[str, OperationMetadata] = {}
         self._load_operations_from_doctk()
@@ -333,9 +333,7 @@ class OperationRegistry:
 
         except ImportError:
             # doctk.operations not available - registry will be empty
-            logger.warning(
-                "Could not import 'doctk.operations'. Operation registry will be empty."
-            )
+            logger.warning("Could not import 'doctk.operations'. Operation registry will be empty.")
 
     def _extract_description(self, obj: Any) -> str:
         """

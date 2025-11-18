@@ -48,10 +48,10 @@ class DocumentState:
         self.diagnostics: list[Diagnostic] = []
 
 
-class DoctkLanguageServer(LanguageServer):
+class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
     """Language Server for doctk DSL."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the doctk language server."""
         super().__init__("doctk-lsp", "v0.1.0")
         self.documents: dict[str, DocumentState] = {}
@@ -59,11 +59,11 @@ class DoctkLanguageServer(LanguageServer):
         # Register handlers
         self._register_handlers()
 
-    def _register_handlers(self):
+    def _register_handlers(self) -> None:
         """Register LSP event handlers."""
 
-        @self.feature(TEXT_DOCUMENT_DID_OPEN)
-        async def did_open(ls: LanguageServer, params: DidOpenTextDocumentParams):
+        @self.feature(TEXT_DOCUMENT_DID_OPEN)  # type: ignore[misc]
+        async def did_open(ls: LanguageServer, params: DidOpenTextDocumentParams) -> None:
             """Handle document open event."""
             logger.info(f"Document opened: {params.text_document.uri}")
 
@@ -78,8 +78,8 @@ class DoctkLanguageServer(LanguageServer):
             # Parse and validate document
             await self.parse_and_validate(uri, text)
 
-        @self.feature(TEXT_DOCUMENT_DID_CHANGE)
-        async def did_change(ls: LanguageServer, params: DidChangeTextDocumentParams):
+        @self.feature(TEXT_DOCUMENT_DID_CHANGE)  # type: ignore[misc]
+        async def did_change(ls: LanguageServer, params: DidChangeTextDocumentParams) -> None:
             """Handle document change event."""
             logger.info(f"Document changed: {params.text_document.uri}")
 
@@ -100,8 +100,8 @@ class DoctkLanguageServer(LanguageServer):
                 # Parse and validate updated document
                 await self.parse_and_validate(uri, text)
 
-        @self.feature(TEXT_DOCUMENT_DID_CLOSE)
-        async def did_close(ls: LanguageServer, params: DidCloseTextDocumentParams):
+        @self.feature(TEXT_DOCUMENT_DID_CLOSE)  # type: ignore[misc]
+        async def did_close(ls: LanguageServer, params: DidCloseTextDocumentParams) -> None:
             """Handle document close event."""
             logger.info(f"Document closed: {params.text_document.uri}")
 
@@ -109,7 +109,7 @@ class DoctkLanguageServer(LanguageServer):
             if uri in self.documents:
                 del self.documents[uri]
 
-    async def parse_and_validate(self, uri: str, text: str):
+    async def parse_and_validate(self, uri: str, text: str) -> None:
         """
         Parse and validate document content.
 
@@ -210,7 +210,7 @@ class DoctkLanguageServer(LanguageServer):
         return diagnostics
 
 
-def main():
+def main() -> None:
     """Start the language server."""
     # Configure logging for standalone execution
     logging.basicConfig(

@@ -19,7 +19,7 @@ from doctk.operations import (
 from doctk.outliner import outline, outline_headings_only
 
 
-def main():
+def main() -> None:
     """Main CLI entry point."""
     console = Console()
 
@@ -53,7 +53,7 @@ def main():
         sys.exit(1)
 
 
-def show_help(console: Console):
+def show_help(console: Console) -> None:
     """Show help information."""
     help_text = """
 [bold cyan]doctk[/bold cyan] - A composable toolkit for structured document manipulation
@@ -106,7 +106,7 @@ def show_help(console: Console):
     console.print(help_text)
 
 
-def run_outline(console: Console, args: list[str]):
+def run_outline(console: Console, args: list[str]) -> None:
     """Run outline command."""
     if not args:
         console.print("[red]Error: No file specified[/red]")
@@ -152,7 +152,7 @@ def run_outline(console: Console, args: list[str]):
     console.print()
 
 
-def run_demo(console: Console):
+def run_demo(console: Console) -> None:
     """Run interactive demo."""
     console.print("\n[bold cyan]doctk Interactive Demo[/bold cyan]\n")
 
@@ -247,7 +247,7 @@ Try it out!
     console.print()
 
 
-def run_repl():
+def run_repl() -> None:
     """Start the interactive REPL."""
     from doctk.dsl.repl import REPL
 
@@ -255,7 +255,7 @@ def run_repl():
     repl.start()
 
 
-def run_execute(console: Console, args: list[str]):
+def run_execute(console: Console, args: list[str]) -> None:
     """Execute a script file on a document."""
     from doctk.dsl import ExecutionError, ScriptExecutor
 

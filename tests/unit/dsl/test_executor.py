@@ -48,7 +48,9 @@ class TestExecutor:
         # Verify the h2-0 node was promoted to h1
         assert isinstance(result, Document)
         # Check that we have a heading with "Section 1" text that should now be level 1
-        section_1_nodes = [n for n in result.nodes if isinstance(n, Heading) and n.text == "Section 1"]
+        section_1_nodes = [
+            n for n in result.nodes if isinstance(n, Heading) and n.text == "Section 1"
+        ]
         assert len(section_1_nodes) == 1
         assert section_1_nodes[0].level == 1
 
@@ -65,7 +67,9 @@ class TestExecutor:
 
         # Verify the h2-0 node was demoted to h3
         assert isinstance(result, Document)
-        section_1_nodes = [n for n in result.nodes if isinstance(n, Heading) and n.text == "Section 1"]
+        section_1_nodes = [
+            n for n in result.nodes if isinstance(n, Heading) and n.text == "Section 1"
+        ]
         assert len(section_1_nodes) == 1
         assert section_1_nodes[0].level == 3
 
@@ -127,7 +131,9 @@ class TestExecutor:
 
         # Verify the h3-0 node was unnested to h2
         assert isinstance(result, Document)
-        subsection_nodes = [n for n in result.nodes if isinstance(n, Heading) and n.text == "Subsection 1.1"]
+        subsection_nodes = [
+            n for n in result.nodes if isinstance(n, Heading) and n.text == "Subsection 1.1"
+        ]
         assert len(subsection_nodes) == 1
         assert subsection_nodes[0].level == 2
 
@@ -226,7 +232,9 @@ class TestExecutor:
         assert section_1[0].level == 1  # Still promoted
 
         # Verify Subsection 1.1 was demoted (it was at h2-0 after first operation)
-        subsection = [n for n in result.nodes if isinstance(n, Heading) and n.text == "Subsection 1.1"]
+        subsection = [
+            n for n in result.nodes if isinstance(n, Heading) and n.text == "Subsection 1.1"
+        ]
         assert len(subsection) == 1
         assert subsection[0].level == 3  # Demoted from h2 back to h3
 
@@ -252,7 +260,9 @@ class TestScriptExecutor:
 
             # Verify result
             assert isinstance(result, Document)
-            section_1_nodes = [n for n in result.nodes if isinstance(n, Heading) and n.text == "Section 1"]
+            section_1_nodes = [
+                n for n in result.nodes if isinstance(n, Heading) and n.text == "Section 1"
+            ]
             assert len(section_1_nodes) == 1
             assert section_1_nodes[0].level == 1
 
@@ -282,7 +292,9 @@ class TestScriptExecutor:
             assert isinstance(saved_doc, Document)
 
             # Verify transformation was applied
-            section_1_nodes = [n for n in saved_doc.nodes if isinstance(n, Heading) and n.text == "Section 1"]
+            section_1_nodes = [
+                n for n in saved_doc.nodes if isinstance(n, Heading) and n.text == "Section 1"
+            ]
             assert len(section_1_nodes) == 1
             assert section_1_nodes[0].level == 1
 

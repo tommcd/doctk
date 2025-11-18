@@ -16,7 +16,7 @@ Set up complete development environment for local development or devcontainer.
 
 This script will:
   1. Install uv (Python package manager) if needed
-  2. Install Python 3.10+ if needed (local dev only, via uv)
+  2. Install Python 3.12+ if needed (local dev only, via uv)
   3. Install external build tools (shellcheck, shfmt) from pyproject.toml
   4. Install Python dependencies (uv sync --all-groups)
   5. Install tox globally for test orchestration
@@ -120,12 +120,12 @@ echo ""
 # Step 2: Ensure correct Python version (local development only)
 if [[ "$DEVCONTAINER_MODE" == "false" ]]; then
   echo "🐍 Checking Python installation..."
-  REQUIRED_PYTHON="3.10"
+  REQUIRED_PYTHON="3.12"
 
-  # Check if Python 3.10+ is available
-  if command -v python3.10 &>/dev/null; then
-    echo "   ✓ Python $REQUIRED_PYTHON already installed ($(python3.10 --version))"
-  elif command -v python &>/dev/null && python --version 2>&1 | grep -qE "Python 3\.(1[0-9]|[2-9][0-9])"; then
+  # Check if Python 3.12+ is available
+  if command -v python3.12 &>/dev/null; then
+    echo "   ✓ Python $REQUIRED_PYTHON already installed ($(python3.12 --version))"
+  elif command -v python &>/dev/null && python --version 2>&1 | grep -qE "Python 3\.(1[2-9]|[2-9][0-9])"; then
     echo "   ✓ Python $REQUIRED_PYTHON+ already installed ($(python --version))"
   else
     echo "   Python $REQUIRED_PYTHON not found, installing via uv..."
@@ -134,7 +134,7 @@ if [[ "$DEVCONTAINER_MODE" == "false" ]]; then
   fi
 
   # Pin Python version for the project
-  if [ ! -f .python-version ] || ! grep -qE "^3\.(1[0-9]|[2-9][0-9])" .python-version; then
+  if [ ! -f .python-version ] || ! grep -qE "^3\.(1[2-9]|[2-9][0-9])" .python-version; then
     echo "   Setting project Python version to $REQUIRED_PYTHON..."
     run_cmd uv python pin $REQUIRED_PYTHON
     echo "   ✓ Python version pinned to $REQUIRED_PYTHON"

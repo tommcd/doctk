@@ -4,7 +4,7 @@ This guide will help you install doctk and set up your development environment.
 
 ## Requirements
 
-- Python 3.10 or higher
+- Python 3.12 or higher
 - [uv](https://docs.astral.sh/uv/) (recommended) or pip
 
 ## Installing with uv (Recommended)

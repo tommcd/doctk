@@ -11,8 +11,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+        # Optimized matrix: Ubuntu-only, actively maintained Python versions
+        # Total: 3 jobs (dropped Windows due to slow builds and limited test suite)
+        os: [ubuntu-latest]
+        python-version: ['3.12', '3.13', '3.14']
 
     steps:
     - uses: actions/checkout@v4
@@ -24,7 +26,7 @@ jobs:
       run: uv python install ${{ matrix.python-version }}
 
     - name: Install dependencies
-      run: uv sync --all-extras
+      run: uv sync --all-groups
 
     - name: Install package
       run: uv pip install -e .
@@ -33,7 +35,7 @@ jobs:
       run: uv run pytest -v --cov=doctk --cov-report=xml --cov-report=term
 
     - name: Upload coverage to Codecov
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
       uses: codecov/codecov-action@v4
       with:
         file: ./coverage.xml

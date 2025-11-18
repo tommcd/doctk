@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "A composable toolkit for structured document manipulation"
 readme = "README.md"
 authors = [{ name = "tommcd", email = "tcmcdermott@gmail.com" }]
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
   "markdown-it-py>=3.0.0",
   "mdit-py-plugins>=0.4.0",

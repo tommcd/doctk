@@ -10,7 +10,7 @@ Usage: $0 [OPTIONS]
 Check if development environment is ready to build/test/run the project.
 
 Verifies:
-  - Python 3.10+
+  - Python 3.12+
   - uv package manager
   - External tools (shellcheck, shfmt, taplo, lychee, markdownlint-cli2, hadolint) match pyproject.toml versions
   - git version control
@@ -52,7 +52,7 @@ echo -e "${BLUE}Checking development environment...${NC}"
 echo ""
 
 # ============================================================================
-# Python 3.10+
+# Python 3.12+
 # ============================================================================
 echo -e "${BLUE}Python:${NC}"
 
@@ -66,11 +66,11 @@ if command -v python3 >/dev/null 2>&1; then
   PYTHON_VERSION=$(python3 --version 2>&1)
   echo -e "${GREEN}✓${NC} $PYTHON_VERSION"
 
-  # Check version >= 3.10
+  # Check version >= 3.12
   PYTHON_MINOR=$(python3 -c 'import sys; print(sys.version_info.minor)')
   PYTHON_MAJOR=$(python3 -c 'import sys; print(sys.version_info.major)')
-  if [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 10 ]; then
-    echo -e "${RED}  ✗ Python 3.10+ required (found 3.$PYTHON_MINOR)${NC}"
+  if [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 12 ]; then
+    echo -e "${RED}  ✗ Python 3.12+ required (found 3.$PYTHON_MINOR)${NC}"
     FAILED=1
   fi
 else

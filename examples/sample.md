@@ -12,7 +12,7 @@ To install this project:
 
 ### Prerequisites
 
-You'll need Python 3.10+.
+You'll need Python 3.12+.
 
 ### Quick Start
 

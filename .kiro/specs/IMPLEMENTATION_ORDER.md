@@ -2,6 +2,8 @@
 
 This document describes the dependencies between the three specs and the recommended implementation order.
 
+**Note**: For current task completion status, see the `tasks.md` file in each spec folder. This document focuses on dependencies and sequencing strategy, not tracking what's been completed.
+
 ## Dependency Graph
 
 ```
@@ -45,16 +47,13 @@ This document describes the dependencies between the three specs and the recomme
 - Provides `OperationRegistry` that Language Server needs
 - Contains the fundamental document manipulation API
 
-**Completed tasks (already done):**
+**Critical tasks that must complete before other specs:**
 
-- ✅ Task 1: Project structure
-- ✅ Task 2: StructureOperations (promote, demote, move, nest, unnest)
-- ✅ Task 3: ExtensionBridge and PythonBridge
-
-**Critical remaining tasks:**
-
-- ✅ Task 4: Granular document edits (CRITICAL - needed by VS Code extension) - COMPLETED
-- ⚠️ Task 5: Centralized node ID generation (MEDIUM - needed by VS Code extension)
+- Task 1: Project structure
+- Task 2: StructureOperations (promote, demote, move, nest, unnest)
+- Task 3: ExtensionBridge and PythonBridge
+- Task 4: Granular document edits (CRITICAL - needed by VS Code extension)
+- Task 5: Centralized node ID generation (MEDIUM - needed by VS Code extension)
 
 ### 2. VS Code Extension & Language Server (CAN BE PARALLEL)
 
@@ -64,10 +63,10 @@ After core integration tasks 1-5 are complete, these two specs can be developed 
 
 **Dependencies:**
 
-- Requires `ExtensionBridge` from core-integration (Task 3) ✅ DONE
-- Requires `StructureOperations` from core-integration (Task 2) ✅ DONE
-- Requires granular edits from core-integration (Task 4) ⚠️ PENDING
-- Requires centralized node IDs from core-integration (Task 5) ⚠️ PENDING
+- Requires `ExtensionBridge` from core-integration (Task 3)
+- Requires `StructureOperations` from core-integration (Task 2)
+- Requires granular edits from core-integration (Task 4)
+- Requires centralized node IDs from core-integration (Task 5)
 
 **Can start after:** Core integration Tasks 1-5 complete
 
@@ -90,30 +89,25 @@ After core integration tasks 1-5 are complete, these two specs can be developed 
 
 **Must complete in order:**
 
-1. ✅ **DONE**: Core integration Tasks 1-3
+1. Core integration Tasks 1-3
 
    - Project structure
    - StructureOperations
    - ExtensionBridge
 
-1. ✅ **COMPLETED**: Core integration Task 4 (Granular edits - CRITICAL)
+1. Core integration Task 4 (Granular edits - CRITICAL)
 
-   - Implemented ModifiedRange dataclass
-   - Implemented DiffComputer for computing granular text ranges
-   - Updated all operations to return modified ranges
-   - Added 16 comprehensive tests
-   - Fixed bug where node IDs change after level modifications
-   - All tests pass (127/127)
+   - Implement ModifiedRange dataclass
+   - Implement DiffComputer for computing granular text ranges
+   - Update all operations to return modified ranges
+   - Add comprehensive tests
 
-1. ✅ **COMPLETED**: Core integration Task 5 (Centralized node IDs - MEDIUM)
+1. Core integration Task 5 (Centralized node IDs - MEDIUM)
 
-   - Implemented TreeNode dataclass in protocols.py
-   - Added build_tree_with_ids() method to DocumentTreeBuilder
-   - Implemented get_document_tree() RPC method in ExtensionBridge
-   - Added 20 comprehensive tests for tree building and RPC method
-   - All tests pass (88/88 for LSP tests)
-   - Backend is now single source of truth for node IDs
-   - VS Code extension Task 9 now unblocked
+   - Implement TreeNode dataclass
+   - Add build_tree_with_ids() method to DocumentTreeBuilder
+   - Implement get_document_tree() RPC method in ExtensionBridge
+   - Add comprehensive tests for tree building and RPC method
 
 ### Phase 2: Parallel Development (PARALLEL)
 
@@ -184,44 +178,11 @@ After Phase 2 tracks complete:
 - VS Code extension must exist BEFORE Language Server Task 6 (connection)
 - All individual spec tasks must complete BEFORE their respective E2E testing
 
-## Current Status
+## How to Use This Document
 
-Based on the task files:
-
-- ✅ **Core Integration**: Tasks 1-5 complete (foundation ready, granular edits implemented, centralized IDs implemented)
-- ✅ **VS Code Extension**: Tasks 1-2 complete (tree provider ready)
-- ✅ **VS Code Extension**: Fully unblocked - all Phase 1 dependencies complete
-- ✅ **Language Server**: Can start now (all dependencies met)
-
-## Recommendation
-
-**Immediate next steps:**
-
-Phase 1 is now complete! Proceed with parallel development:
-
-1. **VS Code extension Tasks 3-11** - All unblocked, can proceed
-2. **Language Server Tasks 1-9** - All unblocked, can proceed
-3. **Core integration Tasks 6-13** - All unblocked, can proceed
-
-**Recent Progress:**
-
-- ✅ **2025-11-18**: Completed Core Integration Task 5 (Centralized node IDs)
-  - Implemented TreeNode dataclass in protocols.py
-  - Added build_tree_with_ids() method to DocumentTreeBuilder for hierarchical tree generation
-  - Implemented get_document_tree() RPC method in ExtensionBridge with JSON serialization
-  - Added 20 comprehensive tests (8 for tree building, 12 for RPC method)
-  - All 88 LSP tests pass
-  - Ruff formatting and linting passes
-  - Backend is now single source of truth for document structure and node IDs
-  - VS Code extension fully unblocked
-
-- ✅ **2025-11-18**: Completed Core Integration Task 4 (Granular edits)
-  - Implemented ModifiedRange dataclass in protocols.py
-  - Implemented DiffComputer class in operations.py
-  - Updated all 6 operations (promote, demote, move_up, move_down, nest, unnest) to compute and return modified ranges
-  - Added 16 comprehensive tests for granular edit functionality
-  - Fixed critical bug where node IDs change after level modifications
-  - All 127 tests pass
-  - Ruff linting passes
+1. **Check dependencies**: Before starting work on any spec, verify that all prerequisite tasks from other specs are complete
+1. **Check task status**: Look at the `tasks.md` file in each spec folder to see what's been completed
+1. **Follow the phases**: Work through Phase 1 sequentially, then proceed with Phase 2 in parallel as dependencies allow
+1. **Respect blockers**: Don't start tasks that depend on incomplete work from other specs
 
 This conservative approach ensures no rework and maintains architectural integrity.

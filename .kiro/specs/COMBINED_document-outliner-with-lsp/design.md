@@ -858,6 +858,7 @@ class UndoableOperationHandler {
 ### Optimized Edits (CRITICAL IMPROVEMENT)
 
 **Problem**: The current implementation (as of PR #6) replaces the entire document on every operation, which:
+
 - Clears the undo/redo stack
 - Loses cursor position and text selections
 - Has poor performance for large documents
@@ -946,6 +947,7 @@ class OperationHandler {
 ### Centralized Node ID Generation (MEDIUM PRIORITY)
 
 **Problem**: Node ID generation logic is duplicated in:
+
 - Frontend: `outlineProvider.ts` lines 157-160
 - Backend: `operations.py` DocumentTreeBuilder class
 

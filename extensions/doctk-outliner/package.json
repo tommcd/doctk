@@ -48,11 +48,6 @@
         "icon": "$(chevron-down)"
       },
       {
-        "command": "doctk.delete",
-        "title": "doctk: Delete Section",
-        "icon": "$(trash)"
-      },
-      {
         "command": "doctk.refresh",
         "title": "doctk: Refresh Outline",
         "icon": "$(refresh)"
@@ -86,11 +81,6 @@
           "command": "doctk.moveDown",
           "when": "view == doctkOutline",
           "group": "reorder@2"
-        },
-        {
-          "command": "doctk.delete",
-          "when": "view == doctkOutline",
-          "group": "edit@1"
         }
       ]
     },
@@ -117,12 +107,6 @@
         "command": "doctk.moveDown",
         "key": "alt+down",
         "mac": "alt+down",
-        "when": "focusedView == doctkOutline"
-      },
-      {
-        "command": "doctk.delete",
-        "key": "delete",
-        "mac": "delete",
         "when": "focusedView == doctkOutline"
       }
     ],
@@ -181,6 +165,11 @@
           "type": "number",
           "default": 50,
           "description": "Maximum number of completion items to show"
+        },
+        "doctk.lsp.pythonCommand": {
+          "type": "string",
+          "default": "python3",
+          "description": "Python command or path to Python executable (e.g., 'python3', 'python', or '/path/to/python')"
         },
         "doctk.performance.largeDocumentThreshold": {
           "type": "number",

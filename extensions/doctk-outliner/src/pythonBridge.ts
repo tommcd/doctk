@@ -32,7 +32,7 @@ interface PendingRequest {
  * Options for configuring the Python bridge.
  */
 export interface PythonBridgeOptions {
-  /** Path to the Python executable (defaults to 'uv') */
+  /** Path to the Python executable (defaults to 'python3') */
   pythonCommand?: string;
   /** Working directory for the Python process */
   cwd?: string;
@@ -59,7 +59,7 @@ export class PythonBridge {
 
   constructor(options: PythonBridgeOptions = {}) {
     this.options = {
-      pythonCommand: options.pythonCommand || 'uv',
+      pythonCommand: options.pythonCommand || 'python3',
       cwd: options.cwd || process.cwd(),
       timeout: options.timeout || 10000,
       maxRestarts: options.maxRestarts || 3,

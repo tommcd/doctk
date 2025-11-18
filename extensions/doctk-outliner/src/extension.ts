@@ -5,6 +5,7 @@
 import * as vscode from 'vscode';
 import { DocumentOutlineProvider } from './outlineProvider';
 import { PythonBridge } from './pythonBridge';
+import { OutlineNode } from './types';
 
 let outlineProvider: DocumentOutlineProvider;
 let pythonBridge: PythonBridge;
@@ -28,7 +29,9 @@ export async function activate(context: vscode.ExtensionContext) {
   });
 
   // Initialize Python bridge
+  const config = vscode.workspace.getConfiguration('doctk');
   pythonBridge = new PythonBridge({
+    pythonCommand: config.get('lsp.pythonCommand', 'python3'),
     cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
   });
 
@@ -51,7 +54,7 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('doctk.navigateToNode', (node: any) => {
+    vscode.commands.registerCommand('doctk.navigateToNode', (node: OutlineNode) => {
       const editor = vscode.window.activeTextEditor;
       if (editor && node.range) {
         editor.selection = new vscode.Selection(node.range.start, node.range.end);
@@ -61,33 +64,26 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('doctk.promote', async (node: any) => {
+    vscode.commands.registerCommand('doctk.promote', async (node: OutlineNode) => {
       await executeOperation('promote', node);
     })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('doctk.demote', async (node: any) => {
+    vscode.commands.registerCommand('doctk.demote', async (node: OutlineNode) => {
       await executeOperation('demote', node);
     })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('doctk.moveUp', async (node: any) => {
+    vscode.commands.registerCommand('doctk.moveUp', async (node: OutlineNode) => {
       await executeOperation('move_up', node);
     })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('doctk.moveDown', async (node: any) => {
+    vscode.commands.registerCommand('doctk.moveDown', async (node: OutlineNode) => {
       await executeOperation('move_down', node);
-    })
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand('doctk.delete', async (node: any) => {
-      // Delete operation would need to be implemented
-      vscode.window.showInformationMessage('Delete operation not yet implemented');
     })
   );
 
@@ -128,7 +124,7 @@ export async function activate(context: vscode.ExtensionContext) {
  * @param operation - Operation name
  * @param node - Target node
  */
-async function executeOperation(operation: string, node: any): Promise<void> {
+async function executeOperation(operation: string, node: OutlineNode): Promise<void> {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     vscode.window.showErrorMessage('No active editor');

@@ -6,15 +6,17 @@ including lexer, parser, executor, and REPL components.
 """
 
 from doctk.dsl.executor import Executor
-from doctk.dsl.lexer import Lexer, Token, TokenType
-from doctk.dsl.parser import Parser
+from doctk.dsl.lexer import Lexer, LexerError, Token, TokenType
+from doctk.dsl.parser import ParseError, Parser
 from doctk.dsl.repl import REPL
 
 __all__ = [
+    "Executor",
     "Lexer",
+    "LexerError",
+    "ParseError",
+    "Parser",
+    "REPL",
     "Token",
     "TokenType",
-    "Parser",
-    "Executor",
-    "REPL",
 ]

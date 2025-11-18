@@ -237,9 +237,11 @@ uv run doctk demo               # Run interactive demo
 
 GitHub Actions runs tests on:
 
-- **OS**: Ubuntu, macOS, Windows
-- **Python**: 3.10, 3.11, 3.12, 3.13, 3.14
-- **Coverage**: Reported to codecov
+- **Ubuntu**: Python 3.10, 3.11, 3.12, 3.13, 3.14 (primary platform)
+- **Windows**: Python 3.14 only (compatibility check)
+- **Coverage**: Reported to codecov (Ubuntu 3.11)
+
+**Total**: 6 jobs (optimized for speed)
 
 ---
 

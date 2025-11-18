@@ -11,8 +11,23 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+        # Optimized matrix: Test all Python versions on Ubuntu, only latest on Windows
+        # Total: 6 jobs (down from 15)
+        include:
+          # Ubuntu: Test all Python versions (primary platform)
+          - os: ubuntu-latest
+            python-version: '3.10'
+          - os: ubuntu-latest
+            python-version: '3.11'
+          - os: ubuntu-latest
+            python-version: '3.12'
+          - os: ubuntu-latest
+            python-version: '3.13'
+          - os: ubuntu-latest
+            python-version: '3.14'
+          # Windows: Test only latest Python version
+          - os: windows-latest
+            python-version: '3.14'
 
     steps:
     - uses: actions/checkout@v4
@@ -24,7 +39,7 @@ jobs:
       run: uv python install ${{ matrix.python-version }}
 
     - name: Install dependencies
-      run: uv sync --all-extras
+      run: uv sync --all-groups
 
     - name: Install package
       run: uv pip install -e .

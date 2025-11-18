@@ -8,6 +8,7 @@ from doctk.lsp.protocols import (
     OperationResult,
     ValidationResult,
 )
+from doctk.lsp.registry import OperationMetadata, OperationRegistry, ParameterInfo
 from doctk.lsp.server import DoctkLanguageServer, DocumentState
 
 __all__ = [
@@ -17,7 +18,10 @@ __all__ = [
     "DocumentState",
     "DocumentTreeBuilder",
     "ExtensionBridge",
+    "OperationMetadata",
+    "OperationRegistry",
     "OperationResult",
+    "ParameterInfo",
     "StructureOperations",
     "ValidationResult",
 ]

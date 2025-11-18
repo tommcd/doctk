@@ -163,11 +163,25 @@ async function executeOperation(operation: string, node: OutlineNode): Promise<v
     if (result.success) {
       // Apply changes to document
       const edit = new vscode.WorkspaceEdit();
-      const fullRange = new vscode.Range(
-        document.positionAt(0),
-        document.positionAt(documentText.length)
-      );
-      edit.replace(document.uri, fullRange, result.document);
+
+      // Use granular edits if available (preferred)
+      if (result.modifiedRanges && result.modifiedRanges.length > 0) {
+        for (const range of result.modifiedRanges) {
+          const vsRange = new vscode.Range(
+            new vscode.Position(range.start_line, range.start_column),
+            new vscode.Position(range.end_line, range.end_column)
+          );
+          edit.replace(document.uri, vsRange, range.new_text);
+        }
+      } else {
+        // Fallback to full document replacement
+        const fullRange = new vscode.Range(
+          document.positionAt(0),
+          document.positionAt(documentText.length)
+        );
+        edit.replace(document.uri, fullRange, result.document || '');
+      }
+
       await vscode.workspace.applyEdit(edit);
 
       // Update tree view

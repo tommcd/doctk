@@ -953,7 +953,7 @@ This creates tight coupling and maintenance issues - any change to the ID scheme
 
 **Solution**: Make the Python backend the single source of truth for document structure and node IDs.
 
-#### Approach 1: Backend-Driven Tree Structure (Recommended)
+#### Implementation Approach
 
 ```python
 @dataclass
@@ -1021,31 +1021,7 @@ class DocumentOutlineProvider {
 }
 ```
 
-#### Approach 2: Backend ID Service (Alternative)
-
-If full tree structure is too expensive, provide an ID generation service:
-
-```python
-class NodeIDService:
-    """Centralized ID generation service."""
-
-    @staticmethod
-    def generate_ids(document: Document) -> Dict[Node, str]:
-        """Generate IDs for all nodes in document."""
-        node_ids = {}
-        heading_counter: Dict[int, int] = {}
-
-        for node in document.nodes:
-            if isinstance(node, Heading):
-                level = node.level
-                heading_counter[level] = heading_counter.get(level, 0) + 1
-                node_id = f"h{level}-{heading_counter[level] - 1}"
-                node_ids[node] = node_id
-
-        return node_ids
-```
-
-**Design Rationale**: Backend as single source of truth eliminates synchronization issues, reduces code duplication, and ensures consistency. The tree structure approach is preferred as it provides more value (parent-child relationships, ranges) with only one additional RPC call. This improves overall architecture by centralizing parsing and ID logic.
+**Design Rationale**: Making the backend the single source of truth for document structure and IDs eliminates synchronization issues, reduces code duplication, and ensures consistency. The backend-driven tree structure provides complete node information (IDs, parent-child relationships, ranges) with only one additional RPC call. This improves overall architecture by centralizing all parsing and ID generation logic in one place.
 
 ## Pluggable Architecture
 

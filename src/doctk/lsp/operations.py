@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from doctk.core import Document, Heading, Node
-from doctk.lsp.protocols import OperationResult, ValidationResult
+from doctk.lsp.protocols import ModifiedRange, OperationResult, ValidationResult
 
 
 class DocumentTreeBuilder:
@@ -96,6 +96,148 @@ class DocumentTreeBuilder:
         return (start_index, end_index)
 
 
+class DiffComputer:
+    """Computes granular text ranges modified by document operations."""
+
+    @staticmethod
+    def compute_ranges(
+        original_doc: Document[Node],
+        modified_doc: Document[Node],
+        affected_node_ids: list[str],
+    ) -> list[ModifiedRange]:
+        """
+        Compute the specific text ranges that changed.
+
+        Args:
+            original_doc: The original document before the operation
+            modified_doc: The modified document after the operation
+            affected_node_ids: List of node IDs that were affected by the operation
+
+        Returns:
+            List of ModifiedRange objects representing the changes
+        """
+        # Convert documents to text and split into lines
+        original_text = original_doc.to_string()
+        modified_text = modified_doc.to_string()
+        original_lines = original_text.splitlines(keepends=True)
+        modified_lines = modified_text.splitlines(keepends=True)
+
+        # Build node maps for both documents
+        original_builder = DocumentTreeBuilder(original_doc)
+        modified_builder = DocumentTreeBuilder(modified_doc)
+
+        ranges: list[ModifiedRange] = []
+
+        # For each affected node, compute the text range that changed
+        for node_id in affected_node_ids:
+            # Find the node in both documents
+            original_node = original_builder.find_node(node_id)
+            modified_node = modified_builder.find_node(node_id)
+
+            if original_node is None and modified_node is None:
+                continue  # Node doesn't exist in either document
+
+            # Get line ranges for the node in both documents
+            original_range = DiffComputer._get_node_line_range(
+                original_doc, original_node, original_builder
+            )
+            modified_range = DiffComputer._get_node_line_range(
+                modified_doc, modified_node, modified_builder
+            )
+
+            # Compute the modified range
+            if original_range is not None and modified_range is not None:
+                # Node was modified
+                start_line, end_line = original_range
+                mod_start_line, mod_end_line = modified_range
+
+                # Extract the new text from modified document
+                new_text = "".join(modified_lines[mod_start_line : mod_end_line + 1])
+
+                ranges.append(
+                    ModifiedRange(
+                        start_line=start_line,
+                        start_column=0,
+                        end_line=end_line,
+                        end_column=len(original_lines[end_line]) if end_line < len(original_lines) else 0,
+                        new_text=new_text,
+                    )
+                )
+            elif original_range is not None:
+                # Node was deleted
+                start_line, end_line = original_range
+                ranges.append(
+                    ModifiedRange(
+                        start_line=start_line,
+                        start_column=0,
+                        end_line=end_line,
+                        end_column=len(original_lines[end_line]) if end_line < len(original_lines) else 0,
+                        new_text="",
+                    )
+                )
+            elif modified_range is not None:
+                # Node was added
+                mod_start_line, mod_end_line = modified_range
+                new_text = "".join(modified_lines[mod_start_line : mod_end_line + 1])
+
+                # Insert at the position in the original document
+                # This is a simplified approach - inserting at line 0
+                ranges.append(
+                    ModifiedRange(
+                        start_line=0,
+                        start_column=0,
+                        end_line=0,
+                        end_column=0,
+                        new_text=new_text,
+                    )
+                )
+
+        return ranges
+
+    @staticmethod
+    def _get_node_line_range(
+        doc: Document[Node], node: Node | None, builder: DocumentTreeBuilder
+    ) -> tuple[int, int] | None:
+        """
+        Get the line range for a node in the document.
+
+        Args:
+            doc: The document containing the node
+            node: The node to find the range for
+            builder: The DocumentTreeBuilder for this document
+
+        Returns:
+            Tuple of (start_line, end_line) or None if not found
+        """
+        if node is None:
+            return None
+
+        # Find the node index
+        try:
+            node_index = doc.nodes.index(node)
+        except ValueError:
+            return None
+
+        # Convert node index to line range
+        # We'll use a simple approach: count lines from document start
+        lines_before = 0
+        for i in range(node_index):
+            # Create a temp document with just this node to get its string representation
+            temp_doc = Document([doc.nodes[i]])
+            node_text = temp_doc.to_string()
+            lines_before += node_text.count("\n") + (1 if node_text and not node_text.endswith("\n") else 0)
+
+        # Get the node's text and count its lines
+        temp_doc = Document([node])
+        node_text = temp_doc.to_string()
+        node_lines = node_text.count("\n") + (1 if node_text and not node_text.endswith("\n") else 0)
+
+        start_line = lines_before
+        end_line = lines_before + node_lines - 1
+
+        return (start_line, end_line)
+
+
 class StructureOperations:
     """High-level operations for document structure manipulation."""
 
@@ -147,8 +289,17 @@ class StructureOperations:
         new_nodes[node_index] = promoted_node
         new_document = Document(new_nodes)
 
+        # Compute modified ranges
+        modified_ranges = DiffComputer.compute_ranges(
+            original_doc=document,
+            modified_doc=new_document,
+            affected_node_ids=[node_id],
+        )
+
         return OperationResult(
-            success=True, document=new_document.to_string()
+            success=True,
+            document=new_document.to_string(),
+            modified_ranges=modified_ranges,
         )
 
     @staticmethod
@@ -199,8 +350,17 @@ class StructureOperations:
         new_nodes[node_index] = demoted_node
         new_document = Document(new_nodes)
 
+        # Compute modified ranges
+        modified_ranges = DiffComputer.compute_ranges(
+            original_doc=document,
+            modified_doc=new_document,
+            affected_node_ids=[node_id],
+        )
+
         return OperationResult(
-            success=True, document=new_document.to_string()
+            success=True,
+            document=new_document.to_string(),
+            modified_ranges=modified_ranges,
         )
 
     @staticmethod
@@ -338,8 +498,20 @@ class StructureOperations:
         new_nodes[prev_section_start:prev_section_start] = current_section
         new_document = Document(new_nodes)
 
+        # Collect all affected node IDs from the moved section
+        affected_node_ids = [node_id]  # At minimum, the heading itself
+
+        # Compute modified ranges
+        modified_ranges = DiffComputer.compute_ranges(
+            original_doc=document,
+            modified_doc=new_document,
+            affected_node_ids=affected_node_ids,
+        )
+
         return OperationResult(
-            success=True, document=new_document.to_string()
+            success=True,
+            document=new_document.to_string(),
+            modified_ranges=modified_ranges,
         )
 
     @staticmethod
@@ -431,8 +603,20 @@ class StructureOperations:
         new_nodes[insert_pos:insert_pos] = current_section
         new_document = Document(new_nodes)
 
+        # Collect all affected node IDs from the moved section
+        affected_node_ids = [node_id]  # At minimum, the heading itself
+
+        # Compute modified ranges
+        modified_ranges = DiffComputer.compute_ranges(
+            original_doc=document,
+            modified_doc=new_document,
+            affected_node_ids=affected_node_ids,
+        )
+
         return OperationResult(
-            success=True, document=new_document.to_string()
+            success=True,
+            document=new_document.to_string(),
+            modified_ranges=modified_ranges,
         )
 
     @staticmethod
@@ -577,8 +761,20 @@ class StructureOperations:
 
         new_document = Document(new_nodes)
 
+        # Collect all affected node IDs from the nested section
+        affected_node_ids = [node_id]  # At minimum, the heading itself
+
+        # Compute modified ranges
+        modified_ranges = DiffComputer.compute_ranges(
+            original_doc=document,
+            modified_doc=new_document,
+            affected_node_ids=affected_node_ids,
+        )
+
         return OperationResult(
-            success=True, document=new_document.to_string()
+            success=True,
+            document=new_document.to_string(),
+            modified_ranges=modified_ranges,
         )
 
     @staticmethod
@@ -632,8 +828,17 @@ class StructureOperations:
         new_nodes[node_index] = unnested_node
         new_document = Document(new_nodes)
 
+        # Compute modified ranges
+        modified_ranges = DiffComputer.compute_ranges(
+            original_doc=document,
+            modified_doc=new_document,
+            affected_node_ids=[node_id],
+        )
+
         return OperationResult(
-            success=True, document=new_document.to_string()
+            success=True,
+            document=new_document.to_string(),
+            modified_ranges=modified_ranges,
         )
 
     @staticmethod

@@ -73,15 +73,31 @@ export interface Operation {
 }
 
 /**
+ * Represents a range of text that was modified by an operation.
+ */
+export interface ModifiedRange {
+  /** Starting line number (0-indexed) */
+  start_line: number;
+  /** Starting column number (0-indexed) */
+  start_column: number;
+  /** Ending line number (0-indexed) */
+  end_line: number;
+  /** Ending column number (0-indexed) */
+  end_column: number;
+  /** The new text to replace the range with */
+  new_text: string;
+}
+
+/**
  * Result of executing an operation.
  */
 export interface OperationResult {
   /** Whether the operation succeeded */
   success: boolean;
-  /** Modified document text (if successful) */
+  /** Modified document text (if successful) - used as fallback */
   document?: string;
-  /** Ranges that were modified */
-  modifiedRanges?: Range[];
+  /** Granular ranges that were modified - preferred over full document replacement */
+  modifiedRanges?: ModifiedRange[];
   /** Error message (if failed) */
   error?: string;
 }

@@ -11,6 +11,17 @@ if TYPE_CHECKING:
 
 
 @dataclass
+class ModifiedRange:
+    """Represents a range of text that was modified by an operation."""
+
+    start_line: int
+    start_column: int
+    end_line: int
+    end_column: int
+    new_text: str
+
+
+@dataclass
 class ValidationResult:
     """Result of validating an operation."""
 
@@ -23,8 +34,8 @@ class OperationResult:
     """Result of executing a document operation."""
 
     success: bool
-    document: str | None = None
-    modified_ranges: list[tuple[int, int, int, int]] | None = None
+    document: str | None = None  # Full document for fallback
+    modified_ranges: list[ModifiedRange] | None = None  # Granular edits
     error: str | None = None
 
 

@@ -265,10 +265,24 @@ class ExtensionBridge:
         Returns:
             Dictionary representation
         """
+        # Convert ModifiedRange dataclasses to dictionaries
+        modified_ranges = None
+        if result.modified_ranges:
+            modified_ranges = [
+                {
+                    "start_line": r.start_line,
+                    "start_column": r.start_column,
+                    "end_line": r.end_line,
+                    "end_column": r.end_column,
+                    "new_text": r.new_text,
+                }
+                for r in result.modified_ranges
+            ]
+
         return {
             "success": result.success,
             "document": result.document,
-            "modified_ranges": result.modified_ranges,
+            "modified_ranges": modified_ranges,
             "error": result.error,
         }
 

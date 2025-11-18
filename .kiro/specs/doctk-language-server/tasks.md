@@ -65,40 +65,45 @@ This implementation plan breaks down the language server into discrete, actionab
     - _Requirements: 20_
     - _Tests in: tests/unit/test_operation_registry.py (22 tests, all passing)_
 
-- [ ] 3. Implement LSP completion provider
+- [x] 3. Implement LSP completion provider
 
-  - [ ] 3.1 Create CompletionProvider class
+  - [x] 3.1 Create CompletionProvider class
 
     - Implement context analysis to determine cursor position
     - Identify completion context (after pipe, in operation, etc.)
     - _Requirements: 9.2, 9.3_
+    - _Implemented in: src/doctk/lsp/completion.py_
 
-  - [ ] 3.2 Add operation completions
+  - [x] 3.2 Add operation completions
 
     - Generate completion items for available operations
     - Include operation descriptions
     - Add snippet support for operation parameters
     - _Requirements: 9.1, 9.4_
+    - _Implemented in: src/doctk/lsp/completion.py:_operation_completions()_
 
-  - [ ] 3.3 Add parameter completions
+  - [x] 3.3 Add parameter completions
 
     - Provide completions for operation parameters
     - Include parameter types and descriptions
     - _Requirements: 9.3_
+    - _Implemented in: src/doctk/lsp/completion.py:_parameter_completions()_
 
-  - [ ] 3.4 Optimize completion performance
+  - [x] 3.4 Optimize completion performance
 
     - Add caching for completion results
     - Implement TTL-based cache invalidation
     - Ensure 200ms response time
     - _Requirements: 9.5_
+    - _Implemented in: src/doctk/lsp/completion.py (CachedCompletion dataclass and caching methods)_
 
-  - [ ] 3.5 Write tests for completion provider
+  - [x] 3.5 Write tests for completion provider
 
     - Test completions after pipe operator
     - Test parameter completions
     - Test completion performance
     - _Requirements: 9_
+    - _Tests in: tests/unit/test_completion_provider.py (28 tests, all passing)_
 
 - [ ] 4. Implement hover documentation provider
 

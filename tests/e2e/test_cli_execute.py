@@ -34,8 +34,9 @@ def test_cli_execute_command_success(sample_document):
 
     try:
         # Execute via CLI
-        from doctk.cli import run_execute
         from rich.console import Console
+
+        from doctk.cli import run_execute
 
         console = Console()
         run_execute(console, [script_path, doc_path])
@@ -54,10 +55,9 @@ def test_cli_execute_command_success(sample_document):
 
 def test_cli_execute_missing_arguments():
     """Test execute command with missing arguments."""
-    import sys
+    from rich.console import Console
 
     from doctk.cli import run_execute
-    from rich.console import Console
 
     console = Console()
 
@@ -69,10 +69,9 @@ def test_cli_execute_missing_arguments():
 
 def test_cli_execute_script_not_found(sample_document):
     """Test execute command with nonexistent script file."""
-    import sys
+    from rich.console import Console
 
     from doctk.cli import run_execute
-    from rich.console import Console
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as doc_file:
         doc_file.write(sample_document.to_string())
@@ -92,10 +91,9 @@ def test_cli_execute_script_not_found(sample_document):
 
 def test_cli_execute_document_not_found():
     """Test execute command with nonexistent document file."""
-    import sys
+    from rich.console import Console
 
     from doctk.cli import run_execute
-    from rich.console import Console
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".tk", delete=False) as script_file:
         script_file.write("doc | promote h2-0")
@@ -115,10 +113,9 @@ def test_cli_execute_document_not_found():
 
 def test_cli_execute_with_execution_error(sample_document):
     """Test execute command with script that causes execution error."""
-    import sys
+    from rich.console import Console
 
     from doctk.cli import run_execute
-    from rich.console import Console
 
     # Create script with invalid operation
     with tempfile.NamedTemporaryFile(mode="w", suffix=".tk", delete=False) as script_file:

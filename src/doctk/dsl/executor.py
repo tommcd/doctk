@@ -123,7 +123,11 @@ class Executor:
             operation: Operation to execute
 
         Returns:
-            Resulting document (operates directly on Document objects, no re-parsing)
+            Resulting document
+
+        Note:
+            Currently re-parses document after each operation due to StructureOperations
+            returning serialized strings (required for JSON-RPC bridge compatibility).
 
         Raises:
             ExecutionError: If operation execution fails
@@ -213,7 +217,6 @@ class ScriptExecutor:
     def __init__(self):
         """Initialize script executor."""
         # No instance variables needed - Executor creates its own StructureOperations
-        pass
 
     def execute_file(self, script_path: str | Path, document_path: str | Path) -> Document[Any]:
         """
@@ -227,10 +230,8 @@ class ScriptExecutor:
             Transformed document
 
         Raises:
-            ExecutionError: If execution fails
+            ExecutionError: If execution, parsing, or I/O fails
             FileNotFoundError: If script or document file not found
-            LexerError: If script has lexical errors
-            ParseError: If script has syntax errors
         """
         script_path = Path(script_path)
         document_path = Path(document_path)
@@ -298,10 +299,8 @@ class ScriptExecutor:
             Transformed document
 
         Raises:
-            ExecutionError: If execution or saving fails
+            ExecutionError: If execution, parsing, I/O, or saving fails
             FileNotFoundError: If script or document file not found
-            LexerError: If script has lexical errors
-            ParseError: If script has syntax errors
         """
         result = self.execute_file(script_path, document_path)
 

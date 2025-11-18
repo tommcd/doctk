@@ -267,16 +267,7 @@ def run_execute(console: Console, args: list[str]):
     script_path = Path(args[0])
     document_path = Path(args[1])
 
-    # Validate files exist
-    if not script_path.exists():
-        console.print(f"[red]Error: Script file not found: {script_path}[/red]")
-        sys.exit(1)
-
-    if not document_path.exists():
-        console.print(f"[red]Error: Document file not found: {document_path}[/red]")
-        sys.exit(1)
-
-    # Execute script
+    # Execute script (file validation handled by ScriptExecutor)
     try:
         executor = ScriptExecutor()
         console.print(f"[cyan]Executing {script_path.name} on {document_path.name}...[/cyan]")
@@ -287,11 +278,11 @@ def run_execute(console: Console, args: list[str]):
         console.print(f"  Transformed document saved to {document_path}")
         console.print(f"  Document has {len(result.nodes)} nodes")
 
+    except FileNotFoundError as e:
+        console.print(f"[red]{e}[/red]")
+        sys.exit(1)
     except ExecutionError as e:
         console.print(f"[red]Execution failed: {e}[/red]")
-        sys.exit(1)
-    except FileNotFoundError as e:
-        console.print(f"[red]File not found: {e}[/red]")
         sys.exit(1)
     except Exception as e:
         console.print(f"[red]Unexpected error: {e}[/red]")

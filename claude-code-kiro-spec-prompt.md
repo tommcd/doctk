@@ -40,7 +40,7 @@ Finally, read `.kiro/specs/<spec-name>/tasks.md`:
 - This breaks the design into discrete, manageable implementation steps
 - Tasks are listed with checkboxes: `- [ ]` (incomplete) or `- [x]` (complete)
 - Tasks may have sub-tasks indented beneath them
-- Each task may reference requirements (e.g., "_Requirements: 1.1, 1.2_")
+- Each task may reference requirements (e.g., "*Requirements: 1.1, 1.2*")
 - Tasks build incrementally - complete them in order unless stated otherwise
 
 ## How to Update the Task List
@@ -76,7 +76,7 @@ As you complete tasks, update `tasks.md` by changing checkboxes:
 - `- [ ]` = Not started
 - `- [x]` = Completed
 - `- [ ]*` = Optional task (marked with asterisk)
-- Tasks may have notes like "_Requirements: 1.5_" linking back to requirements
+- Tasks may have notes like "*Requirements: 1.5*" linking back to requirements
 
 ## Your Implementation Workflow
 

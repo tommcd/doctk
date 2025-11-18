@@ -13,30 +13,30 @@ This implementation plan breaks down the feature into discrete, actionable codin
   - Set up build configuration (tsconfig.json, package.json for extension)
   - _Requirements: 15, 20_
 
-- [ ] 2. Implement core document manipulation API
+- [x] 2. Implement core document manipulation API
 
-  - [ ] 2.1 Create StructureOperations class with promote/demote operations
+  - [x] 2.1 Create StructureOperations class with promote/demote operations
 
     - Implement `promote()` method that decreases heading level
     - Implement `demote()` method that increases heading level
     - Add validation to ensure heading levels stay within 1-6 range
     - _Requirements: 3.2, 3.3, 20_
 
-  - [ ] 2.2 Add move operations (move_up, move_down)
+  - [x] 2.2 Add move operations (move_up, move_down)
 
     - Implement `move_up()` to reorder sections among siblings
     - Implement `move_down()` to reorder sections among siblings
     - Handle edge cases (first/last sibling)
     - _Requirements: 3.4, 3.5, 20_
 
-  - [ ] 2.3 Implement nest and unnest operations
+  - [x] 2.3 Implement nest and unnest operations
 
     - Implement `nest()` to move section under a new parent
     - Implement `unnest()` to move section up one level
     - Validate parent-child relationships
     - _Requirements: 2.2, 2.3, 20_
 
-  - [ ] 2.4 Write unit tests for structure operations
+  - [x] 2.4 Write unit tests for structure operations
 
     - Test promote/demote with various heading levels
     - Test move operations with different sibling positions

@@ -1,5 +1,6 @@
 """Language Server Protocol support for doctk."""
 
+from doctk.lsp.operations import DocumentTreeBuilder, StructureOperations
 from doctk.lsp.protocols import (
     DocumentInterface,
     DocumentOperation,
@@ -10,6 +11,8 @@ from doctk.lsp.protocols import (
 __all__ = [
     "DocumentInterface",
     "DocumentOperation",
+    "DocumentTreeBuilder",
     "OperationResult",
+    "StructureOperations",
     "ValidationResult",
 ]

@@ -236,6 +236,43 @@ def extract() -> Callable[[Document[T]], list[T]]:
     return extractor
 
 
+# Structure operations (hierarchy manipulation)
+# Aliases for hierarchical operations
+lift = promote  # Lift sections up (h3 -> h2)
+unnest = promote  # Remove nesting (h4 -> h3)
+lower = demote  # Lower sections down (h2 -> h3)
+
+
+def nest(under: str | None = None) -> Callable[[Document[Node]], Document[Node]]:
+    """
+    Nest sections under a target section.
+
+    Args:
+        under: Target section identifier (default: previous section)
+
+    This operation moves selected sections to be children of a target section
+    by increasing their heading level appropriately.
+
+    Note:
+        Full hierarchical nesting with the `under` parameter is not yet implemented.
+        When called without arguments, performs basic nesting by demoting.
+
+    Example:
+        doc | select(heading) | where(text="Appendix") | nest()
+
+    Raises:
+        NotImplementedError: When `under` parameter is provided
+    """
+    if under is not None:
+        raise NotImplementedError(
+            "Hierarchical nesting with 'under' parameter is not yet implemented. "
+            "Use nest() without arguments for basic nesting (demote operation)."
+        )
+
+    # Default behavior: demote (basic nesting)
+    return demote()
+
+
 # Convenient type-based selectors
 heading = select(is_heading)
 paragraph = select(is_paragraph)

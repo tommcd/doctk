@@ -79,8 +79,8 @@ export class PythonBridge {
       // Spawn Python process with uv run
       const args =
         this.options.pythonCommand === 'uv'
-          ? ['run', 'python', '-m', 'doctk.lsp.bridge']
-          : ['-m', 'doctk.lsp.bridge'];
+          ? ['run', 'python', '-m', 'doctk.integration.bridge']
+          : ['-m', 'doctk.integration.bridge'];
 
       this.process = spawn(this.options.pythonCommand, args, {
         cwd: this.options.cwd,

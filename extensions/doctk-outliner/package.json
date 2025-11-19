@@ -4,6 +4,16 @@
   "description": "Tree-based document outliner with LSP support for doctk",
   "version": "0.1.0",
   "publisher": "doctk",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tommcd/doctk.git",
+    "directory": "extensions/doctk-outliner"
+  },
+  "bugs": {
+    "url": "https://github.com/tommcd/doctk/issues"
+  },
+  "homepage": "https://github.com/tommcd/doctk#readme",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.80.0"
   },

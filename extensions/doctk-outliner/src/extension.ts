@@ -5,10 +5,12 @@
 import * as vscode from 'vscode';
 import { DocumentOutlineProvider } from './outlineProvider';
 import { PythonBridge } from './pythonBridge';
+import { DocumentSyncManager } from './documentSyncManager';
 import { OutlineNode } from './types';
 
 let outlineProvider: DocumentOutlineProvider;
 let pythonBridge: PythonBridge;
+let syncManager: DocumentSyncManager;
 let treeView: vscode.TreeView<any>;
 
 /**
@@ -37,6 +39,10 @@ export async function activate(context: vscode.ExtensionContext) {
   // Initialize outline provider with Python bridge for centralized ID generation
   outlineProvider = new DocumentOutlineProvider(pythonBridge);
 
+  // Initialize document synchronization manager
+  // Note: Debouncing is handled by outline provider to avoid double debouncing
+  syncManager = new DocumentSyncManager(outlineProvider);
+
   // Register tree data provider with drag-and-drop support
   treeView = vscode.window.createTreeView('doctkOutline', {
     treeDataProvider: outlineProvider,
@@ -45,12 +51,17 @@ export async function activate(context: vscode.ExtensionContext) {
     dragAndDropController: outlineProvider,
   });
 
+  // Register sync manager for disposal
+  context.subscriptions.push({
+    dispose: () => syncManager.dispose(),
+  });
+
   // Register commands
   context.subscriptions.push(
     vscode.commands.registerCommand('doctk.refresh', () => {
       const editor = vscode.window.activeTextEditor;
       if (editor && editor.document.languageId === 'markdown') {
-        outlineProvider.updateFromDocument(editor.document);
+        syncManager.onDocumentChange(editor.document);
       }
     })
   );
@@ -67,31 +78,51 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand('doctk.promote', async (node: OutlineNode) => {
-      await executeOperation('promote', node);
+      try {
+        await executeOperation('promote', node);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to promote section: ${error instanceof Error ? error.message : String(error)}`);
+      }
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand('doctk.demote', async (node: OutlineNode) => {
-      await executeOperation('demote', node);
+      try {
+        await executeOperation('demote', node);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to demote section: ${error instanceof Error ? error.message : String(error)}`);
+      }
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand('doctk.moveUp', async (node: OutlineNode) => {
-      await executeOperation('move_up', node);
+      try {
+        await executeOperation('move_up', node);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to move section up: ${error instanceof Error ? error.message : String(error)}`);
+      }
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand('doctk.moveDown', async (node: OutlineNode) => {
-      await executeOperation('move_down', node);
+      try {
+        await executeOperation('move_down', node);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to move section down: ${error instanceof Error ? error.message : String(error)}`);
+      }
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand('doctk.delete', async (node: OutlineNode) => {
-      await executeOperation('delete', node);
+      try {
+        await executeOperation('delete', node);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to delete section: ${error instanceof Error ? error.message : String(error)}`);
+      }
     })
   );
 
@@ -99,19 +130,20 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
       if (editor && editor.document.languageId === 'markdown') {
-        outlineProvider.updateFromDocument(editor.document);
+        syncManager.onDocumentChange(editor.document);
       } else {
         outlineProvider.clear();
       }
     })
   );
 
-  // Listen for document changes
+  // Listen for document content changes
+  // Sync manager coordinates updates and prevents circular updates via isUpdating flag
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument((event) => {
       const editor = vscode.window.activeTextEditor;
       if (editor && event.document === editor.document && event.document.languageId === 'markdown') {
-        outlineProvider.updateFromDocument(event.document);
+        syncManager.onDocumentChange(event.document);
       }
     })
   );
@@ -119,7 +151,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // Initialize with current editor if it's markdown
   const editor = vscode.window.activeTextEditor;
   if (editor && editor.document.languageId === 'markdown') {
-    outlineProvider.updateFromDocument(editor.document);
+    syncManager.onDocumentChange(editor.document);
   }
 
   // Register tree view
@@ -145,7 +177,10 @@ async function executeOperation(operation: string, node: OutlineNode): Promise<v
     return;
   }
 
-  try {
+  // Execute operation within sync manager context to prevent circular updates.
+  // The sync manager sets isUpdating flag to prevent onDocumentChange from
+  // firing while we're applying tree operation changes to the document.
+  await syncManager.onTreeViewChange(async () => {
     // Get document text
     const documentText = document.getText();
 
@@ -195,15 +230,12 @@ async function executeOperation(operation: string, node: OutlineNode): Promise<v
 
       await vscode.workspace.applyEdit(edit);
 
-      // Update tree view
+      // Update tree view to reflect changes
       outlineProvider.updateFromDocument(document);
     } else {
-      vscode.window.showErrorMessage(`Operation failed: ${result.error}`);
+      throw new Error(result.error || 'Operation failed');
     }
-  } catch (error) {
-    vscode.window.showErrorMessage(`Error executing operation: ${error}`);
-    console.error('Operation error:', error);
-  }
+  });
 }
 
 /**

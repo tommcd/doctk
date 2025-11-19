@@ -63,7 +63,7 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
         """Register LSP event handlers."""
 
         @self.feature(TEXT_DOCUMENT_DID_OPEN)  # type: ignore[misc]
-        async def did_open(ls: LanguageServer, params: DidOpenTextDocumentParams) -> None:
+        async def did_open(_ls: LanguageServer, params: DidOpenTextDocumentParams) -> None:
             """Handle document open event."""
             logger.info(f"Document opened: {params.text_document.uri}")
 
@@ -79,7 +79,7 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
             await self.parse_and_validate(uri, text)
 
         @self.feature(TEXT_DOCUMENT_DID_CHANGE)  # type: ignore[misc]
-        async def did_change(ls: LanguageServer, params: DidChangeTextDocumentParams) -> None:
+        async def did_change(_ls: LanguageServer, params: DidChangeTextDocumentParams) -> None:
             """Handle document change event."""
             logger.info(f"Document changed: {params.text_document.uri}")
 
@@ -101,7 +101,7 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
                 await self.parse_and_validate(uri, text)
 
         @self.feature(TEXT_DOCUMENT_DID_CLOSE)  # type: ignore[misc]
-        async def did_close(ls: LanguageServer, params: DidCloseTextDocumentParams) -> None:
+        async def did_close(_ls: LanguageServer, params: DidCloseTextDocumentParams) -> None:
             """Handle document close event."""
             logger.info(f"Document closed: {params.text_document.uri}")
 

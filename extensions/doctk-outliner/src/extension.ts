@@ -6,11 +6,13 @@ import * as vscode from 'vscode';
 import { DocumentOutlineProvider } from './outlineProvider';
 import { PythonBridge } from './pythonBridge';
 import { DocumentSyncManager } from './documentSyncManager';
+import { DoctkLanguageClient } from './languageClient';
 import { OutlineNode } from './types';
 
 let outlineProvider: DocumentOutlineProvider;
 let pythonBridge: PythonBridge;
 let syncManager: DocumentSyncManager;
+let languageClient: DoctkLanguageClient;
 let treeView: vscode.TreeView<any>;
 
 /**
@@ -21,7 +23,17 @@ let treeView: vscode.TreeView<any>;
 export async function activate(context: vscode.ExtensionContext) {
   console.log('doctk outliner extension is now active');
 
-  // Initialize Python bridge first
+  // Initialize Language Server Client first
+  languageClient = new DoctkLanguageClient(context);
+  try {
+    await languageClient.start();
+    console.log('doctk language server started successfully');
+  } catch (error) {
+    console.error('Failed to start language server:', error);
+    // Non-fatal - continue with extension activation
+  }
+
+  // Initialize Python bridge for outliner operations
   const config = vscode.workspace.getConfiguration('doctk');
   pythonBridge = new PythonBridge({
     pythonCommand: config.get('lsp.pythonCommand', 'python3'),
@@ -305,6 +317,11 @@ async function executeOperation(operation: string, node: OutlineNode): Promise<v
  */
 export async function deactivate() {
   console.log('doctk outliner extension is now deactivated');
+
+  // Stop language server
+  if (languageClient) {
+    await languageClient.stop();
+  }
 
   // Stop Python bridge
   if (pythonBridge) {

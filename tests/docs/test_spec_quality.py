@@ -54,24 +54,24 @@ def test_spec_file_references_exist(project_root, spec_files):
     # But NOT when preceded by another path component (to avoid matching
     # extensions/doctk-outliner/src/file.ts as src/file.ts)
     file_path_pattern = re.compile(
-        r'(?:^|[^\w`])(?<![-a-zA-Z0-9_/])('
-        r'(?:src|tests|docs|scripts|examples|extensions)/'
-        r'[a-zA-Z0-9_/.-]+\.(?:py|md|yaml|yml|toml|txt|sh|ts|tsx|json)'
-        r')',
-        re.MULTILINE
+        r"(?:^|[^\w`])(?<![-a-zA-Z0-9_/])("
+        r"(?:src|tests|docs|scripts|examples|extensions)/"
+        r"[a-zA-Z0-9_/.-]+\.(?:py|md|yaml|yml|toml|txt|sh|ts|tsx|json)"
+        r")",
+        re.MULTILINE,
     )
 
     for spec_file in spec_files:
         content = spec_file.read_text()
 
         # Remove code blocks to avoid checking example code
-        content_no_code = re.sub(r'```.*?```', '', content, flags=re.DOTALL)
+        content_no_code = re.sub(r"```.*?```", "", content, flags=re.DOTALL)
 
         # Process line by line to check for TODO/PLANNED markers
-        lines = content_no_code.split('\n')
+        lines = content_no_code.split("\n")
         for line in lines:
             # Skip lines marked with [TODO] or [PLANNED]
-            if '[TODO]' in line or '[PLANNED]' in line:
+            if "[TODO]" in line or "[PLANNED]" in line:
                 continue
 
             # Find all file path references in this line
@@ -79,7 +79,7 @@ def test_spec_file_references_exist(project_root, spec_files):
 
             for file_path in matches:
                 # Skip common false positives
-                if any(skip in file_path for skip in ['example.py', 'foo.py', 'test.py']):
+                if any(skip in file_path for skip in ["example.py", "foo.py", "test.py"]):
                     continue
 
                 # Check if file exists
@@ -123,29 +123,32 @@ def test_spec_code_references_exist(project_root, spec_files):
     # Pattern to match Python-style API references
     api_ref_pattern = re.compile(
         r"(?:^|[^\w`])([A-Z][a-zA-Z0-9_]*\.(?:[a-z_][a-z0-9_]*|[A-Z][a-zA-Z0-9_]*)(?:\(\))?)",
-        re.MULTILINE
+        re.MULTILINE,
     )
 
     for spec_file in spec_files:
         content = spec_file.read_text()
 
         # Remove code blocks to avoid checking example code
-        content_no_code = re.sub(r'```.*?```', '', content, flags=re.DOTALL)
+        content_no_code = re.sub(r"```.*?```", "", content, flags=re.DOTALL)
 
         # Find all API references
         matches = api_ref_pattern.findall(content_no_code)
 
         for ref in matches:
             # Skip common false positives
-            if any(skip in ref for skip in [
-                'Example.',
-                'Note.',
-                'TODO.',
-                'FIXME.',
-                'Class.',
-                'Method.',
-                'Type.',
-            ]):
+            if any(
+                skip in ref
+                for skip in [
+                    "Example.",
+                    "Note.",
+                    "TODO.",
+                    "FIXME.",
+                    "Class.",
+                    "Method.",
+                    "Type.",
+                ]
+            ):
                 continue
 
             # Remove () if present
@@ -212,13 +215,13 @@ def test_spec_line_number_references_reasonable(project_root, spec_files):
     # Pattern to match file references with line numbers
     # Examples: "src/foo.py (line 42)", "src/foo.py:42", "src/foo.py (lines 10-20)"
     line_ref_pattern = re.compile(
-        r'([a-zA-Z0-9_/.-]+\.py)'
-        r'(?:'
-        r'\s*\(lines?\s*(\d+)(?:-(\d+))?\)'  # (line 42) or (lines 10-20)
-        r'|'
-        r':(\d+)'  # :42
-        r')',
-        re.MULTILINE
+        r"([a-zA-Z0-9_/.-]+\.py)"
+        r"(?:"
+        r"\s*\(lines?\s*(\d+)(?:-(\d+))?\)"  # (line 42) or (lines 10-20)
+        r"|"
+        r":(\d+)"  # :42
+        r")",
+        re.MULTILINE,
     )
 
     for spec_file in spec_files:

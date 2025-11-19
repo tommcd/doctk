@@ -164,7 +164,7 @@ doc | demote | move_up"""
 
     def test_operation_with_string_argument_position(self):
         """Test position tracking for operations with string arguments."""
-        source = 'doc | select heading'
+        source = "doc | select heading"
         lexer = Lexer(source)
         tokens = lexer.tokenize()
         parser = Parser(tokens)

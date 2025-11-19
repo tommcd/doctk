@@ -97,17 +97,20 @@ class ErrorHandler:
 
         # Validation errors (check early to avoid "io" in "validation" matching SYSTEM)
         # Consolidated type-based and message-based checks for consistency
-        if "validation" in error_type_lower or "valueerror" in error_type_lower or "typeerror" in error_type_lower:
+        if (
+            "validation" in error_type_lower
+            or "valueerror" in error_type_lower
+            or "typeerror" in error_type_lower
+        ):
             return ErrorCategory.VALIDATION
 
-        if any(
-            keyword in error_msg for keyword in ["invalid", "required", "missing", "expected"]
-        ):
+        if any(keyword in error_msg for keyword in ["invalid", "required", "missing", "expected"]):
             return ErrorCategory.VALIDATION
 
         # Network errors
         if any(
-            keyword in error_type_lower for keyword in ["connection", "timeout", "network", "socket"]
+            keyword in error_type_lower
+            for keyword in ["connection", "timeout", "network", "socket"]
         ):
             return ErrorCategory.NETWORK
 
@@ -115,7 +118,10 @@ class ErrorHandler:
             return ErrorCategory.NETWORK
 
         # System errors
-        if any(keyword in error_type_lower for keyword in ["ioerror", "oserror", "permission", "file", "path"]):
+        if any(
+            keyword in error_type_lower
+            for keyword in ["ioerror", "oserror", "permission", "file", "path"]
+        ):
             return ErrorCategory.SYSTEM
 
         if any(

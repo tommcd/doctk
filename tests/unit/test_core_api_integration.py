@@ -4,7 +4,6 @@ These tests verify that the LSP integration layer properly uses the doctk
 core API and that all operations are consistent with doctk abstractions.
 """
 
-
 from doctk.core import Document, Heading, Paragraph
 from doctk.lsp import (
     CompatibilityChecker,
@@ -113,9 +112,7 @@ class TestDynamicOperationDiscovery:
         ]
 
         for op_name in expected_operations:
-            assert (
-                registry.operation_exists(op_name)
-            ), f"Operation '{op_name}' should be discovered"
+            assert registry.operation_exists(op_name), f"Operation '{op_name}' should be discovered"
 
     def test_new_operations_automatically_discovered(self):
         """Test that new operations are automatically discovered."""
@@ -133,9 +130,7 @@ class TestDynamicOperationDiscovery:
         public_ops = [
             name
             for name in dir(ops)
-            if not name.startswith("_")
-            and callable(getattr(ops, name))
-            and not name[0].isupper()
+            if not name.startswith("_") and callable(getattr(ops, name)) and not name[0].isupper()
         ]
 
         # Most public operations should be in registry (some may be skipped by filters)

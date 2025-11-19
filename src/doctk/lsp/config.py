@@ -149,7 +149,9 @@ class LSPConfiguration:
             instance._validate_trace(config_dict["trace"], use_default=True)
 
         if "maxCompletionItems" in config_dict:
-            instance._validate_max_completion_items(config_dict["maxCompletionItems"], use_default=True)
+            instance._validate_max_completion_items(
+                config_dict["maxCompletionItems"], use_default=True
+            )
 
         if "enabled" in config_dict:
             instance._validate_enabled(config_dict["enabled"], use_default=True)
@@ -199,7 +201,9 @@ class LSPConfiguration:
             self._validate_trace(config_dict["trace"], use_default=False)
 
         if "maxCompletionItems" in config_dict:
-            self._validate_max_completion_items(config_dict["maxCompletionItems"], use_default=False)
+            self._validate_max_completion_items(
+                config_dict["maxCompletionItems"], use_default=False
+            )
 
         if "enabled" in config_dict:
             self._validate_enabled(config_dict["enabled"], use_default=False)

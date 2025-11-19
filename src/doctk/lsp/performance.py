@@ -5,6 +5,7 @@ durations, identify bottlenecks, and ensure the system meets performance
 requirements.
 """
 
+import copy
 import time
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -29,7 +30,7 @@ class OperationStats:
     total_calls: int = 0
     total_duration: float = 0.0
     min_duration: float = float("inf")
-    max_duration: float = 0.0
+    max_duration: float = float("-inf")
     metrics: list[Metric] = field(default_factory=list)
 
     @property
@@ -66,14 +67,21 @@ class PerformanceMonitor:
         >>> print(f"Average time: {stats.average_duration * 1000:.2f}ms")
     """
 
-    def __init__(self, slow_operation_threshold: float = 0.5):
+    def __init__(
+        self,
+        slow_operation_threshold: float = 0.5,
+        max_metrics_per_operation: int = 1000,
+    ):
         """Initialize performance monitor.
 
         Args:
             slow_operation_threshold: Threshold in seconds for slow operations (default: 0.5s)
+            max_metrics_per_operation: Maximum number of metrics to retain per operation
+                (default: 1000). Prevents unbounded memory growth in long-running processes.
         """
         self.stats: dict[str, OperationStats] = {}
         self.slow_operation_threshold = slow_operation_threshold
+        self.max_metrics_per_operation = max_metrics_per_operation
 
     def record_operation(
         self, operation: str, duration: float, metadata: dict[str, Any] | None = None
@@ -85,13 +93,17 @@ class PerformanceMonitor:
             duration: Duration in seconds
             metadata: Optional metadata about the operation
         """
-        if operation not in self.stats:
-            self.stats[operation] = OperationStats(operation_name=operation)
+        self.stats.setdefault(operation, OperationStats(operation_name=operation))
 
         metric = Metric(
             timestamp=time.time(), duration=duration, metadata=metadata or {}
         )
         self.stats[operation].add_metric(metric)
+
+        # Enforce metric retention limit to prevent unbounded memory growth
+        if len(self.stats[operation].metrics) > self.max_metrics_per_operation:
+            # Remove oldest metric (FIFO eviction)
+            self.stats[operation].metrics.pop(0)
 
     @contextmanager
     def measure(
@@ -143,9 +155,9 @@ class PerformanceMonitor:
         """Get statistics for all operations.
 
         Returns:
-            Dictionary mapping operation names to their statistics
+            Deep copy of dictionary mapping operation names to their statistics
         """
-        return dict(self.stats)
+        return copy.deepcopy(self.stats)
 
     def get_slow_operations(self) -> list[tuple[str, float]]:
         """Identify operations exceeding the slow threshold.

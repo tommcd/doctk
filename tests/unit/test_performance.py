@@ -34,7 +34,7 @@ class TestOperationStats:
         assert stats.total_calls == 0
         assert stats.total_duration == 0.0
         assert stats.min_duration == float("inf")
-        assert stats.max_duration == 0.0
+        assert stats.max_duration == float("-inf")
         assert stats.metrics == []
 
     def test_average_duration_empty(self):
@@ -401,3 +401,59 @@ class TestPerformanceMonitor:
         result = operation_with_return()
         assert result == 42
         assert monitor.get_stats("test") is not None
+
+    def test_metric_retention_limit(self):
+        """Test that metrics are limited to prevent unbounded growth."""
+        # Set low limit for testing
+        monitor = PerformanceMonitor(max_metrics_per_operation=5)
+
+        # Record more metrics than the limit
+        for i in range(10):
+            monitor.record_operation("test_op", 0.1 * i)
+
+        stats = monitor.get_stats("test_op")
+        assert stats is not None
+        # Should only retain max_metrics_per_operation metrics
+        assert len(stats.metrics) == 5
+        # Should keep the most recent metrics (oldest evicted)
+        assert stats.metrics[0].duration == pytest.approx(0.5)  # 6th metric
+        assert stats.metrics[-1].duration == pytest.approx(0.9)  # 10th metric
+
+    def test_metric_retention_default_limit(self):
+        """Test that default retention limit is 1000."""
+        monitor = PerformanceMonitor()
+        assert monitor.max_metrics_per_operation == 1000
+
+    def test_metric_retention_preserves_stats(self):
+        """Test that stats remain accurate after metric eviction."""
+        monitor = PerformanceMonitor(max_metrics_per_operation=3)
+
+        # Record 5 metrics
+        durations = [0.1, 0.2, 0.3, 0.4, 0.5]
+        for duration in durations:
+            monitor.record_operation("test_op", duration)
+
+        stats = monitor.get_stats("test_op")
+        assert stats is not None
+        # Should have recorded all 5 calls
+        assert stats.total_calls == 5
+        # Total duration should include all metrics
+        assert stats.total_duration == pytest.approx(1.5)
+        # Average should be correct
+        assert stats.average_duration == pytest.approx(0.3)
+        # But only 3 metrics retained
+        assert len(stats.metrics) == 3
+
+    def test_get_all_stats_returns_deep_copy(self):
+        """Test that get_all_stats returns deep copy to prevent external mutation."""
+        monitor = PerformanceMonitor()
+        monitor.record_operation("test_op", 0.1)
+
+        # Get stats and try to modify
+        stats_copy = monitor.get_all_stats()
+        stats_copy["test_op"].total_calls = 999
+
+        # Original should be unchanged
+        original_stats = monitor.get_stats("test_op")
+        assert original_stats is not None
+        assert original_stats.total_calls == 1  # Not 999

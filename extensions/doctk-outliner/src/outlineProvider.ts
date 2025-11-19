@@ -411,11 +411,18 @@ export class DocumentOutlineProvider
       return;
     }
 
+    // Validate type before parsing
+    if (typeof transferItem.value !== 'string') {
+      vscode.window.showErrorMessage('Invalid drop data type');
+      return;
+    }
+
     let nodeIds: string[];
     try {
-      nodeIds = JSON.parse(transferItem.value as string);
+      nodeIds = JSON.parse(transferItem.value);
     } catch (error) {
-      vscode.window.showErrorMessage('Failed to parse drop data');
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Failed to parse drop data: ${errorMsg}`);
       return;
     }
 
@@ -500,9 +507,14 @@ export class DocumentOutlineProvider
           edit.replace(this.document.uri, fullRange, result.document || '');
         }
 
-        await vscode.workspace.applyEdit(edit);
+        // Apply edit and verify success
+        const editSucceeded = await vscode.workspace.applyEdit(edit);
+        if (!editSucceeded) {
+          vscode.window.showErrorMessage('Failed to apply document changes');
+          return;
+        }
 
-        // Update tree view
+        // Update tree view only if edit succeeded
         this.updateFromDocument(this.document);
 
         vscode.window.showInformationMessage(
@@ -512,7 +524,8 @@ export class DocumentOutlineProvider
         vscode.window.showErrorMessage(`Drop operation failed: ${result.error}`);
       }
     } catch (error) {
-      vscode.window.showErrorMessage(`Error during drop: ${error}`);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Error during drop: ${errorMsg}`);
       console.error('Drop error:', error);
     }
   }

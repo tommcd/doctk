@@ -6,6 +6,7 @@ This directory contains test documents for verifying the VSCode outliner extensi
 
 ### `large_document.md` (1500 headings)
 - **Purpose**: Test performance with documents exceeding the large document threshold
+- **Total headings**: 1500 (1 title + 1499 generated headings)
 - **Expected Behavior**:
   - Tree nodes should start in **Collapsed** state (lazy loading enabled)
   - Initial tree rendering should complete within 500ms
@@ -14,6 +15,7 @@ This directory contains test documents for verifying the VSCode outliner extensi
 
 ### `threshold_test.md` (999 headings)
 - **Purpose**: Test behavior just below the large document threshold (default: 1000)
+- **Total headings**: 999 (1 title + 998 generated headings)
 - **Expected Behavior**:
   - Tree nodes should start in **Expanded** state (normal behavior)
   - All nodes visible immediately
@@ -39,7 +41,7 @@ This directory contains test documents for verifying the VSCode outliner extensi
    - No visible lag or freezing
 
 4. **Verify lazy loading** (for large_document.md):
-   - Check that nodes start collapsed (configuration: `doctk.performance.enableVirtualization: true`)
+   - Check that nodes start collapsed (configuration: `doctk.performance.enableLazyLoading: true`)
    - Expanding a node should load its children instantly
    - Tree should remain responsive with all nodes expanded
 
@@ -54,13 +56,13 @@ This directory contains test documents for verifying the VSCode outliner extensi
 The performance behavior is controlled by these VS Code settings:
 
 - `doctk.performance.largeDocumentThreshold`: Number of headings to trigger optimizations (default: 1000)
-- `doctk.performance.enableVirtualization`: Enable lazy loading for large documents (default: true)
+- `doctk.performance.enableLazyLoading`: Enable lazy loading for large documents (default: true)
 
 To test different thresholds, adjust these settings in VS Code:
 ```json
 {
   "doctk.performance.largeDocumentThreshold": 500,
-  "doctk.performance.enableVirtualization": true
+  "doctk.performance.enableLazyLoading": true
 }
 ```
 

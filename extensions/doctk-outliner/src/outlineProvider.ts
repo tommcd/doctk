@@ -17,7 +17,7 @@
  *
  * Configuration:
  * - doctk.performance.largeDocumentThreshold: Number of headings to trigger optimizations
- * - doctk.performance.enableVirtualization: Enable/disable lazy loading behavior
+ * - doctk.performance.enableLazyLoading: Enable/disable lazy loading behavior
  */
 
 import * as vscode from 'vscode';
@@ -52,6 +52,9 @@ export class DocumentOutlineProvider
   private document: vscode.TextDocument | null = null;
   private debounceTimer: NodeJS.Timeout | null = null;
   private pythonBridge: PythonBridge | null = null;
+  // Cache the large document check result to avoid repeated calculations during rendering
+  // This is computed once in updateFromDocument() and reused in getTreeItem()
+  private isLargeDoc: boolean = false;
 
   constructor(pythonBridge?: PythonBridge) {
     this.pythonBridge = pythonBridge || null;
@@ -67,27 +70,30 @@ export class DocumentOutlineProvider
   }
 
   /**
-   * Check if the current document is considered "large" based on heading count.
+   * Compute and cache whether the current document is "large" based on heading count.
    * Large documents use performance optimizations like lazy loading.
    *
-   * @returns True if document exceeds the large document threshold
+   * This method should be called once after the tree is built in updateFromDocument().
+   * The cached result is then used by getTreeItem() to avoid repeated calculations.
    */
-  private isLargeDocument(): boolean {
+  private computeIsLargeDocument(): void {
     if (!this.documentTree) {
-      return false;
+      this.isLargeDoc = false;
+      return;
     }
 
     const config = vscode.workspace.getConfiguration('doctk.performance');
     const threshold = config.get('largeDocumentThreshold', 1000);
-    const enableVirtualization = config.get('enableVirtualization', true);
+    const enableLazyLoading = config.get('enableLazyLoading', true);
 
-    if (!enableVirtualization) {
-      return false;
+    if (!enableLazyLoading) {
+      this.isLargeDoc = false;
+      return;
     }
 
     // Count total nodes in tree
     const totalNodes = this.documentTree.nodeMap.size;
-    return totalNodes >= threshold;
+    this.isLargeDoc = totalNodes >= threshold;
   }
 
   /**
@@ -100,9 +106,10 @@ export class DocumentOutlineProvider
     // Determine collapsible state based on document size
     // For large documents, start nodes collapsed to enable lazy loading
     // For normal documents, start nodes expanded for convenience
+    // Use cached isLargeDoc to avoid redundant calculations (computed in updateFromDocument)
     let collapsibleState: vscode.TreeItemCollapsibleState;
     if (element.children.length > 0) {
-      collapsibleState = this.isLargeDocument()
+      collapsibleState = this.isLargeDoc
         ? vscode.TreeItemCollapsibleState.Collapsed
         : vscode.TreeItemCollapsibleState.Expanded;
     } else {
@@ -199,6 +206,8 @@ export class DocumentOutlineProvider
           const documentText = document.getText();
           const treeResponse = await this.pythonBridge.getDocumentTree(documentText);
           this.documentTree = this.deserializeBackendTree(treeResponse.root, document, treeResponse.version);
+          // Compute and cache the large document flag once after tree is built
+          this.computeIsLargeDocument();
           this.refresh();
           return;
         } catch (error) {
@@ -209,6 +218,8 @@ export class DocumentOutlineProvider
 
       // Fallback to local parsing if backend is unavailable
       this.documentTree = this.parseDocument(document);
+      // Compute and cache the large document flag once after tree is built
+      this.computeIsLargeDocument();
       this.refresh();
     }, this.getDebounceDelay());
   }
@@ -420,6 +431,7 @@ export class DocumentOutlineProvider
   clear(): void {
     this.documentTree = null;
     this.document = null;
+    this.isLargeDoc = false;
     this.refresh();
   }
 

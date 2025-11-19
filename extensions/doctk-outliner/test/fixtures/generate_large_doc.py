@@ -30,10 +30,9 @@ def generate_large_document(num_headings: int, output_file: Path) -> None:
             3: num_headings // 10,   # ~10% h3
             4: num_headings // 5,    # ~20% h4
             5: num_headings // 3,    # ~33% h5
-            6: num_headings - (num_headings // 100 + num_headings // 20 +
-                               num_headings // 10 + num_headings // 5 +
-                               num_headings // 3),  # Remaining ~31%
         }
+        # Level 6 gets the remaining headings
+        headings_per_level[6] = num_headings - sum(headings_per_level.values())  # Remaining ~31%
 
         heading_count = 0
 

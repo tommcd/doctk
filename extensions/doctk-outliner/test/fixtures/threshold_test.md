@@ -1,6 +1,6 @@
 # Performance Test Document
 
-This document contains 999 headings for performance testing.
+This document contains 998 headings for performance testing.
 
 # Heading 1 (Level 1)
 
@@ -3442,9 +3442,9 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 This is content for heading 688 at level 5.
 Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 
-##### Heading 689 (Level 5)
+###### Heading 689 (Level 6)
 
-This is content for heading 689 at level 5.
+This is content for heading 689 at level 6.
 Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 
 ###### Heading 690 (Level 6)
@@ -4990,10 +4990,5 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 ###### Heading 998 (Level 6)
 
 This is content for heading 998 at level 6.
-Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-
-###### Heading 999 (Level 6)
-
-This is content for heading 999 at level 6.
 Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 

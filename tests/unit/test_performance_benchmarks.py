@@ -14,9 +14,21 @@ from typing import Any
 
 import pytest
 
-from doctk.core import Document, Heading
+from doctk.core import Document, Heading, Paragraph
 from doctk.lsp.operations import DocumentTreeBuilder, StructureOperations
 from doctk.lsp.performance import PerformanceMonitor
+
+# Performance thresholds from requirements.md (Requirement 17)
+STRUCTURAL_OPERATION_THRESHOLD = 2.0  # seconds (Requirement 17.4)
+TREE_BUILDING_TARGET_THRESHOLD = 1.0  # seconds (Requirement 17.1)
+TREE_BUILDING_BASELINE_THRESHOLD = 5.0  # seconds (current implementation)
+DOCUMENT_GENERATION_SANITY_THRESHOLD = 5.0  # seconds
+SEQUENTIAL_OPERATIONS_THRESHOLD = 10.0  # seconds
+MEMORY_THRESHOLD_MB = 500.0  # MB (Requirement 17.5)
+
+# Scalability thresholds
+SCALING_RATIO_TARGET = 15.0  # Target for linear scaling (100→1000 headings)
+SCALING_RATIO_BASELINE = 120.0  # Current O(n²) baseline
 
 
 def _get_memory_usage_mb() -> float:
@@ -52,17 +64,16 @@ def generate_large_document(num_headings: int) -> Document[Any]:
     Returns:
         Document with the specified number of headings
     """
-    from doctk.core import Paragraph
-
     nodes: list[Any] = []
     headings_created = 0
 
     # Create hierarchical structure
     while headings_created < num_headings:
         # Level 1 heading (section)
-        if headings_created < num_headings:
-            nodes.append(Heading(level=1, text=f"Section {headings_created + 1}"))
-            headings_created += 1
+        nodes.append(Heading(level=1, text=f"Section {headings_created + 1}"))
+        headings_created += 1
+        if headings_created >= num_headings:
+            break
 
         # Add some content
         if headings_created % 10 == 0:
@@ -71,14 +82,14 @@ def generate_large_document(num_headings: int) -> Document[Any]:
             )
 
         # Level 2 heading (subsection)
-        if headings_created < num_headings:
-            nodes.append(Heading(level=2, text=f"Subsection {headings_created + 1}"))
-            headings_created += 1
+        nodes.append(Heading(level=2, text=f"Subsection {headings_created + 1}"))
+        headings_created += 1
+        if headings_created >= num_headings:
+            break
 
         # Level 3 heading (sub-subsection)
-        if headings_created < num_headings:
-            nodes.append(Heading(level=3, text=f"Sub-subsection {headings_created + 1}"))
-            headings_created += 1
+        nodes.append(Heading(level=3, text=f"Sub-subsection {headings_created + 1}"))
+        headings_created += 1
 
     return Document(nodes=nodes)
 
@@ -104,7 +115,10 @@ class TestPerformanceBenchmarks:
         assert heading_count == 1000
 
         # Document generation should be fast (sanity check)
-        assert duration < 5.0, f"Document generation took {duration:.2f}s (should be < 5s)"
+        assert duration < DOCUMENT_GENERATION_SANITY_THRESHOLD, (
+            f"Document generation took {duration:.2f}s "
+            f"(should be < {DOCUMENT_GENERATION_SANITY_THRESHOLD}s)"
+        )
 
     def test_tree_building_1000_headings_performance_baseline(self):
         """
@@ -138,162 +152,76 @@ class TestPerformanceBenchmarks:
         assert tree.label == "Document"
 
         # Current baseline: Allow 5 seconds (will be tightened to 1s in Task 10.1/10.2)
-        assert duration <= 5.0, (
-            f"Tree building took {duration:.3f}s (current baseline: ≤ 5.0s, "
-            f"target requirement: ≤ 1.0s)"
+        assert duration <= TREE_BUILDING_BASELINE_THRESHOLD, (
+            f"Tree building took {duration:.3f}s "
+            f"(current baseline: ≤ {TREE_BUILDING_BASELINE_THRESHOLD}s, "
+            f"target requirement: ≤ {TREE_BUILDING_TARGET_THRESHOLD}s)"
         )
 
         # Document current performance for tracking
-        if duration > 1.0:
+        if duration > TREE_BUILDING_TARGET_THRESHOLD:
             # This is expected with current implementation
             print(
                 f"\nPerformance note: Tree building took {duration:.3f}s "
-                f"(exceeds target of 1.0s, optimization needed)"
+                f"(exceeds target of {TREE_BUILDING_TARGET_THRESHOLD}s, optimization needed)"
             )
 
-    def test_promote_operation_on_large_document_within_2_seconds(self):
+    @pytest.mark.parametrize(
+        "operation_name,operation_func,node_args",
+        [
+            ("promote", lambda doc, node_id: StructureOperations.promote(doc, node_id), ["h2-10"]),
+            ("demote", lambda doc, node_id: StructureOperations.demote(doc, node_id), ["h1-10"]),
+            (
+                "move_up",
+                lambda doc, node_id: StructureOperations.move_up(doc, node_id),
+                ["h1-50"],
+            ),
+            (
+                "move_down",
+                lambda doc, node_id: StructureOperations.move_down(doc, node_id),
+                ["h1-50"],
+            ),
+            (
+                "nest",
+                lambda doc, node_id, parent_id: StructureOperations.nest(doc, node_id, parent_id),
+                ["h2-50", "h1-20"],
+            ),
+            (
+                "unnest",
+                lambda doc, node_id: StructureOperations.unnest(doc, node_id),
+                ["h3-50"],
+            ),
+        ],
+    )
+    def test_structural_operation_on_large_document_within_2_seconds(
+        self, operation_name, operation_func, node_args
+    ):
         """
         Requirement 17.4: Structural operations on large documents SHALL
         complete within 2 seconds.
 
-        Test promote operation on a document with 1000 headings.
+        Tests all structural operations (promote, demote, move_up, move_down,
+        nest, unnest) on a document with 1000 headings.
         """
         doc = generate_large_document(1000)
 
-        # Promote a heading in the middle of the document
-        with self.monitor.measure("promote_large"):
-            result = StructureOperations.promote(doc, "h2-10")
+        # Execute operation with performance monitoring
+        with self.monitor.measure(f"{operation_name}_large"):
+            result = operation_func(doc, *node_args)
 
         # Get the actual duration
-        stats = self.monitor.get_stats("promote_large")
+        stats = self.monitor.get_stats(f"{operation_name}_large")
         assert stats is not None
         duration = stats.average_duration
 
         # Verify operation succeeded
-        assert result.success
+        assert result.success, f"{operation_name} operation failed: {result.error}"
 
         # Performance requirement: ≤ 2 seconds
-        assert duration <= 2.0, f"Promote took {duration:.3f}s (required: ≤ 2.0s)"
-
-    def test_demote_operation_on_large_document_within_2_seconds(self):
-        """
-        Requirement 17.4: Structural operations on large documents SHALL
-        complete within 2 seconds.
-
-        Test demote operation on a document with 1000 headings.
-        """
-        doc = generate_large_document(1000)
-
-        # Demote a heading in the middle of the document
-        with self.monitor.measure("demote_large"):
-            result = StructureOperations.demote(doc, "h1-10")
-
-        # Get the actual duration
-        stats = self.monitor.get_stats("demote_large")
-        assert stats is not None
-        duration = stats.average_duration
-
-        # Verify operation succeeded
-        assert result.success
-
-        # Performance requirement: ≤ 2 seconds
-        assert duration <= 2.0, f"Demote took {duration:.3f}s (required: ≤ 2.0s)"
-
-    def test_move_up_operation_on_large_document_within_2_seconds(self):
-        """
-        Requirement 17.4: Structural operations on large documents SHALL
-        complete within 2 seconds.
-
-        Test move_up operation on a document with 1000 headings.
-        """
-        doc = generate_large_document(1000)
-
-        # Move up a heading in the middle of the document
-        with self.monitor.measure("move_up_large"):
-            result = StructureOperations.move_up(doc, "h1-50")
-
-        # Get the actual duration
-        stats = self.monitor.get_stats("move_up_large")
-        assert stats is not None
-        duration = stats.average_duration
-
-        # Verify operation succeeded
-        assert result.success
-
-        # Performance requirement: ≤ 2 seconds
-        assert duration <= 2.0, f"Move up took {duration:.3f}s (required: ≤ 2.0s)"
-
-    def test_move_down_operation_on_large_document_within_2_seconds(self):
-        """
-        Requirement 17.4: Structural operations on large documents SHALL
-        complete within 2 seconds.
-
-        Test move_down operation on a document with 1000 headings.
-        """
-        doc = generate_large_document(1000)
-
-        # Move down a heading in the middle of the document
-        with self.monitor.measure("move_down_large"):
-            result = StructureOperations.move_down(doc, "h1-50")
-
-        # Get the actual duration
-        stats = self.monitor.get_stats("move_down_large")
-        assert stats is not None
-        duration = stats.average_duration
-
-        # Verify operation succeeded
-        assert result.success
-
-        # Performance requirement: ≤ 2 seconds
-        assert duration <= 2.0, f"Move down took {duration:.3f}s (required: ≤ 2.0s)"
-
-    def test_nest_operation_on_large_document_within_2_seconds(self):
-        """
-        Requirement 17.4: Structural operations on large documents SHALL
-        complete within 2 seconds.
-
-        Test nest operation on a document with 1000 headings.
-        """
-        doc = generate_large_document(1000)
-
-        # Nest a heading under another in the middle of the document
-        with self.monitor.measure("nest_large"):
-            result = StructureOperations.nest(doc, "h2-50", "h1-20")
-
-        # Get the actual duration
-        stats = self.monitor.get_stats("nest_large")
-        assert stats is not None
-        duration = stats.average_duration
-
-        # Verify operation succeeded
-        assert result.success
-
-        # Performance requirement: ≤ 2 seconds
-        assert duration <= 2.0, f"Nest took {duration:.3f}s (required: ≤ 2.0s)"
-
-    def test_unnest_operation_on_large_document_within_2_seconds(self):
-        """
-        Requirement 17.4: Structural operations on large documents SHALL
-        complete within 2 seconds.
-
-        Test unnest operation on a document with 1000 headings.
-        """
-        doc = generate_large_document(1000)
-
-        # Unnest a heading in the middle of the document
-        with self.monitor.measure("unnest_large"):
-            result = StructureOperations.unnest(doc, "h3-50")
-
-        # Get the actual duration
-        stats = self.monitor.get_stats("unnest_large")
-        assert stats is not None
-        duration = stats.average_duration
-
-        # Verify operation succeeded
-        assert result.success
-
-        # Performance requirement: ≤ 2 seconds
-        assert duration <= 2.0, f"Unnest took {duration:.3f}s (required: ≤ 2.0s)"
+        assert duration <= STRUCTURAL_OPERATION_THRESHOLD, (
+            f"{operation_name} took {duration:.3f}s "
+            f"(required: ≤ {STRUCTURAL_OPERATION_THRESHOLD}s)"
+        )
 
     def test_multiple_operations_sequential(self):
         """
@@ -316,16 +244,23 @@ class TestPerformanceBenchmarks:
         for op_name, op_func in operations:
             with self.monitor.measure(op_name):
                 result = op_func(doc)
-                # Re-parse for next operation (current architecture limitation)
-                if result.success and result.document:
-                    doc = Document.from_string(result.document)
+
+            # Verify each operation succeeded
+            assert result.success, f"{op_name} operation failed: {result.error}"
+
+            # Re-parse for next operation (current architecture limitation)
+            if result.document:
+                doc = Document.from_string(result.document)
 
             stats = self.monitor.get_stats(op_name)
             assert stats is not None
             total_time += stats.average_duration
 
         # All operations combined should be reasonably fast
-        assert total_time < 10.0, f"Sequential operations took {total_time:.3f}s (should be < 10s)"
+        assert total_time < SEQUENTIAL_OPERATIONS_THRESHOLD, (
+            f"Sequential operations took {total_time:.3f}s "
+            f"(should be < {SEQUENTIAL_OPERATIONS_THRESHOLD}s)"
+        )
 
     @pytest.mark.skipif(
         _get_memory_usage_mb() == 0, reason="psutil not available for memory monitoring"
@@ -363,9 +298,9 @@ class TestPerformanceBenchmarks:
 
         # Memory increase should be reasonable (not exceeding 500MB)
         # This is a sanity check - actual memory optimization will be in Task 10.2
-        assert (
-            memory_increase < 500.0
-        ), f"Memory increase: {memory_increase:.2f}MB (should be < 500MB)"
+        assert memory_increase < MEMORY_THRESHOLD_MB, (
+            f"Memory increase: {memory_increase:.2f}MB (should be < {MEMORY_THRESHOLD_MB}MB)"
+        )
 
     def test_performance_summary_generation(self):
         """
@@ -406,6 +341,12 @@ class TestPerformanceBenchmarks:
 class TestPerformanceScalability:
     """Tests to verify performance scales appropriately with document size."""
 
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.monitor = PerformanceMonitor()
+        # Force garbage collection before each test
+        gc.collect()
+
     def test_tree_building_scales_linearly(self):
         """
         Test: Tree building should scale approximately linearly with
@@ -420,18 +361,17 @@ class TestPerformanceScalability:
         This test documents current scaling behavior and will be tightened
         once optimization is implemented.
         """
-        monitor = PerformanceMonitor()
         sizes = [100, 500, 1000]
         durations: list[float] = []
 
         for size in sizes:
             doc = generate_large_document(size)
 
-            with monitor.measure(f"tree_build_{size}"):
+            with self.monitor.measure(f"tree_build_{size}"):
                 builder = DocumentTreeBuilder(doc)
                 builder.build_tree_with_ids()
 
-            stats = monitor.get_stats(f"tree_build_{size}")
+            stats = self.monitor.get_stats(f"tree_build_{size}")
             assert stats is not None
             durations.append(stats.average_duration)
 
@@ -440,17 +380,19 @@ class TestPerformanceScalability:
 
         # Current baseline: Allow quadratic scaling (will be improved to linear in Task 10.1)
         # With O(n²): 100→1000 is 100x data, expect ~100x time
-        # Allow 120x to account for variance in timing
-        assert ratio < 120.0, (
-            f"Scaling ratio: {ratio:.2f}x (current baseline: < 120x, target: < 15x)"
+        assert ratio < SCALING_RATIO_BASELINE, (
+            f"Scaling ratio: {ratio:.2f}x "
+            f"(current baseline: < {SCALING_RATIO_BASELINE}x, "
+            f"target: < {SCALING_RATIO_TARGET}x)"
         )
 
         # Document current performance for tracking
-        if ratio > 15.0:
+        if ratio > SCALING_RATIO_TARGET:
             # This is expected with current O(n²) implementation
             print(
                 f"\nPerformance note: Scaling ratio is {ratio:.2f}x "
-                f"(exceeds target of 15x for linear scaling, optimization needed)"
+                f"(exceeds target of {SCALING_RATIO_TARGET}x for linear scaling, "
+                "optimization needed)"
             )
 
     def test_operation_performance_with_varying_sizes(self):
@@ -458,22 +400,21 @@ class TestPerformanceScalability:
         Test: Operations should maintain acceptable performance across
         different document sizes.
         """
-        monitor = PerformanceMonitor()
         sizes = [100, 500, 1000]
 
         for size in sizes:
             doc = generate_large_document(size)
 
             # Test promote operation
-            with monitor.measure(f"promote_{size}"):
+            with self.monitor.measure(f"promote_{size}"):
                 result = StructureOperations.promote(doc, "h2-5")
 
-            assert result.success
+            assert result.success, f"Promote on {size} headings failed: {result.error}"
 
             # Verify performance requirement
-            stats = monitor.get_stats(f"promote_{size}")
+            stats = self.monitor.get_stats(f"promote_{size}")
             assert stats is not None
-            assert stats.average_duration <= 2.0, (
+            assert stats.average_duration <= STRUCTURAL_OPERATION_THRESHOLD, (
                 f"Promote on {size} headings took {stats.average_duration:.3f}s "
-                "(required: ≤ 2.0s)"
+                f"(required: ≤ {STRUCTURAL_OPERATION_THRESHOLD}s)"
             )

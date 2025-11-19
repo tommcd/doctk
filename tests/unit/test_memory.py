@@ -314,7 +314,7 @@ class TestMemoryPerformance:
 
         # Create large documents with many nodes
         for i in range(20):
-            # Create a document with 100 nodes
+            # Create a document with 200 nodes (100 headings + 100 paragraphs)
             nodes = []
             for j in range(100):
                 nodes.append(Heading(level=2, text=f"Heading {i}.{j}"))
@@ -336,12 +336,12 @@ class TestMemoryPerformance:
         assert cache_size <= 50
 
     def test_memory_eviction_frees_space(self):
-        """Test that memory-based eviction actually frees memory."""
+        """Test that memory-based eviction mechanism exists and memory stays under limit."""
         manager = DocumentStateManager(
             max_cache_size=100, max_memory_mb=100, enable_memory_monitoring=True
         )
 
-        # Add documents until eviction occurs
+        # Add documents
         for i in range(50):
             # Large document
             nodes = [
@@ -351,16 +351,17 @@ class TestMemoryPerformance:
             doc = Document(nodes)
             manager.put_document(f"file:///doc{i}.md", doc)
 
-        # Memory should have increased from initial
+        # Memory should stay under limit (eviction may or may not occur depending on actual memory)
         final_memory = manager.get_memory_usage_mb()
-        # Should stay under 100MB limit due to eviction
-        assert final_memory <= 100
+        assert final_memory <= 100, f"Memory {final_memory}MB exceeds 100MB limit"
 
+        # Verify statistics are tracked (evictions may be 0 if memory estimation is low)
         stats = manager.get_statistics()
-        # Verify evictions occurred (either size-based or memory-based)
         total_evictions = stats["total_evictions"]
-        # With 50 docs and cache size 100, expect some evictions due to memory
-        assert total_evictions >= 0  # May have evicted some documents
+        # Evictions can be 0 if memory estimation doesn't exceed limit
+        assert total_evictions >= 0
+        # Verify memory monitoring is actually enabled
+        assert manager.enable_memory_monitoring is True
 
     def test_cache_performance_with_repeated_access(self):
         """Test cache hit performance with repeated document access."""
@@ -383,7 +384,7 @@ class TestMemoryPerformance:
         assert stats["total_accesses"] == 1000
 
     def test_memory_limit_enforcement_with_batch_eviction(self):
-        """Test that batch eviction strategy works correctly."""
+        """Test that memory monitoring enforces limits and batch eviction is available."""
         manager = DocumentStateManager(
             max_cache_size=100, max_memory_mb=50, enable_memory_monitoring=True
         )
@@ -401,13 +402,16 @@ class TestMemoryPerformance:
 
         # Memory should be under limit
         memory_mb = manager.get_memory_usage_mb()
-        assert memory_mb <= 50
+        assert memory_mb <= 50, f"Memory {memory_mb}MB exceeds 50MB limit"
 
-        # Cache should have evicted some documents
+        # Verify cache size is reasonable (not exceeding max)
+        cache_size = manager.get_cache_size()
+        assert cache_size <= 100
+
+        # Statistics should be available
         stats = manager.get_statistics()
-
-        # Either size-based or memory-based eviction should have occurred
-        assert stats["total_evictions"] >= 0
+        assert "total_evictions" in stats
+        assert "memory_usage_mb" in stats
 
     def test_very_large_single_document(self):
         """Test handling of a single very large document."""
@@ -415,7 +419,7 @@ class TestMemoryPerformance:
             max_cache_size=10, max_memory_mb=500, enable_memory_monitoring=True
         )
 
-        # Create a very large document (1000 nodes)
+        # Create a very large document (2000 nodes: 1000 headings + 1000 paragraphs)
         nodes = []
         for i in range(1000):
             nodes.append(Heading(level=2, text=f"Heading {i}"))
@@ -451,8 +455,9 @@ class TestMemoryPerformance:
         assert stats["max_cache_size"] == 20
         assert stats["max_memory_mb"] == 500
         assert stats["memory_usage_mb"] >= 0
-        assert stats["size_evictions"] >= 0
-        assert stats["memory_evictions"] >= 0
+        # With 15 docs and cache size 20, no evictions should occur
+        assert stats["size_evictions"] == 0, "No size evictions expected with 15/20 cache usage"
+        assert stats["memory_evictions"] == 0, "No memory evictions expected with small documents"
         assert stats["total_evictions"] == stats["size_evictions"] + stats["memory_evictions"]
         assert stats["total_accesses"] == 0  # No get() calls yet
 

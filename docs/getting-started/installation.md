@@ -87,6 +87,69 @@ This installs additional tools for:
 
 See the [Development Setup](../development/setup.md) guide for more details.
 
+## Installing the VS Code Extension
+
+After installing doctk, you can optionally install the VS Code extension for visual document manipulation.
+
+### Prerequisites
+
+- doctk installed (see above)
+- VS Code 1.80.0 or higher
+- Python 3.12+ accessible from your PATH
+
+### Installation Steps
+
+**Option 1: Build from Source** (recommended)
+
+```bash
+cd extensions/doctk-outliner
+npm install
+npm run compile
+npx @vscode/vsce package
+code --install-extension doctk-outliner-0.1.0.vsix
+```
+
+**Note:** The `.vsix` file is not included in the repository (it's gitignored). You must either build it yourself (Option 1) or download a pre-built version from [GitHub Releases](https://github.com/tommcd/doctk/releases) when available.
+
+**Option 2: Install from Command Line** (after building or downloading)
+
+```bash
+code --install-extension path/to/doctk-outliner-0.1.0.vsix
+```
+
+**Option 3: Install via VS Code UI** (after building or downloading)
+
+1. Open VS Code
+2. Open the Extensions view (`Ctrl+Shift+X` or `Cmd+Shift+X`)
+3. Click the "..." menu button at the top
+4. Select "Install from VSIX..."
+5. Navigate to and select the `.vsix` file
+6. Reload VS Code when prompted
+
+### Verify Extension Installation
+
+1. Open a Markdown file (`.md`) in VS Code
+2. The "Document Outline" view should appear in the Explorer sidebar
+3. If not visible: **View → Open View → Document Outline**
+4. Try right-clicking on a heading to see available operations
+
+### Troubleshooting
+
+**"Python bridge failed to start"**
+
+- Verify Python is in your PATH: `python3 --version`
+- Verify doctk is installed: `python3 -c "import doctk; print(doctk.__version__)"`
+- Check VS Code Output panel (**View → Output**, select "doctk")
+- Try setting `doctk.lsp.pythonCommand` in VS Code settings to your Python path
+
+**Extension not activating**
+
+- Ensure you're viewing a `.md` file
+- Check the file language mode is "Markdown"
+- Try running the command: **doctk: Refresh Outline** from the Command Palette
+
+For more details, see the [extension README](../../extensions/doctk-outliner/README.md).
+
 ## Next Steps
 
 Now that you have doctk installed, check out the [Quick Start](quick-start.md) guide to learn the basics.

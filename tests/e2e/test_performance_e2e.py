@@ -64,9 +64,7 @@ def generate_large_document(num_headings: int) -> Document:
 
         # Add content every 10 headings
         if headings_created % 10 == 0:
-            nodes.append(
-                Paragraph(content=f"Content for section {headings_created}.", metadata={})
-            )
+            nodes.append(Paragraph(content=f"Content for section {headings_created}.", metadata={}))
 
         # Level 2 heading
         nodes.append(Heading(level=2, text=f"Subsection {headings_created + 1}"))
@@ -259,9 +257,7 @@ class TestE2EPerformanceScriptExecution:
 
             # Verify execution succeeded
             assert result_doc is not None
-            heading_count = sum(
-                1 for node in result_doc.nodes if isinstance(node, Heading)
-            )
+            heading_count = sum(1 for node in result_doc.nodes if isinstance(node, Heading))
             assert heading_count == 1000
 
             # Performance requirement: ≤ 2 seconds
@@ -299,8 +295,7 @@ class TestE2EPerformanceScriptExecution:
             # Performance requirement: reasonable for multiple operations
             max_time = 3 * STRUCTURAL_OPERATION_THRESHOLD
             assert duration <= max_time, (
-                f"Script with 3 operations took {duration:.3f}s "
-                f"(expected: ≤ {max_time}s)"
+                f"Script with 3 operations took {duration:.3f}s (expected: ≤ {max_time}s)"
             )
 
         finally:
@@ -381,8 +376,7 @@ class TestE2EPerformanceExtensionBridge:
 
         # Performance requirement: ≤ 2 seconds
         assert duration <= STRUCTURAL_OPERATION_THRESHOLD, (
-            f"Bridge operation took {duration:.3f}s "
-            f"(required: ≤ {STRUCTURAL_OPERATION_THRESHOLD}s)"
+            f"Bridge operation took {duration:.3f}s (required: ≤ {STRUCTURAL_OPERATION_THRESHOLD}s)"
         )
 
     @pytest.mark.parametrize(
@@ -476,8 +470,7 @@ class TestE2EPerformanceMemory:
 
         # Memory requirement: < 500MB increase
         assert memory_increase < MEMORY_THRESHOLD_MB, (
-            f"Memory increase: {memory_increase:.2f}MB "
-            f"(required: < {MEMORY_THRESHOLD_MB}MB)"
+            f"Memory increase: {memory_increase:.2f}MB (required: < {MEMORY_THRESHOLD_MB}MB)"
         )
 
     @pytest.mark.skipif(
@@ -528,8 +521,7 @@ class TestE2EPerformanceMemory:
 
         # Memory requirement: < 500MB increase
         assert memory_increase < MEMORY_THRESHOLD_MB, (
-            f"Memory increase: {memory_increase:.2f}MB "
-            f"(required: < {MEMORY_THRESHOLD_MB}MB)"
+            f"Memory increase: {memory_increase:.2f}MB (required: < {MEMORY_THRESHOLD_MB}MB)"
         )
 
 
@@ -572,8 +564,7 @@ class TestE2EPerformanceIntegration:
         total_time += tree_time
 
         assert tree_time <= TREE_VIEW_RENDERING_THRESHOLD, (
-            f"Tree display took {tree_time:.3f}s "
-            f"(required: ≤ {TREE_VIEW_RENDERING_THRESHOLD}s)"
+            f"Tree display took {tree_time:.3f}s (required: ≤ {TREE_VIEW_RENDERING_THRESHOLD}s)"
         )
 
         # Perform operations
@@ -620,6 +611,5 @@ class TestE2EPerformanceIntegration:
 
         # Performance requirement: ≤ 1 second
         assert duration <= TREE_VIEW_RENDERING_THRESHOLD, (
-            f"Tree builder took {duration:.3f}s "
-            f"(required: ≤ {TREE_VIEW_RENDERING_THRESHOLD}s)"
+            f"Tree builder took {duration:.3f}s (required: ≤ {TREE_VIEW_RENDERING_THRESHOLD}s)"
         )

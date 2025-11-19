@@ -410,9 +410,7 @@ class TestLSPPerformance:
         elapsed = (time.time() - start) * 1000
 
         assert result is not None
-        assert elapsed < 200, (
-            f"Completion on large doc took {elapsed:.2f}ms (requirement: < 200ms)"
-        )
+        assert elapsed < 200, f"Completion on large doc took {elapsed:.2f}ms (requirement: < 200ms)"
 
     def test_hover_performance_with_large_document(self):
         """Test hover performance with a large document."""

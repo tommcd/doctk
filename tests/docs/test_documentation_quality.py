@@ -260,7 +260,8 @@ def test_api_references_exist_in_code(project_root):
     # - method()
     # But NOT inline code like `some_variable` without dots or parens
     api_ref_pattern = re.compile(
-        r"(?:^|[^\w`])([a-z_][a-z0-9_.]*\.[a-z_][a-z0-9_.]*(?:\(\))?)" r"|(?:^|[^\w`])([A-Z][a-zA-Z0-9_.]*\(\))",
+        r"(?:^|[^\w`])([a-z_][a-z0-9_.]*\.[a-z_][a-z0-9_.]*(?:\(\))?)"
+        r"|(?:^|[^\w`])([A-Z][a-zA-Z0-9_.]*\(\))",
         re.MULTILINE,
     )
 

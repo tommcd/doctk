@@ -14,6 +14,9 @@
   },
   "homepage": "https://github.com/tommcd/doctk#readme",
   "license": "MIT",
+  "extensionKind": [
+    "workspace"
+  ],
   "engines": {
     "vscode": "^1.80.0"
   },

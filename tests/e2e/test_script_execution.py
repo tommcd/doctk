@@ -467,9 +467,7 @@ doc | demote h1-0
         assert len(section_1_nodes) == 1
         assert section_1_nodes[0].level == 1
 
-        title_nodes = [
-            n for n in result_doc.nodes if isinstance(n, Heading) and n.text == "Title"
-        ]
+        title_nodes = [n for n in result_doc.nodes if isinstance(n, Heading) and n.text == "Title"]
         assert len(title_nodes) == 1
         assert title_nodes[0].level == 2
 
@@ -542,8 +540,6 @@ doc | demote h1-0
         assert len(section_1_nodes) == 1
         assert section_1_nodes[0].level == 1
 
-        title_nodes = [
-            n for n in result_doc.nodes if isinstance(n, Heading) and n.text == "Title"
-        ]
+        title_nodes = [n for n in result_doc.nodes if isinstance(n, Heading) and n.text == "Title"]
         assert len(title_nodes) == 1
         assert title_nodes[0].level == 2

@@ -255,7 +255,9 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
             # Handle both nested and flat configuration structures
             if isinstance(settings, dict):
                 # Check if settings are nested under 'doctk.lsp' or 'doctk'
-                lsp_config = settings.get("doctk.lsp") or settings.get("doctk", {}).get("lsp") or settings
+                lsp_config = (
+                    settings.get("doctk.lsp") or settings.get("doctk", {}).get("lsp") or settings
+                )
 
                 # Update configuration
                 warnings = self.config.update_from_dict(lsp_config)

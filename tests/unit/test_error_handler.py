@@ -139,7 +139,9 @@ class TestRetryLogic:
     def test_execute_with_retry_succeeds_after_retries(self):
         """Test that operations succeed after retries."""
         handler = ErrorHandler(RetryConfig(max_attempts=3, initial_delay=0.01))
-        func = MagicMock(side_effect=[NetworkError("Connection failed"), NetworkError("Still failing"), 42])
+        func = MagicMock(
+            side_effect=[NetworkError("Connection failed"), NetworkError("Still failing"), 42]
+        )
 
         result = handler.execute_with_retry(func, "test_operation")
 
@@ -171,7 +173,9 @@ class TestRetryLogic:
     def test_execute_with_retry_custom_retryable_categories(self):
         """Test that custom retryable categories work."""
         handler = ErrorHandler(RetryConfig(max_attempts=3, initial_delay=0.01))
-        func = MagicMock(side_effect=[ValidationError("Invalid"), ValidationError("Still invalid"), 42])
+        func = MagicMock(
+            side_effect=[ValidationError("Invalid"), ValidationError("Still invalid"), 42]
+        )
 
         # Make validation errors retryable
         result = handler.execute_with_retry(
@@ -185,7 +189,9 @@ class TestRetryLogic:
     def test_execute_with_retry_exponential_backoff(self, mock_sleep):
         """Test that retry delays follow exponential backoff."""
         handler = ErrorHandler(RetryConfig(max_attempts=4, initial_delay=1.0))
-        func = MagicMock(side_effect=[NetworkError("Fail 1"), NetworkError("Fail 2"), NetworkError("Fail 3"), 42])
+        func = MagicMock(
+            side_effect=[NetworkError("Fail 1"), NetworkError("Fail 2"), NetworkError("Fail 3"), 42]
+        )
 
         handler.execute_with_retry(func, "test_operation")
 

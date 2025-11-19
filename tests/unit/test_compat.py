@@ -324,9 +324,7 @@ class TestBreakingChanges:
         }
 
         # Use monkeypatch for automatic cleanup after test
-        monkeypatch.setattr(
-            CompatibilityChecker, "BREAKING_CHANGES", test_breaking_changes
-        )
+        monkeypatch.setattr(CompatibilityChecker, "BREAKING_CHANGES", test_breaking_changes)
 
         checker = CompatibilityChecker()
 

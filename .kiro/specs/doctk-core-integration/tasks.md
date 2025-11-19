@@ -346,28 +346,26 @@ This implementation plan breaks down the core integration layer and execution ca
     - All tests passing ✅
     - _Requirements: 18_
 
-- [ ] 12. Implement security features
+- [ ]* 12. ~~Implement security features~~ **NOT APPLICABLE for Local Tool**
 
-  - [ ] 12.1 Add input validation
+  **Rationale**: This task was originally designed for web services or multi-tenant systems. However, doctk is a **local CLI tool** that users run on their own machines with their own documents. The proposed "security" features don't provide value in this context:
 
-    - Implement InputValidator class
-    - Validate operation parameters against schema
-    - Use JSON Schema for validation
-    - _Requirements: 20_
+  - **Input validation**: Already handled by parser (syntax errors) and Python type system
+  - **Sandboxing**: Would restrict legitimate use cases; users can run any code locally anyway
+  - **Operation whitelisting**: No reason to restrict what users can do with their own documents
+  - **Execution timeouts**: User can always Ctrl+C; not a security concern
 
-  - [ ] 12.2 Implement sandboxed execution
+  **What we already have** (sufficient for local tool):
+  - ✅ Parser validation catches syntax errors
+  - ✅ Python type hints provide type safety
+  - ✅ Error handling with graceful failures
+  - ✅ Clear error messages with line/column positions
 
-    - Create SandboxedExecutor class
-    - Limit execution time
-    - Validate operations before execution
-    - _Requirements: 12, 13, 14_
+  **Decision**: Mark as optional (not required for v0.1.0). May revisit if doctk is ever deployed as a web service.
 
-  - [ ] 12.3 Write security tests
-
-    - Test input validation
-    - Test execution timeouts
-    - Test operation whitelisting
-    - _Requirements: 12, 13, 14_
+  - [ ]* 12.1 ~~Add input validation~~ (Not applicable - see above)
+  - [ ]* 12.2 ~~Implement sandboxed execution~~ (Not applicable - see above)
+  - [ ]* 12.3 ~~Write security tests~~ (Not applicable - see above)
 
 - [x] 13. Integration with doctk core API
 

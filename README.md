@@ -238,9 +238,8 @@ doc1.diff(doc2)       # Unique to doc1
 
 📋 **Remaining for v0.1.0 Release**:
 
-- Security features (input validation, sandboxed execution)
-- GitHub Pages documentation deployment
 - GitHub release and changelog
+- Publish VS Code extension to marketplace (optional)
 
 🚀 **Planned for v0.2.0**:
 

@@ -18,10 +18,12 @@ from lsprotocol.types import (
     TEXT_DOCUMENT_DOCUMENT_SYMBOL,
     TEXT_DOCUMENT_HOVER,
     TEXT_DOCUMENT_SIGNATURE_HELP,
+    WORKSPACE_DID_CHANGE_CONFIGURATION,
     CompletionList,
     CompletionParams,
     Diagnostic,
     DiagnosticSeverity,
+    DidChangeConfigurationParams,
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
     DidOpenTextDocumentParams,
@@ -29,6 +31,7 @@ from lsprotocol.types import (
     DocumentSymbolParams,
     Hover,
     HoverParams,
+    MessageType,
     ParameterInformation,
     Position,
     Range,
@@ -43,6 +46,7 @@ from doctk.dsl.lexer import Lexer, LexerError
 from doctk.dsl.parser import ParseError, Parser, Pipeline
 from doctk.lsp.ai_support import AIAgentSupport
 from doctk.lsp.completion import CompletionProvider
+from doctk.lsp.config import LSPConfiguration
 from doctk.lsp.hover import HoverProvider
 from doctk.lsp.registry import OperationRegistry
 
@@ -76,6 +80,9 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
         """Initialize the doctk language server."""
         super().__init__("doctk-lsp", "v0.1.0")
         self.documents: dict[str, DocumentState] = {}
+
+        # Initialize configuration with defaults
+        self.config = LSPConfiguration()
 
         # Initialize operation registry and providers
         self.registry = OperationRegistry()
@@ -152,8 +159,10 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
 
             text = self.documents[uri].text
 
-            # Provide completions
-            return self.completion_provider.provide_completions(text, params.position)
+            # Provide completions with max_items from configuration
+            return self.completion_provider.provide_completions(
+                text, params.position, max_items=self.config.max_completion_items
+            )
 
         @self.feature(TEXT_DOCUMENT_HOVER)  # type: ignore[misc]
         async def hover(_ls: LanguageServer, params: HoverParams) -> Hover | None:
@@ -211,6 +220,38 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
 
             # Extract document symbols
             return self.extract_document_symbols(text)
+
+        @self.feature(WORKSPACE_DID_CHANGE_CONFIGURATION)  # type: ignore[misc]
+        async def did_change_configuration(
+            _ls: LanguageServer, params: DidChangeConfigurationParams
+        ) -> None:
+            """Handle configuration change event."""
+            logger.info("Configuration changed")
+
+            # Extract doctk.lsp settings from the configuration
+            # The settings come nested under 'doctk.lsp' if synchronize.configurationSection is set
+            settings = params.settings
+
+            # Handle both nested and flat configuration structures
+            if isinstance(settings, dict):
+                # Check if settings are nested under 'doctk.lsp' or 'doctk'
+                lsp_config = settings.get("doctk.lsp") or settings.get("doctk", {}).get("lsp") or settings
+
+                # Update configuration
+                warnings = self.config.update_from_dict(lsp_config)
+
+                # Display warnings to user if any validation errors occurred
+                if warnings:
+                    for warning in warnings:
+                        self.show_message(warning, MessageType.Warning)
+
+                logger.info(
+                    f"Configuration updated: trace={self.config.trace.value}, "
+                    f"maxCompletionItems={self.config.max_completion_items}, "
+                    f"enabled={self.config.enabled}"
+                )
+            else:
+                logger.warning(f"Unexpected settings format: {type(settings)}")
 
     async def parse_and_validate(self, uri: str, text: str) -> None:
         """

@@ -68,13 +68,16 @@ class CompletionProvider:
         self.cache: dict[str, CachedCompletion] = {}
         self.cache_ttl = cache_ttl
 
-    def provide_completions(self, document: str, position: Position) -> CompletionList:
+    def provide_completions(
+        self, document: str, position: Position, max_items: int | None = None
+    ) -> CompletionList:
         """
         Provide completion suggestions at the given position.
 
         Args:
             document: Full document text
             position: Cursor position (line and character)
+            max_items: Maximum number of completion items to return (None for unlimited)
 
         Returns:
             List of completion items
@@ -87,6 +90,11 @@ class CompletionProvider:
         cached = self._get_cached_completion(cache_key)
         if cached:
             logger.debug(f"Cache hit for completion at {position}")
+            # Apply max_items limit to cached result
+            if max_items is not None and len(cached.items) > max_items:
+                return CompletionList(
+                    is_incomplete=True, items=cached.items[:max_items]
+                )
             return cached
 
         # Generate completions based on context
@@ -98,6 +106,12 @@ class CompletionProvider:
             completions = self._parameter_completions(analysis)
         else:
             completions = CompletionList(is_incomplete=False, items=[])
+
+        # Apply max_items limit
+        if max_items is not None and len(completions.items) > max_items:
+            completions = CompletionList(
+                is_incomplete=True, items=completions.items[:max_items]
+            )
 
         # Cache the result
         self._cache_completion(cache_key, completions)

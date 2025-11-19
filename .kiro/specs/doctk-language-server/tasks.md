@@ -266,34 +266,40 @@ This implementation plan breaks down the language server into discrete, actionab
     - _Requirements: 17_
     - _Tests in: tests/unit/test_memory.py::TestMemoryPerformance (8 tests, all passing)_
 
-- [ ] 9. Add configuration and customization
+- [x] 9. Add configuration and customization
 
-  - [ ] 9.1 Define configuration schema
+  - [x] 9.1 Define configuration schema
 
     - Add settings for LSP trace level
     - Add settings for maximum completion items
     - Add settings to enable/disable the language server
     - _Requirements: 19.1, 19.2, 19.3_
+    - _Implemented in: src/doctk/lsp/config.py (LSPConfiguration dataclass, TraceLevel enum)_
+    - _VS Code settings in: extensions/doctk-outliner/package.json (configuration section)_
 
-  - [ ] 9.2 Implement configuration loading
+  - [x] 9.2 Implement configuration loading
 
     - Load settings from VS Code configuration
     - Apply settings without restart
     - _Requirements: 19.4_
+    - _Implemented in: src/doctk/lsp/server.py (did_change_configuration handler)_
+    - _Implemented in: extensions/doctk-outliner/src/languageClient.ts (trace level application)_
 
-  - [ ] 9.3 Add configuration validation
+  - [x] 9.3 Add configuration validation
 
     - Validate settings on change
     - Use defaults for invalid settings
     - Display warnings for invalid values
     - _Requirements: 19.5_
+    - _Implemented in: src/doctk/lsp/config.py (from_dict and update_from_dict methods)_
 
-  - [ ] 9.4 Write tests for configuration
+  - [x] 9.4 Write tests for configuration
 
     - Test settings loading
     - Test settings validation
     - Test dynamic settings updates
     - _Requirements: 19_
+    - _Tests in: tests/unit/test_lsp_config.py (19 tests, all passing)_
 
 - [x] 10. Python dependencies and packaging
 

@@ -14,6 +14,7 @@ import {
   LanguageClientOptions,
   ServerOptions,
   State,
+  Trace,
   TransportKind,
 } from 'vscode-languageclient/node';
 
@@ -56,6 +57,9 @@ export class DoctkLanguageClient {
       return;
     }
 
+    // Get trace level from configuration
+    const traceLevel = config.get<string>('lsp.trace', 'off');
+
     // Configure server options to run the language server via uv
     const serverOptions: ServerOptions = {
       command: 'uv',
@@ -95,6 +99,10 @@ export class DoctkLanguageClient {
       serverOptions,
       clientOptions
     );
+
+    // Set trace level from configuration
+    // Must be done after client creation but before start
+    await this.client.setTrace(this._mapTraceLevel(traceLevel));
 
     // Handle server crashes with automatic restart
     this.client.onDidChangeState((event) => {
@@ -212,5 +220,25 @@ export class DoctkLanguageClient {
    */
   getClient(): LanguageClient | null {
     return this.client;
+  }
+
+  /**
+   * Map trace level string to Trace enum.
+   *
+   * @param traceLevel - Trace level string from configuration
+   * @returns Trace enum value
+   */
+  private _mapTraceLevel(traceLevel: string): Trace {
+    switch (traceLevel.toLowerCase()) {
+      case 'off':
+        return Trace.Off;
+      case 'messages':
+        return Trace.Messages;
+      case 'verbose':
+        return Trace.Verbose;
+      default:
+        console.warn(`Unknown trace level: ${traceLevel}, using 'off'`);
+        return Trace.Off;
+    }
   }
 }

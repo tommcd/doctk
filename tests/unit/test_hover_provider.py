@@ -279,9 +279,7 @@ class TestParameterHover:
         # Should indicate which operation this parameter belongs to
         assert "where" in content
 
-    def test_hover_parameter_shows_required_status(
-        self, hover_provider: HoverProvider
-    ) -> None:
+    def test_hover_parameter_shows_required_status(self, hover_provider: HoverProvider) -> None:
         """Test parameter hover shows if parameter is required or optional."""
         document = "doc | where level=2"
         position = Position(line=0, character=13)
@@ -420,9 +418,7 @@ class TestHoverFormatting:
         # Should not have Parameters section
         # (promote has no parameters in our mock)
 
-    def test_operation_with_multiple_parameters(
-        self, hover_provider: HoverProvider
-    ) -> None:
+    def test_operation_with_multiple_parameters(self, hover_provider: HoverProvider) -> None:
         """Test formatting of operation with multiple parameters."""
         document = "doc | where"
         position = Position(line=0, character=8)

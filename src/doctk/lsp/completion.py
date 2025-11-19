@@ -68,9 +68,7 @@ class CompletionProvider:
         self.cache: dict[str, CachedCompletion] = {}
         self.cache_ttl = cache_ttl
 
-    def provide_completions(
-        self, document: str, position: Position
-    ) -> CompletionList:
+    def provide_completions(self, document: str, position: Position) -> CompletionList:
         """
         Provide completion suggestions at the given position.
 
@@ -106,9 +104,7 @@ class CompletionProvider:
 
         return completions
 
-    def _analyze_context(
-        self, document: str, position: Position
-    ) -> CompletionAnalysis:
+    def _analyze_context(self, document: str, position: Position) -> CompletionAnalysis:
         """
         Analyze cursor position to determine completion context.
 
@@ -207,9 +203,7 @@ class CompletionProvider:
 
         return CompletionList(is_incomplete=False, items=items)
 
-    def _operation_completions(
-        self, analysis: CompletionAnalysis
-    ) -> CompletionList:
+    def _operation_completions(self, analysis: CompletionAnalysis) -> CompletionList:
         """
         Provide completions for operations after pipe operator.
 
@@ -238,7 +232,9 @@ class CompletionProvider:
 
             # Add examples to documentation if available
             if op.examples:
-                examples_str = "\n".join(f"  {ex}" for ex in op.examples[:2])  # Show up to 2 examples
+                examples_str = "\n".join(
+                    f"  {ex}" for ex in op.examples[:2]
+                )  # Show up to 2 examples
                 documentation += f"\n\nExample:\n{examples_str}"
 
             # Create snippet for operations with parameters
@@ -246,8 +242,7 @@ class CompletionProvider:
                 # Create snippet with key=value placeholders (DSL uses named parameters)
                 # Use numbered tab stops: ${1}, ${2}, etc. for values
                 param_placeholders = ", ".join(
-                    f"{param.name}=${{{i+1}}}"
-                    for i, param in enumerate(op.parameters)
+                    f"{param.name}=${{{i + 1}}}" for i, param in enumerate(op.parameters)
                 )
                 insert_text = f"{op.name}({param_placeholders})"
                 insert_text_format = InsertTextFormat.Snippet
@@ -273,9 +268,7 @@ class CompletionProvider:
 
         return CompletionList(is_incomplete=False, items=items)
 
-    def _parameter_completions(
-        self, analysis: CompletionAnalysis
-    ) -> CompletionList:
+    def _parameter_completions(self, analysis: CompletionAnalysis) -> CompletionList:
         """
         Provide completions for operation parameters.
 
@@ -333,9 +326,7 @@ class CompletionProvider:
         op_suffix = f":{analysis.operation_name}" if analysis.operation_name else ""
         return f"{analysis.context.value}:{analysis.current_word}{op_suffix}"
 
-    def _get_cached_completion(
-        self, cache_key: str
-    ) -> CompletionList | None:
+    def _get_cached_completion(self, cache_key: str) -> CompletionList | None:
         """
         Get cached completion if not expired.
 
@@ -358,9 +349,7 @@ class CompletionProvider:
 
         return cached.completions
 
-    def _cache_completion(
-        self, cache_key: str, completions: CompletionList
-    ) -> None:
+    def _cache_completion(self, cache_key: str, completions: CompletionList) -> None:
         """
         Cache completion result.
 

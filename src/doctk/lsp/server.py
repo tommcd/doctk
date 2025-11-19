@@ -124,9 +124,7 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
                 del self.documents[uri]
 
         @self.feature(TEXT_DOCUMENT_COMPLETION)  # type: ignore[misc]
-        async def completions(
-            _ls: LanguageServer, params: CompletionParams
-        ) -> CompletionList:
+        async def completions(_ls: LanguageServer, params: CompletionParams) -> CompletionList:
             """Handle completion request."""
             logger.info(
                 f"Completion requested at {params.position.line}:{params.position.character}"
@@ -145,13 +143,9 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
             return self.completion_provider.provide_completions(text, params.position)
 
         @self.feature(TEXT_DOCUMENT_HOVER)  # type: ignore[misc]
-        async def hover(
-            _ls: LanguageServer, params: HoverParams
-        ) -> Hover | None:
+        async def hover(_ls: LanguageServer, params: HoverParams) -> Hover | None:
             """Handle hover request."""
-            logger.info(
-                f"Hover requested at {params.position.line}:{params.position.character}"
-            )
+            logger.info(f"Hover requested at {params.position.line}:{params.position.character}")
 
             uri = params.text_document.uri
 

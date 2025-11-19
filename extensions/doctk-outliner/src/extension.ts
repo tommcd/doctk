@@ -126,6 +126,64 @@ export async function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand('doctk.rename', async (node: OutlineNode) => {
+      try {
+        // Show input box with current heading text
+        const newText = await vscode.window.showInputBox({
+          prompt: 'Enter new heading text',
+          value: node.label,
+          validateInput: (value) => {
+            if (!value || value.trim().length === 0) {
+              return 'Heading text cannot be empty';
+            }
+            return null;
+          }
+        });
+
+        // User cancelled (pressed Escape)
+        if (newText === undefined) {
+          return;
+        }
+
+        // Update the heading in the document
+        const editor = vscode.window.activeTextEditor;
+        if (!editor || !node.range) {
+          vscode.window.showErrorMessage('No active editor or invalid node range');
+          return;
+        }
+
+        await syncManager.onTreeViewChange(async () => {
+          const edit = new vscode.WorkspaceEdit();
+
+          // Extract the heading line and replace only the text part (preserve the # symbols)
+          const headingLine = editor.document.lineAt(node.range.start.line);
+          const headingPrefix = '#'.repeat(node.level) + ' ';
+          const newHeadingLine = headingPrefix + newText.trim();
+
+          // Replace the entire line
+          const lineRange = new vscode.Range(
+            headingLine.range.start,
+            headingLine.range.end
+          );
+          edit.replace(editor.document.uri, lineRange, newHeadingLine);
+
+          const success = await vscode.workspace.applyEdit(edit);
+          if (!success) {
+            throw new Error('Failed to apply edit');
+          }
+
+          // Refresh tree view
+          outlineProvider.refresh();
+        });
+
+        vscode.window.showInformationMessage(`Renamed heading to: ${newText}`);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to rename section: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    })
+  );
+
   // Listen for active editor changes
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {

@@ -30,11 +30,19 @@ export class DocumentOutlineProvider
   private documentTree: DocumentTree | null = null;
   private document: vscode.TextDocument | null = null;
   private debounceTimer: NodeJS.Timeout | null = null;
-  private readonly debounceDelay = 300; // milliseconds
   private pythonBridge: PythonBridge | null = null;
 
   constructor(pythonBridge?: PythonBridge) {
     this.pythonBridge = pythonBridge || null;
+  }
+
+  /**
+   * Get the configured debounce delay from VS Code settings.
+   * Falls back to default if not configured.
+   */
+  private getDebounceDelay(): number {
+    const config = vscode.workspace.getConfiguration('doctk.outliner');
+    return config.get('refreshDelay', 300); // Default: 300ms
   }
 
   /**
@@ -150,7 +158,7 @@ export class DocumentOutlineProvider
       // Fallback to local parsing if backend is unavailable
       this.documentTree = this.parseDocument(document);
       this.refresh();
-    }, this.debounceDelay);
+    }, this.getDebounceDelay());
   }
 
   /**

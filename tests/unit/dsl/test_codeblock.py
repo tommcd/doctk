@@ -113,9 +113,7 @@ doc | move_up h3-0
     def test_extract_code_from_block(self) -> None:
         """Test extracting code from a CodeBlock object."""
         executor = CodeBlockExecutor()
-        block = CodeBlock(
-            language="doctk", code="doc | promote h2-0", start_line=5, end_line=7
-        )
+        block = CodeBlock(language="doctk", code="doc | promote h2-0", start_line=5, end_line=7)
 
         code = executor.extract_code_from_block(block)
         assert code == "doc | promote h2-0"

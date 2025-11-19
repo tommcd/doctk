@@ -36,6 +36,42 @@ class TestVersionInfo:
         assert version.patch == 0
         assert version.raw == "0.2.0-alpha"
 
+    def test_version_from_string_pep440_rc(self):
+        """Test parsing PEP 440 release candidate version."""
+        version = VersionInfo.from_string("0.2.0rc1")
+
+        assert version.major == 0
+        assert version.minor == 2
+        assert version.patch == 0
+        assert version.raw == "0.2.0rc1"
+
+    def test_version_from_string_pep440_dev(self):
+        """Test parsing PEP 440 dev version."""
+        version = VersionInfo.from_string("0.1.dev0")
+
+        assert version.major == 0
+        assert version.minor == 1
+        assert version.patch == 0
+        assert version.raw == "0.1.dev0"
+
+    def test_version_from_string_pep440_alpha(self):
+        """Test parsing PEP 440 alpha version."""
+        version = VersionInfo.from_string("1.0.0a1")
+
+        assert version.major == 1
+        assert version.minor == 0
+        assert version.patch == 0
+        assert version.raw == "1.0.0a1"
+
+    def test_version_from_string_pep440_beta(self):
+        """Test parsing PEP 440 beta version."""
+        version = VersionInfo.from_string("1.0.0b2")
+
+        assert version.major == 1
+        assert version.minor == 0
+        assert version.patch == 0
+        assert version.raw == "1.0.0b2"
+
     def test_version_from_string_with_build(self):
         """Test parsing version with build metadata."""
         version = VersionInfo.from_string("1.0.0+build.123")
@@ -62,6 +98,16 @@ class TestVersionInfo:
         version = VersionInfo(0, 1, 2, "0.1.2")
 
         assert str(version) == "0.1.2"
+
+    def test_version_str_preserves_raw(self):
+        """Test that __str__ preserves original version format."""
+        version = VersionInfo.from_string("0.2.0-alpha")
+
+        # Should return raw format, not reconstructed
+        assert str(version) == "0.2.0-alpha"
+
+        version_rc = VersionInfo.from_string("1.0.0rc1")
+        assert str(version_rc) == "1.0.0rc1"
 
     def test_version_comparison_less_than(self):
         """Test version comparison (less than)."""
@@ -228,6 +274,27 @@ class TestVersionComparisons:
         assert v1 != 1.0
         assert v1 != None  # noqa: E711
 
+    def test_version_hash(self):
+        """Test that VersionInfo is hashable."""
+        v1 = VersionInfo(1, 0, 0, "1.0.0")
+        v2 = VersionInfo(1, 0, 0, "1.0.0")
+        v3 = VersionInfo(1, 0, 1, "1.0.1")
+
+        # Equal versions should have equal hashes
+        assert hash(v1) == hash(v2)
+
+        # Different versions should (usually) have different hashes
+        assert hash(v1) != hash(v3)
+
+        # Should be usable in sets
+        version_set = {v1, v2, v3}
+        assert len(version_set) == 2  # v1 and v2 are equal
+
+        # Should be usable as dict keys
+        version_dict = {v1: "first", v2: "second", v3: "third"}
+        assert len(version_dict) == 2
+        assert version_dict[v1] == "second"  # v2 overwrote v1
+
 
 class TestBreakingChanges:
     """Test breaking change handling."""
@@ -243,24 +310,28 @@ class TestBreakingChanges:
         assert isinstance(CompatibilityChecker.MIN_VERSION, VersionInfo)
 
     @patch("doctk.lsp.compat.importlib.metadata.version")
-    def test_breaking_changes_detection(self, mock_version):
+    def test_breaking_changes_detection(self, mock_version, monkeypatch):
         """Test that breaking changes are detected and logged."""
         # Simulate version with breaking changes
         mock_version.return_value = "0.1.0"
 
-        # Add a breaking change for testing
-        CompatibilityChecker.BREAKING_CHANGES["0.1.0"] = {
-            "changes": ["Test breaking change"],
-            "migration": "Use new API",
+        # Create a copy of BREAKING_CHANGES and add test data
+        test_breaking_changes = {
+            "0.1.0": {
+                "changes": ["Test breaking change"],
+                "migration": "Use new API",
+            }
         }
+
+        # Use monkeypatch for automatic cleanup after test
+        monkeypatch.setattr(
+            CompatibilityChecker, "BREAKING_CHANGES", test_breaking_changes
+        )
 
         checker = CompatibilityChecker()
 
         # Should initialize successfully
         assert checker.is_compatible() is True
-
-        # Clean up
-        del CompatibilityChecker.BREAKING_CHANGES["0.1.0"]
 
 
 class TestIntegration:

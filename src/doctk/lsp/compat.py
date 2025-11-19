@@ -29,6 +29,9 @@ class VersionInfo:
         """
         Parse version string into VersionInfo.
 
+        Supports PEP 440 version formats including pre-release versions
+        (e.g., "0.1.0", "0.2.0rc1", "0.1.dev0", "1.0.0-alpha").
+
         Args:
             version_str: Version string (e.g., "0.1.0")
 
@@ -38,22 +41,32 @@ class VersionInfo:
         Raises:
             ValueError: If version string is invalid
         """
-        # Handle versions with additional suffixes (e.g., "0.1.0-alpha", "0.1.0.dev1")
-        clean_version = version_str.split("-")[0].split("+")[0]
-        parts = clean_version.split(".")
+        # Handle PEP 440 pre-release/dev versions (e.g., "0.2.0rc1", "0.1.dev0")
+        # Also handle semantic versioning (e.g., "0.1.0-alpha", "1.0.0+build.123")
+        import re
 
-        if len(parts) < 2:
+        # Extract numeric version components only
+        # Handles: "0.1.0", "0.2.0rc1", "0.1.0-alpha", "1.0.0+build"
+        version_pattern = r"^(\d+)\.(\d+)(?:\.(\d+))?(?:[.-]|\+|rc|a|b|dev|alpha|beta)?"
+        match = re.match(version_pattern, version_str)
+
+        if not match:
             raise ValueError(f"Invalid version string: {version_str}")
 
-        major = int(parts[0])
-        minor = int(parts[1])
-        patch = int(parts[2]) if len(parts) > 2 else 0
+        try:
+            major = int(match.group(1))
+            minor = int(match.group(2))
+            patch = int(match.group(3)) if match.group(3) else 0
+        except ValueError as e:
+            raise ValueError(
+                f"Invalid version string '{version_str}': version components must be integers"
+            ) from e
 
         return cls(major=major, minor=minor, patch=patch, raw=version_str)
 
     def __str__(self) -> str:
-        """Return string representation."""
-        return f"{self.major}.{self.minor}.{self.patch}"
+        """Return string representation (preserves original format)."""
+        return self.raw
 
     def __lt__(self, other: VersionInfo) -> bool:
         """Compare versions for ordering."""
@@ -76,6 +89,14 @@ class VersionInfo:
         if not isinstance(other, VersionInfo):
             return NotImplemented
         return (self.major, self.minor, self.patch) == (other.major, other.minor, other.patch)
+
+    def __hash__(self) -> int:
+        """
+        Return hash of version for use in sets and dicts.
+
+        Required when __eq__ is overridden to maintain hashability.
+        """
+        return hash((self.major, self.minor, self.patch))
 
 
 class CompatibilityChecker:
@@ -176,20 +197,20 @@ class CompatibilityChecker:
         return available
 
 
-# Global compatibility checker instance
-_compat_checker: CompatibilityChecker | None = None
+# Global compatibility checker instance (initialized at module load)
+# This leverages Python's import mechanism for thread-safe initialization
+_compat_checker: CompatibilityChecker = CompatibilityChecker()
 
 
 def get_compatibility_checker() -> CompatibilityChecker:
     """
     Get the global compatibility checker instance.
 
+    Thread-safe singleton initialized at module import time.
+
     Returns:
         CompatibilityChecker singleton instance
     """
-    global _compat_checker
-    if _compat_checker is None:
-        _compat_checker = CompatibilityChecker()
     return _compat_checker
 
 

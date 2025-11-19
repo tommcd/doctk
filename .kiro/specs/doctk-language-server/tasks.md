@@ -382,40 +382,42 @@ This implementation plan breaks down the language server into discrete, actionab
       - _Testing strategy_
       - _Future enhancements_
 
-- [ ] 13. Enhance parser with position tracking
+- [x] 13. Enhance parser with position tracking
 
-  - [ ] 13.1 Add position information to AST nodes
+  - [x] 13.1 Add position information to AST nodes
 
-    - Modify DSL parser to track source positions (line/column) for all AST nodes
-    - Add `position: Position` field to AST node classes
-    - Update parser to capture and propagate position information during parsing
-    - _Current limitation: See TODOs in src/doctk/lsp/server.py (lines 335, 393, 642)_
-    - _Target: src/doctk/dsl/parser.py_
+    - Modified DSL parser to track source positions (line/column) for all AST nodes
+    - Added `Position` dataclass with line and column fields
+    - Updated all AST node classes (Pipeline, FunctionCall, Assignment) to include position field
+    - Parser now captures position from tokens when creating AST nodes
+    - _Implemented in: src/doctk/dsl/parser.py (lines 9-14, 21, 30, 44, 53)_
 
-  - [ ] 13.2 Update diagnostics to use accurate positions
+  - [x] 13.2 Update diagnostics to use accurate positions
 
-    - Modify `validate_syntax()` to report diagnostics at actual error locations
-    - Replace hardcoded `(line: 0, column: 0)` with positions from AST nodes
-    - Test that parse errors report correct line/column numbers
-    - _Current behavior: All diagnostics report at position (0, 0)_
-    - _Target: src/doctk/lsp/server.py:335_
+    - Modified `validate_syntax()` to report diagnostics at actual error locations
+    - Replaced hardcoded `(line: 0, column: 0)` with positions from AST nodes
+    - Added conversion from 1-indexed (parser) to 0-indexed (LSP) coordinates
+    - Diagnostics now report accurate line and column positions
+    - _Implemented in: src/doctk/lsp/server.py (lines 340-341, 396-397)_
 
-  - [ ] 13.3 Update document symbols to use accurate positions
+  - [x] 13.3 Update document symbols to use accurate positions
 
-    - Modify `extract_document_symbols()` to use positions from AST nodes
-    - Report each pipeline/operation at its actual source location
-    - Test that document symbols show correct line numbers
-    - _Current behavior: Symbols always report at line 0_
-    - _Target: src/doctk/lsp/server.py:393, 642_
+    - Modified `extract_document_symbols()` to use positions from AST nodes
+    - Each pipeline and operation now reports at its actual source location
+    - Document symbols show correct line numbers for multi-line documents
+    - Added conversion from 1-indexed (parser) to 0-indexed (LSP) coordinates
+    - _Implemented in: src/doctk/lsp/server.py (lines 643-644, 652-653, 679-680)_
 
-  - [ ] 13.4 Write tests for position accuracy
+  - [x] 13.4 Write tests for position accuracy
 
-    - Test that parse errors report correct positions
-    - Test that document symbols show correct positions
-    - Test multi-line documents with multiple operations
-    - Test error recovery with position preservation
-    - _[PLANNED] Tests in: tests/unit/test_parser_positions.py_
-    - _E2E tests in: tests/e2e/test_lsp_e2e.py_
+    - Created comprehensive test suite for parser position tracking (11 tests)
+    - Created comprehensive test suite for LSP position accuracy (13 tests)
+    - Tests verify accurate positions for diagnostics and document symbols
+    - Tests cover multi-line documents, comments, whitespace handling
+    - Updated existing tests to reflect corrected behavior
+    - _Implemented in: tests/unit/test_parser_positions.py (24 tests total)_
+    - _Implemented in: tests/unit/test_lsp_positions.py_
+    - _Updated: tests/unit/test_lsp_ai_features.py (2 tests corrected)_
 
 ## Notes
 

@@ -17,8 +17,8 @@ test/**
 **/*.test.ts
 **/*.test.js
 
-# Node modules (will be bundled)
-node_modules/**
+# NOTE: node_modules is NOT excluded because we don't bundle
+# If bundling is implemented, add: node_modules/**
 
 # Markdown files except README
 *.md

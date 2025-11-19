@@ -362,7 +362,7 @@ For detailed design documentation, see:
 
 ## License
 
-MIT License - see [LICENSE](../../LICENSE) for details.
+MIT License - see [LICENSE](LICENSE) for details.
 
 ## Support
 

@@ -419,7 +419,12 @@ export class DocumentOutlineProvider
 
     let nodeIds: string[];
     try {
-      nodeIds = JSON.parse(transferItem.value);
+      const parsed = JSON.parse(transferItem.value);
+      if (!Array.isArray(parsed)) {
+        vscode.window.showErrorMessage('Invalid drop data: expected array');
+        return;
+      }
+      nodeIds = parsed;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       vscode.window.showErrorMessage(`Failed to parse drop data: ${errorMsg}`);

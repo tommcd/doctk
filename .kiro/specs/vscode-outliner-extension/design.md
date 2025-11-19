@@ -107,6 +107,48 @@ class DocumentOutlineProvider implements TreeDataProvider<OutlineNode>, TreeDrag
 
 **Design Rationale**: Using VS Code's native `TreeDataProvider` ensures consistency with other VS Code tree views and provides built-in support for drag-and-drop, which is a core requirement.
 
+#### Drag-and-Drop API Limitations
+
+**Important Constraint**: VS Code's `TreeDragAndDropController` API has a fundamental limitation that impacts the reordering functionality described in Requirement 2.3.
+
+**What the API Provides:**
+- `handleDrop(target: OutlineNode | undefined, ...)`
+  - When `target` is **defined**: User dropped onto a specific node
+  - When `target` is **undefined**: User dropped at root level
+
+**What the API Does NOT Provide:**
+- Drop position information (before/after a node)
+- Sibling ordering context
+- Index within parent's children
+
+**Implementation Implications:**
+
+| User Action | API Detection | Implementation |
+|-------------|---------------|----------------|
+| Drop node onto another node | `target` defined | Execute `nest()` operation |
+| Drop node at root level | `target` undefined | Execute `unnest()` operation |
+| Drop node between siblings | ❌ **Not detectable** | Cannot implement via drag-and-drop |
+
+**Workaround for Requirement 2.3 (Reordering):**
+
+Since precise sibling reordering cannot be achieved through drag-and-drop alone, the implementation provides:
+
+1. **Drag-and-Drop**: Changes hierarchy level (nest/unnest)
+2. **Context Menu Operations**: Provides `move_up()` and `move_down()` for precise sibling positioning
+
+This two-step approach fulfills the functional requirements while working within VS Code API constraints:
+- User drags to change hierarchy level
+- User uses context menu to adjust position within sibling list
+
+**Alternative Considered and Rejected:**
+
+Implementing a custom tree view with full position detection would require:
+- Building entire tree UI from scratch (no native VS Code components)
+- Reimplementing all VS Code tree view features (accessibility, keyboard nav, etc.)
+- Significantly increased complexity with marginal UX improvement
+
+The context menu approach provides equivalent functionality with better reliability.
+
 ### Document Synchronization Manager
 
 Manages bidirectional synchronization between the tree view and editor.
@@ -564,6 +606,21 @@ describe('Extension Integration', () => {
 
 This design addresses the following requirements:
 
-- **Requirements 1-6**: Outliner UI features (tree view, drag-drop, context menu, editing, keyboard shortcuts, undo/redo)
-- **Requirement 16**: Document synchronization
-- **Requirement 19**: Configuration and customization
+- **Requirement 1**: Tree-based document outliner - ✅ Fully implemented via TreeDataProvider
+- **Requirement 2**: Drag-and-drop structure manipulation - ⚠️ **Partially implemented with API constraint**
+  - **2.1** (Visual feedback): ✅ VS Code native drag UI + validation errors
+  - **2.2** (Nest on drop onto node): ✅ Fully implemented via `nest()` operation
+  - **2.3** (Reorder on drop between nodes): ⚠️ **Not possible via VS Code drag-and-drop API**
+    - API limitation: Cannot detect drop position (before/after)
+    - **Workaround**: Hierarchy changes via drag-and-drop (nest/unnest), precise positioning via context menu operations (move_up/move_down)
+    - Functionality is equivalent, requires two-step interaction
+  - **2.4** (Update document): ✅ Fully implemented with granular edits
+  - **2.5** (Prevent invalid drops): ✅ Fully implemented with descendant validation
+- **Requirement 3**: Context menu operations - ✅ Fully implemented (also compensates for 2.3 limitation)
+- **Requirement 4**: Inline editing - 🔜 Planned for Task 5
+- **Requirement 5**: Keyboard shortcuts - 🔜 Planned for Task 6
+- **Requirement 6**: Undo/redo support - ✅ Fully implemented via WorkspaceEdit integration
+- **Requirement 16**: Document synchronization - ✅ Fully implemented with debouncing
+- **Requirement 19**: Configuration and customization - 🔜 Planned for Task 10
+
+**Key Design Decision**: The VS Code API limitation for Requirement 2.3 (reordering via drop between siblings) led to a hybrid approach where drag-and-drop handles hierarchy changes and context menu handles precise positioning. This provides equivalent functionality while working within platform constraints.

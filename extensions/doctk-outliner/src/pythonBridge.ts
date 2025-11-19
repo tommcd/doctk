@@ -109,7 +109,7 @@ export class PythonBridge {
 
     try {
       // Reject all pending requests
-      for (const [_id, pending] of this.pendingRequests) {
+      for (const pending of this.pendingRequests.values()) {
         pending.reject(new Error('Bridge stopped'));
       }
       this.pendingRequests.clear();
@@ -338,7 +338,7 @@ export class PythonBridge {
    */
   private async handleProcessExit(code: number | null, signal: string | null): Promise<void> {
     // Reject all pending requests
-    for (const [_id, pending] of this.pendingRequests) {
+    for (const pending of this.pendingRequests.values()) {
       pending.reject(new Error(`Process exited with code ${code}, signal ${signal}`));
     }
     this.pendingRequests.clear();
@@ -362,7 +362,7 @@ export class PythonBridge {
    */
   private handleProcessError(error: Error): void {
     // Reject all pending requests
-    for (const [_id, pending] of this.pendingRequests) {
+    for (const pending of this.pendingRequests.values()) {
       pending.reject(error);
     }
     this.pendingRequests.clear();

@@ -6,10 +6,13 @@ These tests verify that specifications are accurate and up-to-date:
 - No outdated API references
 """
 
+import logging
 import re
 from pathlib import Path
 
 import pytest
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
@@ -243,7 +246,7 @@ def test_spec_line_number_references_reasonable(project_root, spec_files):
 
             # Count lines in file
             try:
-                with open(full_path, 'r') as f:
+                with open(full_path) as f:
                     actual_lines = sum(1 for _ in f)
 
                 # Check if referenced lines exist
@@ -253,9 +256,9 @@ def test_spec_line_number_references_reasonable(project_root, spec_files):
                         f"{f'-{line_end}' if line_end != line_start else ''} "
                         f"but file only has {actual_lines} lines"
                     )
-            except Exception:
+            except Exception as e:
                 # Skip if we can't read the file
-                pass
+                logger.debug("Cannot read file '%s': %s", full_path, e)
 
     if violations:
         msg = (

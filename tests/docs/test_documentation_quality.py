@@ -7,10 +7,13 @@ These tests verify that documentation is complete, well-formatted, and accurate:
 - Links are valid
 """
 
+import logging
 import re
 from pathlib import Path
 
 import pytest
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
@@ -238,7 +241,6 @@ def test_api_references_exist_in_code(project_root):
     """
     import importlib
     import inspect
-    from pathlib import Path
 
     # Find all API documentation files
     api_docs_dir = project_root / "docs" / "api"
@@ -340,9 +342,9 @@ def test_api_references_exist_in_code(project_root):
                         # Module might not exist yet or reference might be ambiguous
                         pass
 
-            except Exception:
+            except Exception as e:
                 # Skip if we can't check it (might be intentional doc of future features)
-                pass
+                logger.debug("Skipping reference '%s': %s", ref, e)
 
     if violations:
         msg = (

@@ -18,6 +18,9 @@ The language server follows the LSP standard, ensuring compatibility with multip
 
 ### Component Overview
 
+**Updated 2025-11-19**: LSP now uses `src/doctk/integration/` for operations and depends on
+it rather than directly on core API. This ensures consistency with other interfaces.
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     VS Code Extension                        │
@@ -32,6 +35,7 @@ The language server follows the LSP standard, ensuring compatibility with multip
                    ┌─────────────────────┐
                    │  Language Server    │
                    │  (Python Process)   │
+                   │  src/doctk/lsp/     │
                    └──────────┬──────────┘
                               │
         ┌─────────────────────┼─────────────────────┐
@@ -40,15 +44,28 @@ The language server follows the LSP standard, ensuring compatibility with multip
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
 │  DSL Parser  │    │  Operation   │    │  Completion  │
 │  & Validator │    │  Registry    │    │  Provider    │
+│  src/doctk/  │    │  registry.py │    │  completion  │
+│  dsl/        │    │              │    │  .py         │
 └──────────────┘    └──────────────┘    └──────────────┘
         │                     │                     │
         └─────────────────────┼─────────────────────┘
                               │
                               ▼
                    ┌─────────────────────┐
+                   │  Core Integration   │
+                   │  src/doctk/         │
+                   │  integration/       │
+                   └──────────┬──────────┘
+                              │
+                              ▼
+                   ┌─────────────────────┐
                    │  doctk Core API     │
+                   │  src/doctk/core.py  │
                    └─────────────────────┘
 ```
+
+**Key Point**: LSP (`src/doctk/lsp/`) depends on Core Integration (`src/doctk/integration/`),
+which provides platform-agnostic operations used by all interfaces (LSP, VS Code, CLI).
 
 ### Component Responsibilities
 

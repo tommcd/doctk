@@ -18,9 +18,13 @@ The outliner provides a GUI interface to the underlying doctk API, allowing user
 
 ### Component Overview
 
+**Updated 2025-11-19**: VS Code extension uses `src/doctk/integration/bridge.py` (ExtensionBridge)
+for JSON-RPC communication with the platform-agnostic integration layer.
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     VS Code Extension                        │
+│              VS Code Extension (TypeScript)                  │
+│              extensions/doctk-outliner/                      │
 │  ┌──────────────────┐         ┌─────────────────────────┐  │
 │  │  Outliner View   │         │   Document Sync         │  │
 │  │  (Tree Provider) │◄────────┤   Manager               │  │
@@ -30,17 +34,36 @@ The outliner provides a GUI interface to the underlying doctk API, allowing user
 │           ▼                               ▼                  │
 │  ┌──────────────────┐         ┌─────────────────────────┐  │
 │  │  Operation       │         │   Python Bridge         │  │
-│  │  Handler         │────────►│   (JSON-RPC)            │  │
+│  │  Handler         │────────►│   (JSON-RPC Client)     │  │
 │  └──────────────────┘         └─────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
                                           │
-                                          │ JSON-RPC
+                                          │ JSON-RPC over stdio
                                           ▼
                               ┌─────────────────────┐
-                              │  doctk Core API     │
+                              │  Extension Bridge   │
                               │  (Python Backend)   │
+                              │  src/doctk/         │
+                              │  integration/       │
+                              │  bridge.py          │
+                              └──────────┬──────────┘
+                                         │
+                                         ▼
+                              ┌─────────────────────┐
+                              │  Core Integration   │
+                              │  src/doctk/         │
+                              │  integration/       │
+                              └──────────┬──────────┘
+                                         │
+                                         ▼
+                              ┌─────────────────────┐
+                              │  doctk Core API     │
+                              │  src/doctk/core.py  │
                               └─────────────────────┘
 ```
+
+**Key Point**: VS Code extension communicates with Python backend via `ExtensionBridge`,
+which provides a JSON-RPC interface to the platform-agnostic integration layer.
 
 ### Component Responsibilities
 

@@ -42,6 +42,13 @@ nav:
   - Getting Started:
       - Installation: getting-started/installation.md
       - Quick Start: getting-started/quick-start.md
+  - API Reference:
+      - Core Integration: api/core-integration.md
+      - DSL: api/dsl.md
+      - Language Server: api/lsp.md
+  - Guides:
+      - Adding New Interfaces: guides/adding-new-interface.md
+      - Extending the DSL: guides/extending-dsl.md
   - Development:
       - Setup: development/setup.md
       - Testing: development/testing.md

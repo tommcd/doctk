@@ -400,12 +400,13 @@ This implementation plan breaks down the core integration layer and execution ca
   - [x] 14.1 Write end-to-end tests for script execution
 
     - Test REPL workflow (8 tests - all passing)
-    - Test script file execution (5 tests - 4 passing, 1 with known issue)
-    - Test code block execution in Markdown (8 tests - 7 passing, 1 with known issue)
+    - Test script file execution (5 tests - 4 passing, 1 xfail)
+    - Test code block execution in Markdown (8 tests - 7 passing, 1 xfail)
     - _Requirements: 12, 13, 14_
-    - COMPLETED: 19 of 21 E2E tests passing
-    - NOTE: 2 tests have known issues with multi-operation sequential execution
+    - COMPLETED: 19 passing + 2 xfail (expected failures)
+    - NOTE: 2 tests marked as xfail due to known issue with multi-operation sequential execution
     - Tests are in tests/e2e/test_script_execution.py
+    - xfail tests will be fixed by Task 16 (separate InternalOperations from StructureOperations)
 
   - [x] 14.2 Write end-to-end tests for pluggable architecture
 

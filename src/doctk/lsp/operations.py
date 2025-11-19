@@ -19,7 +19,9 @@ class DocumentTreeBuilder:
         self.document = document
         self.node_map: dict[str, Node] = {}
         self.parent_map: dict[str, str] = {}
+        self._line_position_cache: dict[int, int] = {}  # Cache: node_index -> line_number
         self._build_node_map()
+        self._build_line_position_cache()
 
     def _build_node_map(self) -> None:
         """Build a map of node IDs to nodes."""
@@ -31,6 +33,40 @@ class DocumentTreeBuilder:
                 heading_counter[level] = heading_counter.get(level, 0) + 1
                 node_id = f"h{level}-{heading_counter[level] - 1}"
                 self.node_map[node_id] = node
+
+    def _build_line_position_cache(self) -> None:
+        """
+        Build a cache of line positions for all nodes (O(n) operation).
+
+        This eliminates the O(n²) complexity from repeated line calculations.
+        """
+        # Get document text and split into lines
+        doc_text = self.document.to_string()
+        lines = doc_text.split("\n")
+
+        current_line = 0
+        for node_index, node in enumerate(self.document.nodes):
+            # Get the text for this node
+            temp_doc = Document([node])
+            search_text = temp_doc.to_string().strip()
+
+            # Find this text in the remaining lines
+            for line_idx in range(current_line, len(lines)):
+                line_content = lines[line_idx].rstrip("\n")
+                # Check if this line starts the node
+                if search_text.startswith(line_content) or line_content.startswith(
+                    search_text.split("\n")[0]
+                ):
+                    # Found the start of this node
+                    self._line_position_cache[node_index] = line_idx
+
+                    # Skip past this node
+                    num_node_lines = search_text.count("\n") + 1
+                    current_line = line_idx + num_node_lines
+                    # Skip any blank lines after this node
+                    while current_line < len(lines) and lines[current_line].strip() == "":
+                        current_line += 1
+                    break
 
     def build_tree_with_ids(self) -> TreeNode:
         """
@@ -59,23 +95,15 @@ class DocumentTreeBuilder:
         # Counter for generating node IDs
         heading_counter: dict[int, int] = {}
 
-        # Calculate line numbers for each node
-        # Convert document to string and split into lines for line number tracking
-        doc_text = self.document.to_string()
-        lines = doc_text.split("\n")
-
         # Build the tree by iterating through all nodes
-        current_line = 0  # Track current line in document
         for node_index, node in enumerate(self.document.nodes):
             if isinstance(node, Heading):
                 level = node.level
                 heading_counter[level] = heading_counter.get(level, 0) + 1
                 node_id = f"h{level}-{heading_counter[level] - 1}"
 
-                # Calculate actual line number for this node
-                # Use the same logic as _get_node_line_range to find line numbers
-                node_line_range = self._calculate_node_line(node_index, lines)
-                node_line = node_line_range if node_line_range is not None else current_line
+                # Get line number from cache (O(1) lookup instead of O(n) calculation)
+                node_line = self._line_position_cache.get(node_index, 0)
 
                 # Create TreeNode for this heading
                 tree_node = TreeNode(
@@ -103,48 +131,17 @@ class DocumentTreeBuilder:
 
     def _calculate_node_line(self, node_index: int, lines: list[str]) -> int | None:
         """
-        Calculate the line number where a node starts.
+        Calculate the line number where a node starts (uses cache for O(1) lookup).
 
         Args:
             node_index: Index of the node in the document
-            lines: Lines of the document text
+            lines: Lines of the document text (unused, kept for compatibility)
 
         Returns:
             Line number (0-indexed) or None if not found
         """
-        # Track current line as we iterate through nodes
-        current_line = 0
-
-        for i in range(node_index + 1):
-            # Get the text for node i
-            temp_doc_i = Document([self.document.nodes[i]])
-            search_text = temp_doc_i.to_string().strip()
-
-            # Find this text in the remaining lines
-            found = False
-            for line_idx in range(current_line, len(lines)):
-                line_content = lines[line_idx].rstrip("\n")
-                # Check if this line starts the node
-                if search_text.startswith(line_content) or line_content.startswith(
-                    search_text.split("\n")[0]
-                ):
-                    # Found the start of this node
-                    if i == node_index:
-                        # This is the node we're looking for
-                        return line_idx
-                    else:
-                        # Skip past this node
-                        num_node_lines = search_text.count("\n") + 1
-                        current_line = line_idx + num_node_lines
-                        # Skip any blank lines after this node
-                        while current_line < len(lines) and lines[current_line].strip() == "":
-                            current_line += 1
-                        found = True
-                        break
-            if not found:
-                return None
-
-        return None
+        # Use cached line position (O(1) lookup)
+        return self._line_position_cache.get(node_index)
 
     def find_node(self, node_id: str) -> Node | None:
         """
@@ -351,12 +348,12 @@ class DiffComputer:
         doc: Document[Node], node: Node | None, builder: DocumentTreeBuilder
     ) -> tuple[int, int] | None:
         """
-        Get the line range for a node in the document.
+        Get the line range for a node in the document (uses cached positions).
 
         Args:
             doc: The document containing the node
             node: The node to find the range for
-            builder: The DocumentTreeBuilder for this document
+            builder: The DocumentTreeBuilder for this document (contains line position cache)
 
         Returns:
             Tuple of (start_line, end_line) or None if not found
@@ -370,45 +367,18 @@ class DiffComputer:
         except ValueError:
             return None
 
-        # Get the full document text and split into lines
-        full_text = doc.to_string()
-        lines = full_text.splitlines(keepends=True)
+        # Use cached line position from builder (O(1) lookup)
+        start_line = builder._line_position_cache.get(node_index)
+        if start_line is None:
+            return None
 
-        # Find where this node's text appears in the document
-        current_line = 0
-        for i in range(node_index + 1):
-            # Get the text for node i
-            temp_doc_i = Document([doc.nodes[i]])
-            search_text = temp_doc_i.to_string().strip()
+        # Calculate how many lines this node occupies
+        temp_doc = Document([node])
+        search_text = temp_doc.to_string().strip()
+        num_node_lines = search_text.count("\n") + 1
+        end_line = start_line + num_node_lines - 1
 
-            # Find this text in the remaining lines
-            found = False
-            for line_idx in range(current_line, len(lines)):
-                line_content = lines[line_idx].rstrip("\n")
-                if search_text.startswith(line_content) or line_content.startswith(
-                    search_text.split("\n")[0]
-                ):
-                    # Found the start of this node
-                    if i == node_index:
-                        # This is the node we're looking for
-                        start_line = line_idx
-                        # Count how many lines this node occupies
-                        num_node_lines = search_text.count("\n") + 1
-                        end_line = start_line + num_node_lines - 1
-                        return (start_line, end_line)
-                    else:
-                        # Skip past this node
-                        num_node_lines = search_text.count("\n") + 1
-                        current_line = line_idx + num_node_lines
-                        # Skip any blank lines after this node
-                        while current_line < len(lines) and lines[current_line].strip() == "":
-                            current_line += 1
-                        found = True
-                        break
-            if not found:
-                return None
-
-        return None
+        return (start_line, end_line)
 
 
 class StructureOperations:

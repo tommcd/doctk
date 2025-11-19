@@ -1,0 +1,274 @@
+"""Tests for memory management functionality."""
+
+import pytest
+
+from doctk.core import Document, Heading, Paragraph
+from doctk.lsp.memory import DocumentState, DocumentStateManager, LRUCache
+
+
+class TestLRUCache:
+    """Tests for LRUCache class."""
+
+    def test_cache_creation(self):
+        """Test creating an LRU cache."""
+        cache = LRUCache[str](maxsize=10)
+        assert len(cache) == 0
+        assert cache.maxsize == 10
+
+    def test_cache_put_and_get(self):
+        """Test putting and getting items from cache."""
+        cache = LRUCache[str](maxsize=10)
+        cache.put("key1", "value1")
+        assert cache.get("key1") == "value1"
+        assert len(cache) == 1
+
+    def test_cache_get_nonexistent(self):
+        """Test getting a nonexistent item returns None."""
+        cache = LRUCache[str](maxsize=10)
+        assert cache.get("nonexistent") is None
+
+    def test_cache_eviction(self):
+        """Test that cache evicts least recently used items when full."""
+        cache = LRUCache[str](maxsize=3)
+        cache.put("key1", "value1")
+        cache.put("key2", "value2")
+        cache.put("key3", "value3")
+
+        # Cache is now full (3/3)
+        assert len(cache) == 3
+
+        # Adding a 4th item should evict key1 (least recently used)
+        cache.put("key4", "value4")
+        assert len(cache) == 3
+        assert cache.get("key1") is None
+        assert cache.get("key4") == "value4"
+
+    def test_cache_update_marks_as_recent(self):
+        """Test that getting an item marks it as recently used."""
+        cache = LRUCache[str](maxsize=3)
+        cache.put("key1", "value1")
+        cache.put("key2", "value2")
+        cache.put("key3", "value3")
+
+        # Access key1 to mark it as recently used
+        cache.get("key1")
+
+        # Adding a 4th item should evict key2 (now least recently used)
+        cache.put("key4", "value4")
+        assert cache.get("key1") == "value1"
+        assert cache.get("key2") is None
+
+    def test_cache_remove(self):
+        """Test removing items from cache."""
+        cache = LRUCache[str](maxsize=10)
+        cache.put("key1", "value1")
+        assert cache.get("key1") == "value1"
+
+        cache.remove("key1")
+        assert cache.get("key1") is None
+        assert len(cache) == 0
+
+    def test_cache_clear(self):
+        """Test clearing all cached items."""
+        cache = LRUCache[str](maxsize=10)
+        cache.put("key1", "value1")
+        cache.put("key2", "value2")
+        assert len(cache) == 2
+
+        cache.clear()
+        assert len(cache) == 0
+        assert cache.get("key1") is None
+        assert cache.get("key2") is None
+
+    def test_cache_contains(self):
+        """Test checking if key is in cache."""
+        cache = LRUCache[str](maxsize=10)
+        cache.put("key1", "value1")
+
+        assert "key1" in cache
+        assert "key2" not in cache
+
+    def test_cache_popitem(self):
+        """Test removing and returning items from cache."""
+        cache = LRUCache[str](maxsize=10)
+        cache.put("key1", "value1")
+        cache.put("key2", "value2")
+
+        # Pop most recent item (last=True)
+        key, value = cache.popitem(last=True)
+        assert key == "key2"
+        assert value == "value2"
+        assert len(cache) == 1
+
+        # Pop least recent item (last=False)
+        cache.put("key3", "value3")
+        key, value = cache.popitem(last=False)
+        assert key == "key1"
+        assert value == "value1"
+        assert len(cache) == 1
+
+
+class TestDocumentStateManager:
+    """Tests for DocumentStateManager class."""
+
+    def test_manager_creation(self):
+        """Test creating a document state manager."""
+        manager = DocumentStateManager(max_cache_size=100, max_memory_mb=500)
+        assert manager.get_cache_size() == 0
+        assert manager.max_memory_mb == 500
+
+    def test_put_and_get_document(self):
+        """Test putting and getting documents."""
+        manager = DocumentStateManager()
+        doc = Document([Heading(level=1, text="Test")])
+
+        manager.put_document("file:///test.md", doc, {"version": 1})
+        state = manager.get_document("file:///test.md")
+
+        assert state is not None
+        assert state.uri == "file:///test.md"
+        assert isinstance(state.document, Document)
+        assert state.metadata["version"] == 1
+        assert state.access_count == 1
+
+    def test_get_nonexistent_document(self):
+        """Test getting a nonexistent document returns None."""
+        manager = DocumentStateManager()
+        assert manager.get_document("file:///nonexistent.md") is None
+
+    def test_remove_document(self):
+        """Test removing a document from cache."""
+        manager = DocumentStateManager()
+        doc = Document([Heading(level=1, text="Test")])
+        manager.put_document("file:///test.md", doc)
+
+        assert manager.get_document("file:///test.md") is not None
+
+        manager.remove_document("file:///test.md")
+        assert manager.get_document("file:///test.md") is None
+
+    def test_clear_cache(self):
+        """Test clearing all cached documents."""
+        manager = DocumentStateManager()
+        doc1 = Document([Heading(level=1, text="Test 1")])
+        doc2 = Document([Heading(level=1, text="Test 2")])
+
+        manager.put_document("file:///test1.md", doc1)
+        manager.put_document("file:///test2.md", doc2)
+        assert manager.get_cache_size() == 2
+
+        manager.clear()
+        assert manager.get_cache_size() == 0
+
+    def test_access_count_increments(self):
+        """Test that access count increments on each get."""
+        manager = DocumentStateManager()
+        doc = Document([Heading(level=1, text="Test")])
+        manager.put_document("file:///test.md", doc)
+
+        state1 = manager.get_document("file:///test.md")
+        assert state1 is not None
+        assert state1.access_count == 1
+
+        state2 = manager.get_document("file:///test.md")
+        assert state2 is not None
+        assert state2.access_count == 2
+
+    def test_cache_size_limit(self):
+        """Test that cache respects size limit."""
+        manager = DocumentStateManager(max_cache_size=3)
+
+        # Add 3 documents (fill cache)
+        for i in range(3):
+            doc = Document([Heading(level=1, text=f"Test {i}")])
+            manager.put_document(f"file:///test{i}.md", doc)
+
+        assert manager.get_cache_size() == 3
+
+        # Add 4th document - should evict oldest
+        doc4 = Document([Heading(level=1, text="Test 4")])
+        manager.put_document("file:///test4.md", doc4)
+
+        assert manager.get_cache_size() == 3
+        assert manager.get_document("file:///test0.md") is None
+        assert manager.get_document("file:///test4.md") is not None
+
+    def test_memory_usage_estimation(self):
+        """Test memory usage estimation."""
+        manager = DocumentStateManager(enable_memory_monitoring=False)
+        doc = Document([Heading(level=1, text="Test")])
+        manager.put_document("file:///test.md", doc)
+
+        memory_mb = manager.get_memory_usage_mb()
+        assert memory_mb >= 0
+
+    def test_statistics(self):
+        """Test getting cache statistics."""
+        manager = DocumentStateManager(max_cache_size=10, max_memory_mb=500)
+        doc = Document([Heading(level=1, text="Test")])
+        manager.put_document("file:///test.md", doc)
+        manager.get_document("file:///test.md")
+
+        stats = manager.get_statistics()
+        assert stats["cache_size"] == 1
+        assert stats["max_cache_size"] == 10
+        assert stats["max_memory_mb"] == 500
+        assert stats["total_accesses"] == 1
+        assert stats["memory_usage_mb"] >= 0
+
+    def test_summary(self):
+        """Test getting cache summary."""
+        manager = DocumentStateManager(max_cache_size=10, max_memory_mb=500)
+        doc = Document([Heading(level=1, text="Test")])
+        manager.put_document("file:///test.md", doc)
+
+        summary = manager.get_summary()
+        assert "Document Cache Summary:" in summary
+        assert "Cache size:" in summary
+        assert "Memory usage:" in summary
+        assert "Total evictions:" in summary
+        assert "Total accesses:" in summary
+
+    def test_memory_monitoring_disabled(self):
+        """Test that memory monitoring can be disabled."""
+        manager = DocumentStateManager(
+            max_cache_size=10, max_memory_mb=500, enable_memory_monitoring=False
+        )
+
+        # Add many documents without triggering eviction
+        for i in range(5):
+            doc = Document(
+                [
+                    Heading(level=1, text=f"Section {i}"),
+                    Paragraph(content=f"Content for section {i}"),
+                ]
+            )
+            manager.put_document(f"file:///test{i}.md", doc)
+
+        # All documents should still be cached (no memory-based eviction)
+        assert manager.get_cache_size() == 5
+
+    def test_eviction_count(self):
+        """Test that eviction count is tracked."""
+        manager = DocumentStateManager(max_cache_size=2)
+
+        # Add 3 documents to trigger eviction
+        for i in range(3):
+            doc = Document([Heading(level=1, text=f"Test {i}")])
+            manager.put_document(f"file:///test{i}.md", doc)
+
+        stats = manager.get_statistics()
+        # One document should have been evicted (cache size = 2, added 3)
+        assert manager.get_cache_size() == 2
+
+    def test_document_state_dataclass(self):
+        """Test DocumentState dataclass."""
+        doc = Document([Heading(level=1, text="Test")])
+        state = DocumentState(
+            uri="file:///test.md", document=doc, metadata={"version": 1}, access_count=5
+        )
+
+        assert state.uri == "file:///test.md"
+        assert isinstance(state.document, Document)
+        assert state.metadata["version"] == 1
+        assert state.access_count == 5

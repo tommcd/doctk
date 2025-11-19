@@ -9,7 +9,7 @@ from typing import Any
 from doctk.core import Document
 from doctk.dsl.lexer import Lexer, LexerError
 from doctk.dsl.parser import Assignment, ASTNode, FunctionCall, ParseError, Parser, Pipeline
-from doctk.lsp.operations import StructureOperations
+from doctk.integration.operations import StructureOperations
 
 
 class ExecutionError(Exception):

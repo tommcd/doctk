@@ -24,42 +24,59 @@ The design follows a pluggable architecture pattern, separating interface concer
 
 ### High-Level Architecture
 
+**Updated 2025-11-19**: Core integration layer is now in `src/doctk/integration/` (platform-agnostic),
+separate from LSP-specific code in `src/doctk/lsp/`.
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     Interface Layer                          │
-│  ┌──────────────────┐         ┌─────────────────────────┐  │
-│  │  VS Code         │         │   Language Server       │  │
-│  │  Extension       │         │   (LSP)                 │  │
-│  └────────┬─────────┘         └──────────┬──────────────┘  │
-│           │                               │                  │
-└───────────┼───────────────────────────────┼──────────────────┘
-            │                               │
-            │                               │
-            └────────────┬──────────────────┘
-                         │
-            ┌────────────▼─────────────┐
-            │   Core Integration       │
-            │   Layer                  │
-            └────────────┬─────────────┘
-                         │
-        ┌────────────────┼────────────────┐
-        │                │                │
-        ▼                ▼                ▼
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│  Document    │  │  Extension   │  │  Script      │
-│  Operations  │  │  Bridge      │  │  Executor    │
-└──────┬───────┘  └──────┬───────┘  └──────┬───────┘
-       │                 │                 │
-       └─────────────────┼─────────────────┘
-                         │
-                         ▼
-              ┌─────────────────────┐
-              │  doctk Core API     │
-              │  - Document/Node    │
-              │  - UDAST            │
-              │  - Parser           │
-              └─────────────────────┘
+│  ┌──────────────────────┐         ┌──────────────────────┐  │
+│  │  VS Code Extension   │         │  Language Server     │  │
+│  │  (TypeScript)        │         │  (LSP - Python)      │  │
+│  │  extensions/         │         │  src/doctk/lsp/      │  │
+│  │  doctk-outliner/     │         │                      │  │
+│  └──────────┬───────────┘         └──────────┬───────────┘  │
+│             │                                │               │
+└─────────────┼────────────────────────────────┼───────────────┘
+              │                                │
+              │                                │
+              └────────────┬───────────────────┘
+                           │
+              ┌────────────▼──────────────┐
+              │  Core Integration Layer   │
+              │  src/doctk/integration/   │
+              │  (Platform-agnostic)      │
+              └────────────┬──────────────┘
+                           │
+          ┌────────────────┼────────────────┐
+          │                │                │
+          ▼                ▼                ▼
+  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+  │  Document    │  │  Extension   │  │  Script      │
+  │  Operations  │  │  Bridge      │  │  Executor    │
+  │  operations  │  │  bridge      │  │  (DSL)       │
+  │  .py         │  │  .py         │  │  src/doctk/  │
+  │              │  │              │  │  dsl/        │
+  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
+         │                 │                 │
+         └─────────────────┼─────────────────┘
+                           │
+                           ▼
+                ┌─────────────────────┐
+                │  doctk Core API     │
+                │  src/doctk/core.py  │
+                │  - Document/Node    │
+                │  - UDAST            │
+                │  - Parsers/Writers  │
+                └─────────────────────┘
 ```
+
+**Key Architectural Points:**
+
+- **Core Integration** (`src/doctk/integration/`) is platform-agnostic - no dependencies on LSP or UI
+- **LSP Server** (`src/doctk/lsp/`) depends on integration layer, not vice versa
+- **VS Code Extension** (`extensions/doctk-outliner/`) uses integration layer via JSON-RPC bridge
+- **Script Execution** (`src/doctk/dsl/`) uses integration layer for operations
 
 ### Component Responsibilities
 

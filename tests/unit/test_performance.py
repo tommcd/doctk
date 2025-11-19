@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from doctk.lsp.performance import Metric, OperationStats, PerformanceMonitor
+from doctk.integration.performance import Metric, OperationStats, PerformanceMonitor
 
 
 class TestMetric:

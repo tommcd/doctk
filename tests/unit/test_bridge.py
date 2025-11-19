@@ -1,6 +1,6 @@
 """Tests for the ExtensionBridge JSON-RPC interface."""
 
-from doctk.lsp.bridge import ExtensionBridge
+from doctk.integration.bridge import ExtensionBridge
 
 
 class TestExtensionBridge:

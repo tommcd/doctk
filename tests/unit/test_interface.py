@@ -5,8 +5,8 @@ from typing import Any
 import pytest
 
 from doctk.core import Document, Heading, Paragraph
-from doctk.lsp.operations import DocumentTreeBuilder, StructureOperations
-from doctk.lsp.protocols import DocumentInterface, OperationResult, TreeNode
+from doctk.integration.operations import DocumentTreeBuilder, StructureOperations
+from doctk.integration.protocols import DocumentInterface, OperationResult, TreeNode
 
 
 class MockInterface(DocumentInterface):

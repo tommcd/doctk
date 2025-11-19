@@ -126,10 +126,10 @@ Execute with: `doctk execute script.tk guide.md`
 
 Ready to dive in? Check out these resources:
 
-- **[Installation Guide](getting-started/installation/)** - Get doctk installed
-- **[Quick Start](getting-started/quick-start/)** - Hands-on tutorial
-- **[API Reference](api/core-integration/)** - Complete API documentation
-- **[Integration Guides](guides/adding-new-interface/)** - Extend doctk to new platforms
+- **[Installation Guide](getting-started/installation.md)** - Get doctk installed
+- **[Quick Start](getting-started/quick-start.md)** - Hands-on tutorial
+- **[API Reference](api/core-integration.md)** - Complete API documentation
+- **[Integration Guides](guides/adding-new-interface.md)** - Extend doctk to new platforms
 
 ---
 

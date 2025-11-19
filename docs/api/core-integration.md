@@ -627,7 +627,5 @@ uv run pytest -m slow      # Performance tests
 
 ## See Also
 
-- [Pluggable Architecture Design](../design/02-pluggable-architecture.md)
 - [DSL API Reference](./dsl.md)
 - [LSP API Reference](./lsp.md)
-- [Core API Reference](./core.md)

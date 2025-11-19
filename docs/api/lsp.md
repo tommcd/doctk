@@ -438,8 +438,3 @@ uv run pytest tests/unit/test_lsp*.py --cov=src/doctk/lsp
 
 - [DSL API Reference](./dsl.md) - doctk DSL language specification
 - [Core Integration API](./core-integration.md) - Integration layer documentation
-- [VS Code Extension](../../extensions/doctk-outliner/README.md) - Editor integration
-
-## Contributing
-
-See [CONTRIBUTING.md](../../CONTRIBUTING.md) for guidelines on contributing to the language server.

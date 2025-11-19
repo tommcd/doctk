@@ -19,9 +19,9 @@ This guide walks you through adding a new interface (UI implementation) for doct
 
 ### Example Interfaces
 
-- **VS Code Extension**: TypeScript extension with JSON-RPC bridge ([source](../../extensions/doctk-outliner/))
-- **CLI**: Command-line interface ([source](../../src/doctk/cli.py))
-- **REPL**: Interactive terminal interface ([source](../../src/doctk/dsl/repl.py))
+- **VS Code Extension**: TypeScript extension with JSON-RPC bridge (`extensions/doctk-outliner/`)
+- **CLI**: Command-line interface (`src/doctk/cli.py`)
+- **REPL**: Interactive terminal interface (`src/doctk/dsl/repl.py`)
 
 ---
 
@@ -784,10 +784,8 @@ for range in result.modified_ranges:
 ## Additional Resources
 
 - [Core Integration API Reference](../api/core-integration.md)
-- [Pluggable Architecture Design](../design/02-pluggable-architecture.md)
-- [VS Code Extension Source](../../extensions/doctk-outliner/)
-- [REPL Source](../../src/doctk/dsl/repl.py)
-- [Architecture Decisions](../design/03-core-integration-decisions.md)
+- VS Code Extension Source: `extensions/doctk-outliner/`
+- REPL Source: `src/doctk/dsl/repl.py`
 
 ---
 

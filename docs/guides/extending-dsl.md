@@ -715,8 +715,8 @@ Before submitting your new operation:
 
 - [DSL API Reference](../api/dsl.md)
 - [Core Integration API](../api/core-integration.md)
-- [Executor Source](../../src/doctk/dsl/executor.py)
-- [Operation Tests](../../tests/unit/test_structure_operations.py)
+- Executor Source: `src/doctk/dsl/executor.py`
+- Operation Tests: `tests/unit/test_structure_operations.py`
 
 ---
 

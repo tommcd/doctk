@@ -13,6 +13,7 @@ from lsprotocol.types import (
     TEXT_DOCUMENT_DID_CHANGE,
     TEXT_DOCUMENT_DID_CLOSE,
     TEXT_DOCUMENT_DID_OPEN,
+    TEXT_DOCUMENT_HOVER,
     CompletionList,
     CompletionParams,
     Diagnostic,
@@ -20,6 +21,8 @@ from lsprotocol.types import (
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
     DidOpenTextDocumentParams,
+    Hover,
+    HoverParams,
     Position,
     Range,
 )
@@ -28,6 +31,7 @@ from pygls.lsp.server import LanguageServer
 from doctk.dsl.lexer import Lexer, LexerError
 from doctk.dsl.parser import ParseError, Parser
 from doctk.lsp.completion import CompletionProvider
+from doctk.lsp.hover import HoverProvider
 from doctk.lsp.registry import OperationRegistry
 
 # Get logger for this module
@@ -61,9 +65,10 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
         super().__init__("doctk-lsp", "v0.1.0")
         self.documents: dict[str, DocumentState] = {}
 
-        # Initialize operation registry and completion provider
+        # Initialize operation registry and providers
         self.registry = OperationRegistry()
         self.completion_provider = CompletionProvider(self.registry)
+        self.hover_provider = HoverProvider(self.registry)
 
         # Register handlers
         self._register_handlers()
@@ -138,6 +143,27 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
 
             # Provide completions
             return self.completion_provider.provide_completions(text, params.position)
+
+        @self.feature(TEXT_DOCUMENT_HOVER)  # type: ignore[misc]
+        async def hover(
+            _ls: LanguageServer, params: HoverParams
+        ) -> Hover | None:
+            """Handle hover request."""
+            logger.info(
+                f"Hover requested at {params.position.line}:{params.position.character}"
+            )
+
+            uri = params.text_document.uri
+
+            # Get document text
+            if uri not in self.documents:
+                logger.warning(f"Document not found for hover: {uri}")
+                return None
+
+            text = self.documents[uri].text
+
+            # Provide hover information
+            return self.hover_provider.provide_hover(text, params.position)
 
     async def parse_and_validate(self, uri: str, text: str) -> None:
         """

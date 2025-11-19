@@ -105,34 +105,38 @@ This implementation plan breaks down the language server into discrete, actionab
     - _Requirements: 9_
     - _Tests in: tests/unit/test_completion_provider.py (28 tests, all passing)_
 
-- [ ] 4. Implement hover documentation provider
+- [x] 4. Implement hover documentation provider
 
-  - [ ] 4.1 Create HoverProvider class
+  - [x] 4.1 Create HoverProvider class
 
     - Implement hover position analysis
     - Identify operation or parameter under cursor
     - _Requirements: 10.1, 10.2_
+    - _Implemented in: src/doctk/lsp/hover.py (HoverProvider class, 437 lines)_
 
-  - [ ] 4.2 Generate hover documentation
+  - [x] 4.2 Generate hover documentation
 
     - Format operation documentation with descriptions
     - Include parameter information
     - Add usage examples
     - Include type information
     - _Requirements: 10.1, 10.2, 10.3, 10.4_
+    - _Implemented in: src/doctk/lsp/hover.py (_format_operation_documentation, _format_parameter_documentation)_
 
-  - [ ] 4.3 Optimize hover performance
+  - [x] 4.3 Optimize hover performance
 
     - Ensure 200ms response time
     - Cache documentation where appropriate
     - _Requirements: 10.5_
+    - _Implemented in: src/doctk/lsp/hover.py (TTL-based cache with 5s expiration, automatic periodic cleanup)_
 
-  - [ ] 4.4 Write tests for hover provider
+  - [x] 4.4 Write tests for hover provider
 
     - Test hover on operations
     - Test hover on parameters
     - Test documentation formatting
     - _Requirements: 10_
+    - _Tests in: tests/unit/test_hover_provider.py (29 tests, all passing, 92.48% coverage)_
 
 - [ ] 5. Add AI agent support to language server
 

@@ -437,6 +437,7 @@ def merge(document: Document[Node], node_id1: str, node_id2: str) -> OperationRe
     new_nodes = []
     new_nodes.extend(document.nodes[:start1])  # Before first section
     new_nodes.extend(document.nodes[start1:end1+1])  # First section
+    new_nodes.extend(document.nodes[end1+1:start2])  # Between sections (IMPORTANT!)
     new_nodes.extend(document.nodes[start2+1:end2+1])  # Second section content (skip heading)
     new_nodes.extend(document.nodes[end2+1:])  # After second section
 

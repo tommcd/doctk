@@ -92,7 +92,7 @@ The `DocumentInterface` protocol defines the contract for UI implementations. Im
 ```python
 from abc import ABC, abstractmethod
 from typing import Any
-from doctk.lsp.protocols import OperationResult
+from doctk.integration.protocols import OperationResult
 
 class DocumentInterface(ABC):
     """Abstract interface for document manipulation UIs."""
@@ -146,7 +146,7 @@ class DocumentInterface(ABC):
 ```python
 from doctk import Document
 from doctk.integration.operations import StructureOperations, DocumentTreeBuilder
-from doctk.lsp.protocols import DocumentInterface, OperationResult
+from doctk.integration.protocols import DocumentInterface, OperationResult
 
 class MyInterface(DocumentInterface):
     def __init__(self, document: Document):
@@ -164,9 +164,10 @@ class MyInterface(DocumentInterface):
         return self.selected_node_id
 
     def apply_operation(self, operation: Any) -> OperationResult:
-        """Apply operation."""
-        # Example: Execute operation via StructureOperations
-        result = self.operations.promote(self.document, self.selected_node_id)
+        """Apply operation dynamically."""
+        # operation should be a callable that returns OperationResult
+        # Example: lambda: self.operations.promote(self.document, node_id)
+        result = operation() if callable(operation) else operation
 
         if result.success:
             # Update internal state
@@ -482,7 +483,12 @@ if (result.success) {
 
 ## Complete Example: Jupyter Lab Widget
 
-Here's a complete example of a JupyterLab widget interface:
+Here's a complete example of a JupyterLab widget interface.
+
+**Prerequisites:**
+```bash
+pip install ipywidgets  # Required for this example
+```
 
 ```python
 # jupyterlab_doctk_widget.py
@@ -490,7 +496,7 @@ from ipywidgets import VBox, HBox, Button, Output, HTML
 from IPython.display import display
 from doctk import Document
 from doctk.integration.operations import StructureOperations, DocumentTreeBuilder
-from doctk.lsp.protocols import DocumentInterface
+from doctk.integration.protocols import DocumentInterface
 
 class DoctkWidget(DocumentInterface):
     """JupyterLab widget for doctk."""
@@ -560,7 +566,11 @@ class DoctkWidget(DocumentInterface):
             return
 
         result = self.operations.promote(self.document, self.selected_node_id)
-        if not result.success:
+        if result.success:
+            # Update document state
+            self.document = Document.from_string(result.document)
+            self.refresh_display()
+        else:
             self.show_error(result.error)
 
     def _handle_demote(self):
@@ -569,7 +579,11 @@ class DoctkWidget(DocumentInterface):
             return
 
         result = self.operations.demote(self.document, self.selected_node_id)
-        if not result.success:
+        if result.success:
+            # Update document state
+            self.document = Document.from_string(result.document)
+            self.refresh_display()
+        else:
             self.show_error(result.error)
 
     def _handle_save(self):
@@ -585,15 +599,21 @@ class DoctkWidget(DocumentInterface):
 
     def _tree_to_html(self, node, level=0):
         """Convert tree to HTML."""
+        import html
+
         indent = "  " * level
-        html = f"{indent}<div style='margin-left: {level*20}px;'>"
-        html += f"<a href='#' onclick='selectNode(\"{node.id}\")'>{node.label}</a>"
-        html += "</div>"
+        # Escape HTML to prevent injection
+        safe_id = html.escape(node.id, quote=True)
+        safe_label = html.escape(node.label)
+
+        html_str = f"{indent}<div style='margin-left: {level*20}px;'>"
+        html_str += f"<a href='#' onclick='selectNode(\"{safe_id}\")'>{safe_label}</a>"
+        html_str += "</div>"
 
         for child in node.children:
-            html += self._tree_to_html(child, level + 1)
+            html_str += self._tree_to_html(child, level + 1)
 
-        return html
+        return html_str
 
 # Usage in Jupyter notebook:
 # widget = DoctkWidget("document.md")

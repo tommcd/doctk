@@ -104,13 +104,37 @@ for token in tokens:
 
 ```python
 class TokenType(Enum):
-    DOC = auto()           # 'doc'
-    LET = auto()           # 'let'
-    PIPE = auto()          # '|'
-    EQUALS = auto()        # '='
+    # Literals
     IDENTIFIER = auto()    # Variable or operation name
-    NUMBER = auto()        # Numeric literal
-    STRING = auto()        # String literal
+    STRING = auto()        # "text" or 'text'
+    NUMBER = auto()        # 123, 3.14
+    BOOLEAN = auto()       # true, false
+
+    # Operators
+    PIPE = auto()          # |
+    EQUALS = auto()        # =
+    NOT_EQUALS = auto()    # !=
+    GREATER = auto()       # >
+    LESS = auto()          # <
+    GREATER_EQUAL = auto() # >=
+    LESS_EQUAL = auto()    # <=
+    TILDE_EQUALS = auto()  # ~= (regex match)
+    CARET_EQUALS = auto()  # ^= (starts with)
+    DOLLAR_EQUALS = auto() # $= (ends with)
+    STAR_EQUALS = auto()   # *= (contains)
+
+    # Keywords
+    LET = auto()           # let
+    DOC = auto()           # doc
+    WHERE = auto()         # where
+    SELECT = auto()        # select
+    TRUE = auto()          # true
+    FALSE = auto()         # false
+
+    # Delimiters
+    LPAREN = auto()        # (
+    RPAREN = auto()        # )
+    COMMA = auto()         # ,
     NEWLINE = auto()       # Line break
     EOF = auto()           # End of file
 ```
@@ -168,9 +192,10 @@ class Pipeline:
 
 @dataclass
 class FunctionCall:
-    """Function call: operation arg1 arg2"""
+    """Function call: name(arg1, arg2, key1=val1)"""
     name: str
-    arguments: list[Any]
+    args: list[Any]  # Positional arguments
+    kwargs: dict[str, Any]  # Keyword arguments
 
 @dataclass
 class Assignment:
@@ -304,13 +329,15 @@ Execute DSL scripts from files.
 
 #### Static Methods
 
-##### `execute_file(script_path: str | Path, document: Document[Any]) -> Document[Any]`
+##### `execute_file(script_path: str | Path, document_path: str | Path) -> Document[Any]`
 
-Execute a script file against a document.
+Execute a script file on a document.
+
+**Note:** This is an **instance method** - you must create a `ScriptExecutor` first.
 
 **Parameters:**
 - `script_path`: Path to `.tk` script file
-- `document`: Document to operate on
+- `document_path`: Path to document to transform
 
 **Returns:** Resulting document
 
@@ -322,12 +349,14 @@ from pathlib import Path
 from doctk import Document
 from doctk.dsl.executor import ScriptExecutor
 
+# Create executor (needs a document)
 doc = Document.from_file("example.md")
+executor = ScriptExecutor(doc)
 
-# Execute script
-result = ScriptExecutor.execute_file(
+# Execute script file on a document
+result = executor.execute_file(
     script_path=Path("script.tk"),
-    document=doc
+    document_path=Path("example.md")
 )
 
 result.to_file("output.md")
@@ -440,34 +469,39 @@ result = executor.execute_all_blocks(markdown)
 result.to_file("output.md")
 ```
 
-##### `execute_from_file(markdown_path, doc_path, block_index=None) -> Document`
+##### `execute_file(markdown_path, block_index=0) -> Document`
 
-Execute code blocks from a Markdown file.
+Execute a specific code block from a Markdown file.
+
+**Note:** This is an **instance method** - you must create a `CodeBlockExecutor` with a document first.
 
 **Parameters:**
 - `markdown_path`: Path to Markdown file with code blocks
-- `doc_path`: Path to document to transform
-- `block_index`: Optional index of specific block to execute (0-based)
+- `block_index`: Index of code block to execute (0-based, default: 0)
 
 **Returns:** Resulting document
 
 **Example:**
 ```python
 from pathlib import Path
+from doctk import Document
 from doctk.dsl.codeblock import CodeBlockExecutor
 
+# Load the document to transform
+doc = Document.from_file("document.md")
+
+# Create executor
+executor = CodeBlockExecutor(doc)
+
 # Execute specific block (index 0)
-result = CodeBlockExecutor.execute_from_file(
+result = executor.execute_file(
     markdown_path=Path("instructions.md"),
-    doc_path=Path("document.md"),
     block_index=0
 )
 
-# Execute all blocks
-result = CodeBlockExecutor.execute_from_file(
-    markdown_path=Path("instructions.md"),
-    doc_path=Path("document.md")
-)
+# Execute all blocks sequentially (using execute_all_blocks)
+markdown_text = Path("instructions.md").read_text()
+result = executor.execute_all_blocks(markdown_text)
 ```
 
 ---
@@ -635,8 +669,15 @@ from pathlib import Path
 from doctk import Document
 from doctk.dsl.executor import ScriptExecutor
 
+# Create executor
 doc = Document.from_file("input.md")
-result = ScriptExecutor.execute_file(Path("transform.tk"), doc)
+executor = ScriptExecutor(doc)
+
+# Execute script file
+result = executor.execute_file(
+    script_path=Path("transform.tk"),
+    document_path=Path("input.md")
+)
 result.to_file("output.md")
 ```
 
@@ -644,13 +685,22 @@ result.to_file("output.md")
 
 ```python
 from pathlib import Path
+from doctk import Document
 from doctk.dsl.codeblock import CodeBlockExecutor
 
-# Execute all blocks in Markdown file
-result = CodeBlockExecutor.execute_from_file(
-    markdown_path=Path("instructions.md"),
-    doc_path=Path("document.md")
-)
+# Load document
+doc = Document.from_file("document.md")
+
+# Create executor and execute code blocks
+executor = CodeBlockExecutor(doc)
+
+# Execute specific block
+result = executor.execute_file(Path("instructions.md"), block_index=0)
+result.to_file("transformed.md")
+
+# Or execute all blocks sequentially
+markdown_text = Path("instructions.md").read_text()
+result = executor.execute_all_blocks(markdown_text)
 result.to_file("transformed.md")
 ```
 

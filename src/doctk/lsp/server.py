@@ -150,6 +150,11 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
                 f"Completion requested at {params.position.line}:{params.position.character}"
             )
 
+            # Check if language server is enabled
+            if not self.config.enabled:
+                logger.debug("Language server disabled, returning empty completion list")
+                return CompletionList(is_incomplete=False, items=[])
+
             uri = params.text_document.uri
 
             # Get document text
@@ -168,6 +173,11 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
         async def hover(_ls: LanguageServer, params: HoverParams) -> Hover | None:
             """Handle hover request."""
             logger.info(f"Hover requested at {params.position.line}:{params.position.character}")
+
+            # Check if language server is enabled
+            if not self.config.enabled:
+                logger.debug("Language server disabled, returning no hover")
+                return None
 
             uri = params.text_document.uri
 
@@ -190,6 +200,11 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
                 f"Signature help requested at {params.position.line}:{params.position.character}"
             )
 
+            # Check if language server is enabled
+            if not self.config.enabled:
+                logger.debug("Language server disabled, returning no signature help")
+                return None
+
             uri = params.text_document.uri
 
             # Get document text
@@ -208,6 +223,11 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
         ) -> list[DocumentSymbol] | None:
             """Handle document symbols request."""
             logger.info(f"Document symbols requested for {params.text_document.uri}")
+
+            # Check if language server is enabled
+            if not self.config.enabled:
+                logger.debug("Language server disabled, returning no document symbols")
+                return None
 
             uri = params.text_document.uri
 
@@ -261,6 +281,13 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
             uri: Document URI
             text: Document text content
         """
+        # Check if language server is enabled
+        if not self.config.enabled:
+            logger.debug("Language server disabled, skipping validation")
+            # Clear diagnostics when disabled
+            self.text_document_publish_diagnostics(uri, [])
+            return
+
         diagnostics = self.validate_syntax(text)
 
         # Store diagnostics in document state

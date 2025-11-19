@@ -90,12 +90,8 @@ class CompletionProvider:
         cached = self._get_cached_completion(cache_key)
         if cached:
             logger.debug(f"Cache hit for completion at {position}")
-            # Apply max_items limit to cached result
-            if max_items is not None and len(cached.items) > max_items:
-                return CompletionList(
-                    is_incomplete=True, items=cached.items[:max_items]
-                )
-            return cached
+            # Apply max_items limit to cached result and return
+            return self._apply_max_items_limit(cached, max_items)
 
         # Generate completions based on context
         if analysis.context == CompletionContext.START_OF_LINE:
@@ -107,15 +103,28 @@ class CompletionProvider:
         else:
             completions = CompletionList(is_incomplete=False, items=[])
 
-        # Apply max_items limit
-        if max_items is not None and len(completions.items) > max_items:
-            completions = CompletionList(
-                is_incomplete=True, items=completions.items[:max_items]
-            )
-
-        # Cache the result
+        # Cache the FULL result (before applying max_items limit)
+        # This allows users to increase max_items later and see more results
         self._cache_completion(cache_key, completions)
 
+        # Apply max_items limit and return
+        return self._apply_max_items_limit(completions, max_items)
+
+    def _apply_max_items_limit(
+        self, completions: CompletionList, max_items: int | None
+    ) -> CompletionList:
+        """
+        Apply max_items limit to completion list.
+
+        Args:
+            completions: Full completion list
+            max_items: Maximum number of items to return (None for unlimited)
+
+        Returns:
+            CompletionList with limit applied if necessary
+        """
+        if max_items is not None and len(completions.items) > max_items:
+            return CompletionList(is_incomplete=True, items=completions.items[:max_items])
         return completions
 
     def _analyze_context(self, document: str, position: Position) -> CompletionAnalysis:

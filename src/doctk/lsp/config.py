@@ -46,6 +46,78 @@ class LSPConfiguration:
     # Internal tracking
     _warnings: list[str] = field(default_factory=list, init=False, repr=False)
 
+    def _validate_trace(self, trace_value: Any, use_default: bool = True) -> None:
+        """
+        Validate and update trace level.
+
+        Args:
+            trace_value: Trace level value to validate
+            use_default: If True, use default on invalid value; if False, keep current
+        """
+        try:
+            self.trace = TraceLevel(trace_value)
+        except ValueError:
+            default_or_current = (
+                f"'{TraceLevel.OFF.value}'" if use_default else f"'{self.trace.value}'"
+            )
+            action = "Using default" if use_default else "Keeping current"
+            self._warnings.append(
+                f"Invalid trace level '{trace_value}'. "
+                f"Valid values are: {[t.value for t in TraceLevel]}. "
+                f"{action}: {default_or_current}"
+            )
+            logger.warning(self._warnings[-1])
+
+    def _validate_max_completion_items(self, max_items: Any, use_default: bool = True) -> None:
+        """
+        Validate and update max completion items.
+
+        Args:
+            max_items: Max items value to validate
+            use_default: If True, use default on invalid value; if False, keep current
+        """
+        if isinstance(max_items, int) and max_items > 0:
+            self.max_completion_items = max_items
+        else:
+            default_or_current = 50 if use_default else self.max_completion_items
+            action = "Using default" if use_default else "Keeping current"
+            self._warnings.append(
+                f"Invalid maxCompletionItems '{max_items}'. "
+                "Must be a positive integer. "
+                f"{action}: {default_or_current}"
+            )
+            logger.warning(self._warnings[-1])
+
+    def _validate_enabled(self, enabled: Any, use_default: bool = True) -> None:
+        """
+        Validate and update enabled flag.
+
+        Args:
+            enabled: Enabled value to validate
+            use_default: If True, use default on invalid value; if False, keep current
+        """
+        if isinstance(enabled, bool):
+            self.enabled = enabled
+        else:
+            default_or_current = True if use_default else self.enabled
+            action = "Using default" if use_default else "Keeping current"
+            self._warnings.append(
+                f"Invalid enabled value '{enabled}'. "
+                "Must be a boolean. "
+                f"{action}: {default_or_current}"
+            )
+            logger.warning(self._warnings[-1])
+
+    def _validate_python_command(self, python_cmd: Any) -> None:
+        """
+        Validate and update Python command.
+
+        Args:
+            python_cmd: Python command value to validate
+        """
+        if isinstance(python_cmd, str):
+            self.python_command = python_cmd
+
     @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> LSPConfiguration:
         """
@@ -72,50 +144,18 @@ class LSPConfiguration:
         """
         instance = cls()
 
-        # Validate and set trace level
+        # Validate and set each field using helper methods
         if "trace" in config_dict:
-            trace_value = config_dict["trace"]
-            try:
-                instance.trace = TraceLevel(trace_value)
-            except ValueError:
-                instance._warnings.append(
-                    f"Invalid trace level '{trace_value}'. "
-                    f"Valid values are: {[t.value for t in TraceLevel]}. "
-                    f"Using default: '{TraceLevel.OFF.value}'"
-                )
-                logger.warning(instance._warnings[-1])
+            instance._validate_trace(config_dict["trace"], use_default=True)
 
-        # Validate and set max completion items
         if "maxCompletionItems" in config_dict:
-            max_items = config_dict["maxCompletionItems"]
-            if isinstance(max_items, int) and max_items > 0:
-                instance.max_completion_items = max_items
-            else:
-                instance._warnings.append(
-                    f"Invalid maxCompletionItems '{max_items}'. "
-                    "Must be a positive integer. "
-                    "Using default: 50"
-                )
-                logger.warning(instance._warnings[-1])
+            instance._validate_max_completion_items(config_dict["maxCompletionItems"], use_default=True)
 
-        # Validate and set enabled
         if "enabled" in config_dict:
-            enabled = config_dict["enabled"]
-            if isinstance(enabled, bool):
-                instance.enabled = enabled
-            else:
-                instance._warnings.append(
-                    f"Invalid enabled value '{enabled}'. "
-                    "Must be a boolean. "
-                    "Using default: True"
-                )
-                logger.warning(instance._warnings[-1])
+            instance._validate_enabled(config_dict["enabled"], use_default=True)
 
-        # Python command (informational only, not validated by server)
         if "pythonCommand" in config_dict:
-            python_cmd = config_dict["pythonCommand"]
-            if isinstance(python_cmd, str):
-                instance.python_command = python_cmd
+            instance._validate_python_command(config_dict["pythonCommand"])
 
         return instance
 
@@ -154,50 +194,18 @@ class LSPConfiguration:
         # Clear previous warnings
         self._warnings = []
 
-        # Validate and update trace level
+        # Validate and update each field using helper methods
         if "trace" in config_dict:
-            trace_value = config_dict["trace"]
-            try:
-                self.trace = TraceLevel(trace_value)
-            except ValueError:
-                self._warnings.append(
-                    f"Invalid trace level '{trace_value}'. "
-                    f"Valid values are: {[t.value for t in TraceLevel]}. "
-                    f"Keeping current: '{self.trace.value}'"
-                )
-                logger.warning(self._warnings[-1])
+            self._validate_trace(config_dict["trace"], use_default=False)
 
-        # Validate and update max completion items
         if "maxCompletionItems" in config_dict:
-            max_items = config_dict["maxCompletionItems"]
-            if isinstance(max_items, int) and max_items > 0:
-                self.max_completion_items = max_items
-            else:
-                self._warnings.append(
-                    f"Invalid maxCompletionItems '{max_items}'. "
-                    "Must be a positive integer. "
-                    f"Keeping current: {self.max_completion_items}"
-                )
-                logger.warning(self._warnings[-1])
+            self._validate_max_completion_items(config_dict["maxCompletionItems"], use_default=False)
 
-        # Validate and update enabled
         if "enabled" in config_dict:
-            enabled = config_dict["enabled"]
-            if isinstance(enabled, bool):
-                self.enabled = enabled
-            else:
-                self._warnings.append(
-                    f"Invalid enabled value '{enabled}'. "
-                    "Must be a boolean. "
-                    f"Keeping current: {self.enabled}"
-                )
-                logger.warning(self._warnings[-1])
+            self._validate_enabled(config_dict["enabled"], use_default=False)
 
-        # Update python command
         if "pythonCommand" in config_dict:
-            python_cmd = config_dict["pythonCommand"]
-            if isinstance(python_cmd, str):
-                self.python_command = python_cmd
+            self._validate_python_command(config_dict["pythonCommand"])
 
         return self._warnings
 
@@ -214,31 +222,3 @@ class LSPConfiguration:
             "enabled": self.enabled,
             "pythonCommand": self.python_command,
         }
-
-
-# Global configuration instance
-# This is initialized with defaults and updated via LSP configuration messages
-_global_config = LSPConfiguration()
-
-
-def get_config() -> LSPConfiguration:
-    """
-    Get the global LSP configuration instance.
-
-    Returns:
-        Global LSPConfiguration instance
-    """
-    return _global_config
-
-
-def update_config(config_dict: dict[str, Any]) -> list[str]:
-    """
-    Update the global configuration from a dictionary.
-
-    Args:
-        config_dict: Configuration dictionary from LSP client
-
-    Returns:
-        List of validation warnings
-    """
-    return _global_config.update_from_dict(config_dict)

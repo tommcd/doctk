@@ -4,7 +4,7 @@ I need you to analyze all Kiro specs in `.kiro/specs/`, assess the current state
 
 ## Your Mission
 
-1. **Assess the current state** across all specs
+1. **Assess the current state** across all specs except those in the 'old' directory
 1. **Identify critical issues** (failing tests, missing tests, blockers)
 1. **Suggest the next few steps** with rationale
 1. **Offer options** for what to work on next

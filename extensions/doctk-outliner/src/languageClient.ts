@@ -13,6 +13,7 @@ import {
   LanguageClient,
   LanguageClientOptions,
   ServerOptions,
+  State,
   TransportKind,
 } from 'vscode-languageclient/node';
 
@@ -21,9 +22,14 @@ export class DoctkLanguageClient {
   private restartAttempts = 0;
   private maxRestartAttempts = 3;
   private restartDelay = 2000; // 2 seconds
+  private traceOutputChannel: vscode.OutputChannel;
+  private isManualShutdown = false;
+  private isRestarting = false;
 
   constructor(_context: vscode.ExtensionContext) {
     // Context not currently used but kept for future extensibility
+    // Initialize trace output channel once (reused across restarts)
+    this.traceOutputChannel = vscode.window.createOutputChannel('doctk LSP Trace');
   }
 
   /**
@@ -78,8 +84,8 @@ export class DoctkLanguageClient {
       // Output channel for debugging
       outputChannelName: 'doctk Language Server',
 
-      // Trace level for debugging (from configuration)
-      traceOutputChannel: vscode.window.createOutputChannel('doctk LSP Trace'),
+      // Reuse trace output channel (initialized in constructor)
+      traceOutputChannel: this.traceOutputChannel,
     };
 
     // Create and start the language client
@@ -94,9 +100,12 @@ export class DoctkLanguageClient {
     this.client.onDidChangeState((event) => {
       console.log(`Language server state changed: ${event.oldState} -> ${event.newState}`);
 
-      // If server crashed, attempt to restart
-      if (event.newState === 3) {
-        // State.Stopped
+      // If server stopped unexpectedly (crashed), attempt to restart
+      // Only trigger crash handler if:
+      // 1. New state is Stopped (1)
+      // 2. Not a manual shutdown (deactivation)
+      // 3. Not already in the process of restarting
+      if (event.newState === State.Stopped && !this.isManualShutdown && !this.isRestarting) {
         this.handleServerCrash();
       }
     });
@@ -122,11 +131,16 @@ export class DoctkLanguageClient {
   async stop(): Promise<void> {
     if (this.client) {
       try {
+        // Mark as manual shutdown to prevent crash handler from firing
+        this.isManualShutdown = true;
         await this.client.stop();
         console.log('doctk language server stopped');
         this.client = null;
       } catch (error) {
         console.error('Error stopping language server:', error);
+      } finally {
+        // Reset flag after stop completes or fails
+        this.isManualShutdown = false;
       }
     }
   }
@@ -138,6 +152,11 @@ export class DoctkLanguageClient {
    * After max attempts, shows an error message and gives up.
    */
   private async handleServerCrash(): Promise<void> {
+    // Prevent concurrent restart attempts
+    if (this.isRestarting) {
+      return;
+    }
+
     if (this.restartAttempts >= this.maxRestartAttempts) {
       vscode.window.showErrorMessage(
         `doctk language server has crashed ${this.maxRestartAttempts} times. ` +
@@ -146,8 +165,11 @@ export class DoctkLanguageClient {
       return;
     }
 
+    this.isRestarting = true;
     this.restartAttempts++;
-    const delay = this.restartDelay * this.restartAttempts; // Exponential backoff
+
+    // Exponential backoff: 2s, 4s, 8s
+    const delay = this.restartDelay * Math.pow(2, this.restartAttempts - 1);
 
     console.log(
       `Language server crashed. Attempting restart ${this.restartAttempts}/${this.maxRestartAttempts} in ${delay}ms...`
@@ -169,6 +191,8 @@ export class DoctkLanguageClient {
       vscode.window.showErrorMessage(
         `Failed to restart language server: ${error instanceof Error ? error.message : String(error)}`
       );
+    } finally {
+      this.isRestarting = false;
     }
   }
 
@@ -178,7 +202,7 @@ export class DoctkLanguageClient {
    * @returns True if the server is running, false otherwise
    */
   isRunning(): boolean {
-    return this.client !== null;
+    return this.client !== null && this.client.state === State.Running;
   }
 
   /**

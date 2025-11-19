@@ -74,13 +74,15 @@ class TestLanguageServerDocumentHandling:
         """Test parsing and validation of a simple document."""
         server = DoctkLanguageServer()
 
-        text = "doc input.md | select heading"
+        # Valid DSL syntax
+        text = "doc | select heading"
 
         # Parse and validate
         diagnostics = server.validate_syntax(text)
 
         # Should have no errors for valid syntax
         assert isinstance(diagnostics, list)
+        assert len(diagnostics) == 0, f"Valid syntax should produce no diagnostics, got: {diagnostics}"
 
     def test_parse_and_validate_invalid_document(self):
         """Test parsing and validation of a document with errors."""
@@ -91,8 +93,10 @@ class TestLanguageServerDocumentHandling:
         # Parse and validate
         diagnostics = server.validate_syntax(text)
 
-        # Should have errors for invalid syntax (or at least not crash)
+        # Should have errors for invalid syntax
         assert isinstance(diagnostics, list)
+        # Note: Current parser is lenient and may not report errors for all invalid syntax
+        # This test verifies it doesn't crash, not that it necessarily reports errors
 
 
 class TestLanguageServerFeatureProviders:
@@ -102,9 +106,9 @@ class TestLanguageServerFeatureProviders:
         """Test that completions can be generated."""
         server = DoctkLanguageServer()
 
-        uri = "file:///test.tk"
-        text = "doc input.md | "
-        position = (0, 15)  # After the pipe
+        # Valid DSL syntax with cursor after pipe
+        text = "doc | "
+        position = (0, 6)  # After the pipe
 
         # Get completions
         from lsprotocol.types import Position
@@ -119,8 +123,9 @@ class TestLanguageServerFeatureProviders:
         """Test that hover information can be generated."""
         server = DoctkLanguageServer()
 
-        text = "doc input.md | select heading"
-        position = (0, 16)  # On "select"
+        # Valid DSL syntax
+        text = "doc | select heading"
+        position = (0, 7)  # On "select"
 
         # Get hover info
         from lsprotocol.types import Position
@@ -135,8 +140,9 @@ class TestLanguageServerFeatureProviders:
         """Test that signature help can be generated."""
         server = DoctkLanguageServer()
 
-        text = "doc input.md | where(level=2)"
-        position = (0, 22)  # Inside "where"
+        # Valid DSL syntax with function call
+        text = "doc | where(level=2)"
+        position = (0, 13)  # Inside "where"
 
         # Get signature help
         from lsprotocol.types import Position
@@ -144,14 +150,16 @@ class TestLanguageServerFeatureProviders:
         pos = Position(line=position[0], character=position[1])
         sig_help = server.provide_signature_help(text, pos)
 
-        # Should return signature help
-        assert sig_help is not None or sig_help is None  # May or may not have signature help
+        # Signature help may or may not be available depending on cursor position
+        # This test verifies the method doesn't crash
+        assert sig_help is None or (hasattr(sig_help, "signatures") and len(sig_help.signatures) >= 0)
 
     def test_document_symbols_integration(self):
         """Test that document symbols can be extracted."""
         server = DoctkLanguageServer()
 
-        text = "doc input.md | select heading | promote"
+        # Valid DSL syntax
+        text = "doc | select heading | promote"
 
         # Extract symbols
         symbols = server.extract_document_symbols(text)
@@ -181,15 +189,17 @@ class TestLanguageServerErrorHandling:
 
         diagnostics = server.validate_syntax(text)
 
-        # Should not crash, should have errors
+        # Should not crash (main test objective)
         assert isinstance(diagnostics, list)
+        # Parser should detect malformed syntax
+        # Note: Actual error reporting depends on parser implementation
 
     def test_very_long_document_handling(self):
         """Test that very long documents are handled efficiently."""
         server = DoctkLanguageServer()
 
-        # Create a very long pipeline
-        text = "doc input.md" + " | select heading" * 100
+        # Create a very long pipeline with valid syntax
+        text = "doc" + " | select heading" * 100
 
         # Should not crash or timeout
         diagnostics = server.validate_syntax(text)

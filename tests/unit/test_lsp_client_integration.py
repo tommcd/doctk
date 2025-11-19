@@ -4,7 +4,6 @@ These tests verify that the language server can be started, stopped, and
 properly handles client connections.
 """
 
-import pytest
 
 from doctk.lsp.server import DoctkLanguageServer
 

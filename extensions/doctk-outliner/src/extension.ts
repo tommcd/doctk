@@ -40,9 +40,8 @@ export async function activate(context: vscode.ExtensionContext) {
   outlineProvider = new DocumentOutlineProvider(pythonBridge);
 
   // Initialize document synchronization manager
-  const config_sync = vscode.workspace.getConfiguration('doctk.outliner');
-  const refreshDelay = config_sync.get('refreshDelay', 300);
-  syncManager = new DocumentSyncManager(outlineProvider, refreshDelay);
+  // Note: Debouncing is handled by outline provider to avoid double debouncing
+  syncManager = new DocumentSyncManager(outlineProvider);
 
   // Register tree data provider with drag-and-drop support
   treeView = vscode.window.createTreeView('doctkOutline', {
@@ -62,7 +61,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('doctk.refresh', () => {
       const editor = vscode.window.activeTextEditor;
       if (editor && editor.document.languageId === 'markdown') {
-        outlineProvider.updateFromDocument(editor.document);
+        syncManager.onDocumentChange(editor.document);
       }
     })
   );
@@ -79,31 +78,51 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand('doctk.promote', async (node: OutlineNode) => {
-      await executeOperation('promote', node);
+      try {
+        await executeOperation('promote', node);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to promote section: ${error instanceof Error ? error.message : String(error)}`);
+      }
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand('doctk.demote', async (node: OutlineNode) => {
-      await executeOperation('demote', node);
+      try {
+        await executeOperation('demote', node);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to demote section: ${error instanceof Error ? error.message : String(error)}`);
+      }
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand('doctk.moveUp', async (node: OutlineNode) => {
-      await executeOperation('move_up', node);
+      try {
+        await executeOperation('move_up', node);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to move section up: ${error instanceof Error ? error.message : String(error)}`);
+      }
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand('doctk.moveDown', async (node: OutlineNode) => {
-      await executeOperation('move_down', node);
+      try {
+        await executeOperation('move_down', node);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to move section down: ${error instanceof Error ? error.message : String(error)}`);
+      }
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand('doctk.delete', async (node: OutlineNode) => {
-      await executeOperation('delete', node);
+      try {
+        await executeOperation('delete', node);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to delete section: ${error instanceof Error ? error.message : String(error)}`);
+      }
     })
   );
 
@@ -118,29 +137,13 @@ export async function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // Listen for document changes
+  // Listen for document content changes
+  // Sync manager coordinates updates and prevents circular updates via isUpdating flag
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument((event) => {
       const editor = vscode.window.activeTextEditor;
       if (editor && event.document === editor.document && event.document.languageId === 'markdown') {
         syncManager.onDocumentChange(event.document);
-      }
-    })
-  );
-
-  // Listen for external file changes (Requirement 16.5)
-  context.subscriptions.push(
-    vscode.workspace.onDidSaveTextDocument((document) => {
-      // Check if this save was triggered externally (not by our extension)
-      const editor = vscode.window.activeTextEditor;
-      if (
-        editor &&
-        document === editor.document &&
-        document.languageId === 'markdown' &&
-        !syncManager.isCurrentlyUpdating()
-      ) {
-        // Treat as potential external change
-        syncManager.onExternalChange(document);
       }
     })
   );
@@ -174,7 +177,9 @@ async function executeOperation(operation: string, node: OutlineNode): Promise<v
     return;
   }
 
-  // Wrap operation in sync manager to prevent circular updates
+  // Execute operation within sync manager context to prevent circular updates.
+  // The sync manager sets isUpdating flag to prevent onDocumentChange from
+  // firing while we're applying tree operation changes to the document.
   await syncManager.onTreeViewChange(async () => {
     // Get document text
     const documentText = document.getText();
@@ -225,7 +230,7 @@ async function executeOperation(operation: string, node: OutlineNode): Promise<v
 
       await vscode.workspace.applyEdit(edit);
 
-      // Update tree view (sync manager handles preventing circular updates)
+      // Update tree view to reflect changes
       outlineProvider.updateFromDocument(document);
     } else {
       throw new Error(result.error || 'Operation failed');

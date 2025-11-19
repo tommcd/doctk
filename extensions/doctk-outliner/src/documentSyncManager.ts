@@ -2,7 +2,11 @@
  * Document Synchronization Manager
  *
  * Manages bidirectional synchronization between the tree view and editor,
- * with debouncing, error handling, and recovery mechanisms.
+ * with error handling and recovery mechanisms.
+ *
+ * NOTE: Debouncing is handled by the outline provider to avoid double
+ * debouncing. This manager focuses on preventing circular updates and
+ * error recovery.
  */
 
 import * as vscode from 'vscode';
@@ -16,25 +20,23 @@ export interface SyncError {
 }
 
 export class DocumentSyncManager {
-  private debounceTimer: NodeJS.Timeout | null = null;
-  private readonly debounceDelay: number;
+  // Configuration constants
+  private static readonly ERROR_WARNING_THRESHOLD = 3;
+  private static readonly MAX_ERRORS = 10;
+  private static readonly RECOVERY_DELAY_MS = 1000;
+  private static readonly ERROR_TTL_MS = 60000; // 1 minute
+
   private isUpdating = false;
   private lastSyncVersion = 0;
   private syncErrors: SyncError[] = [];
-  private readonly maxErrors = 10;
 
-  constructor(
-    private outlineProvider: DocumentOutlineProvider,
-    debounceDelay = 300 // milliseconds
-  ) {
-    this.debounceDelay = debounceDelay;
-  }
+  constructor(private outlineProvider: DocumentOutlineProvider) {}
 
   /**
    * Handle document changes from the editor.
    *
-   * This is called when the user types in the editor or when external
-   * modifications occur. Updates are debounced to prevent excessive refreshes.
+   * This is called when the user types in the editor. The outline provider
+   * handles its own debouncing, so we just coordinate the update here.
    *
    * @param document - The changed text document
    */
@@ -44,21 +46,18 @@ export class DocumentSyncManager {
       return;
     }
 
-    // Debounce updates to prevent excessive refreshes during rapid typing
-    this.debounceUpdate(() => {
-      try {
-        this.outlineProvider.updateFromDocument(document);
-        this.lastSyncVersion++;
-        this.clearOldErrors();
-      } catch (error) {
-        this.handleSyncError({
-          message: `Failed to update tree from document: ${error}`,
-          timestamp: Date.now(),
-          recoverable: true,
-          source: 'editor',
-        });
-      }
-    });
+    try {
+      this.outlineProvider.updateFromDocument(document);
+      this.lastSyncVersion++;
+      this.clearOldErrors();
+    } catch (error) {
+      this.handleSyncError({
+        message: `Failed to update tree from document: ${this.formatError(error)}`,
+        timestamp: Date.now(),
+        recoverable: true,
+        source: 'editor',
+      });
+    }
   }
 
   /**
@@ -78,7 +77,7 @@ export class DocumentSyncManager {
       this.clearOldErrors();
     } catch (error) {
       this.handleSyncError({
-        message: `Failed to apply tree operation: ${error}`,
+        message: `Failed to apply tree operation: ${this.formatError(error)}`,
         timestamp: Date.now(),
         recoverable: true,
         source: 'tree',
@@ -87,52 +86,6 @@ export class DocumentSyncManager {
     } finally {
       this.isUpdating = false;
     }
-  }
-
-  /**
-   * Handle external file modifications.
-   *
-   * This is called when the file is modified outside of VS Code or by
-   * another extension. Attempts to reconcile changes and update both views.
-   *
-   * @param document - The externally modified document
-   */
-  async onExternalChange(document: vscode.TextDocument): Promise<void> {
-    try {
-      // Clear any pending debounced updates
-      if (this.debounceTimer) {
-        clearTimeout(this.debounceTimer);
-        this.debounceTimer = null;
-      }
-
-      // Immediately update the tree view
-      this.outlineProvider.updateFromDocument(document);
-      this.lastSyncVersion++;
-
-      // Show notification to user
-      vscode.window.showInformationMessage(
-        'Document outline updated due to external changes'
-      );
-    } catch (error) {
-      this.handleSyncError({
-        message: `Failed to handle external change: ${error}`,
-        timestamp: Date.now(),
-        recoverable: false,
-        source: 'external',
-      });
-    }
-  }
-
-  /**
-   * Debounce updates to prevent excessive refreshes.
-   *
-   * @param callback - The callback to debounce
-   */
-  private debounceUpdate(callback: () => void): void {
-    if (this.debounceTimer) {
-      clearTimeout(this.debounceTimer);
-    }
-    this.debounceTimer = setTimeout(callback, this.debounceDelay);
   }
 
   /**
@@ -146,7 +99,7 @@ export class DocumentSyncManager {
   private handleSyncError(error: SyncError): void {
     // Record error
     this.syncErrors.push(error);
-    if (this.syncErrors.length > this.maxErrors) {
+    if (this.syncErrors.length > DocumentSyncManager.MAX_ERRORS) {
       this.syncErrors.shift(); // Remove oldest error
     }
 
@@ -163,7 +116,7 @@ export class DocumentSyncManager {
         `Document synchronization error: ${error.message}. ` +
           'Try closing and reopening the file.'
       );
-    } else if (this.syncErrors.length >= 3) {
+    } else if (this.syncErrors.length >= DocumentSyncManager.ERROR_WARNING_THRESHOLD) {
       // Show warning if multiple errors occur
       vscode.window.showWarningMessage(
         'Multiple synchronization errors detected. Document outline may be out of sync.'
@@ -182,8 +135,13 @@ export class DocumentSyncManager {
    * @param error - The error to recover from
    */
   private attemptRecovery(error: SyncError): void {
-    // For now, simple recovery: refresh the outline from the current document
     setTimeout(() => {
+      // Check if we're currently updating to avoid circular updates
+      if (this.isUpdating) {
+        console.log(`[DocumentSyncManager] Skipping recovery attempt - update in progress`);
+        return;
+      }
+
       try {
         const editor = vscode.window.activeTextEditor;
         if (editor && editor.document.languageId === 'markdown') {
@@ -193,15 +151,28 @@ export class DocumentSyncManager {
       } catch (recoveryError) {
         console.error('[DocumentSyncManager] Recovery attempt failed:', recoveryError);
       }
-    }, 1000); // Wait 1 second before attempting recovery
+    }, DocumentSyncManager.RECOVERY_DELAY_MS);
   }
 
   /**
-   * Clear old errors (older than 1 minute).
+   * Clear old errors (older than ERROR_TTL_MS).
    */
   private clearOldErrors(): void {
-    const oneMinuteAgo = Date.now() - 60000;
-    this.syncErrors = this.syncErrors.filter((err) => err.timestamp > oneMinuteAgo);
+    const cutoffTime = Date.now() - DocumentSyncManager.ERROR_TTL_MS;
+    this.syncErrors = this.syncErrors.filter((err) => err.timestamp > cutoffTime);
+  }
+
+  /**
+   * Format error for display.
+   *
+   * @param error - Unknown error object
+   * @returns Formatted error message
+   */
+  private formatError(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return String(error);
   }
 
   /**
@@ -235,10 +206,6 @@ export class DocumentSyncManager {
    * Cleanup resources.
    */
   dispose(): void {
-    if (this.debounceTimer) {
-      clearTimeout(this.debounceTimer);
-      this.debounceTimer = null;
-    }
     this.syncErrors = [];
   }
 }

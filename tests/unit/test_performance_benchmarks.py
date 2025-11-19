@@ -15,8 +15,8 @@ from typing import Any
 import pytest
 
 from doctk.core import Document, Heading, Paragraph
-from doctk.lsp.operations import DocumentTreeBuilder, StructureOperations
-from doctk.lsp.performance import PerformanceMonitor
+from doctk.integration.operations import DocumentTreeBuilder, StructureOperations
+from doctk.integration.performance import PerformanceMonitor
 
 # Performance thresholds from requirements.md (Requirement 17)
 STRUCTURAL_OPERATION_THRESHOLD = 2.0  # seconds (Requirement 17.4)

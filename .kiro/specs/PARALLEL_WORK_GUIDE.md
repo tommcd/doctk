@@ -133,11 +133,70 @@ The only shared files are:
 
 ## Quick Reference
 
-| Spec Name | Directory | Tasks File |
-|-----------|-----------|------------|
-| Core Integration | `src/doctk/integration/` | `.kiro/specs/doctk-core-integration/tasks.md` |
+| Spec Name | Primary Directories | Tasks File |
+|-----------|---------------------|------------|
+| Core Integration | `src/doctk/integration/`, `src/doctk/dsl/` | `.kiro/specs/doctk-core-integration/tasks.md` |
 | VS Code Extension | `extensions/doctk-outliner/` | `.kiro/specs/vscode-outliner-extension/tasks.md` |
 | Language Server | `src/doctk/lsp/` | `.kiro/specs/doctk-language-server/tasks.md` |
+
+## Architectural Organization (Updated 2025-11-19)
+
+### Core Integration Layer (`src/doctk/integration/`)
+
+**Purpose**: Platform-agnostic integration layer used by ALL consumers (CLI, VS Code, LSP, future interfaces)
+
+**Key modules**:
+- `operations.py` - StructureOperations, DocumentTreeBuilder
+- `bridge.py` - ExtensionBridge (JSON-RPC for TypeScript)
+- `memory.py` - DocumentStateManager, LRUCache
+- `performance.py` - PerformanceMonitor
+- `protocols.py` - DocumentInterface, OperationResult, TreeNode, etc.
+- `compat.py` - CompatibilityChecker, version management
+
+**Dependencies**: Only depends on `doctk.core` (no LSP or UI dependencies)
+
+### Language Server (`src/doctk/lsp/`)
+
+**Purpose**: LSP-specific functionality for IDE integration
+
+**Key modules**:
+- `server.py` - DoctkLanguageServer
+- `completion.py` - CompletionProvider
+- `hover.py` - HoverProvider
+- `ai_support.py` - AIAgentSupport
+- `registry.py` - OperationRegistry
+- `config.py` - LSPConfiguration
+
+**Dependencies**: Depends on `doctk.integration` for core operations
+
+**Note**: `doctk.lsp` re-exports integration items for backward compatibility, but new code should import from `doctk.integration` directly.
+
+### VS Code Extension (`extensions/doctk-outliner/`)
+
+**Purpose**: VS Code-specific UI and tree view
+
+**Dependencies**: Uses `doctk.integration.bridge` for communication with Python backend
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     doctk Core API                           │
+│                  (Document, Node, parsers)                   │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│              doctk Integration Layer                         │
+│  (Platform-agnostic operations, bridge, memory, perf)       │
+└────────┬────────────────────────────┬───────────────────────┘
+         │                            │
+         ▼                            ▼
+┌────────────────────────┐   ┌────────────────────────────────┐
+│  VS Code Extension     │   │  LSP Server                    │
+│  (TypeScript UI)       │   │  (Python LSP features)         │
+└────────────────────────┘   └────────────────────────────────┘
+```
 
 ## Summary
 

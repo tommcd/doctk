@@ -170,7 +170,7 @@ class TestREPLOperations:
         repl_instance.load_document(temp_markdown_file)
 
         # Get the original heading level
-        from doctk.lsp.operations import DocumentTreeBuilder
+        from doctk.integration.operations import DocumentTreeBuilder
 
         original_builder = DocumentTreeBuilder(repl_instance.document)
         original_node = original_builder.find_node("h2-0")

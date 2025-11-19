@@ -1,7 +1,7 @@
 """Tests for memory management functionality."""
 
 from doctk.core import Document, Heading, Paragraph
-from doctk.lsp.memory import DocumentState, DocumentStateManager, LRUCache
+from doctk.integration.memory import DocumentState, DocumentStateManager, LRUCache
 
 
 class TestLRUCache:

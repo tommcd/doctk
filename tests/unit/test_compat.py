@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from doctk.lsp.compat import (
+from doctk.integration.compat import (
     CompatibilityChecker,
     VersionInfo,
     check_compatibility,
@@ -191,7 +191,7 @@ class TestCompatibilityChecker:
         available = checker.check_feature("future_feature", "99.0.0")
         assert available is False
 
-    @patch("doctk.lsp.compat.importlib.metadata.version")
+    @patch("doctk.integration.compat.importlib.metadata.version")
     def test_checker_handles_old_version(self, mock_version):
         """Test checker warns about old version."""
         # Simulate old doctk version
@@ -204,7 +204,7 @@ class TestCompatibilityChecker:
         assert checker.doctk_version.minor == 0
         assert checker.doctk_version.patch == 1
 
-    @patch("doctk.lsp.compat.importlib.metadata.version")
+    @patch("doctk.integration.compat.importlib.metadata.version")
     def test_checker_handles_package_not_found(self, mock_version):
         """Test checker handles missing doctk package."""
         mock_version.side_effect = importlib.metadata.PackageNotFoundError("doctk")
@@ -309,7 +309,7 @@ class TestBreakingChanges:
         assert hasattr(CompatibilityChecker, "MIN_VERSION")
         assert isinstance(CompatibilityChecker.MIN_VERSION, VersionInfo)
 
-    @patch("doctk.lsp.compat.importlib.metadata.version")
+    @patch("doctk.integration.compat.importlib.metadata.version")
     def test_breaking_changes_detection(self, mock_version, monkeypatch):
         """Test that breaking changes are detected and logged."""
         # Simulate version with breaking changes

@@ -1,9 +1,9 @@
-"""Document structure operations for the LSP integration layer."""
+"""Document structure operations for the core integration layer."""
 
 from __future__ import annotations
 
 from doctk.core import Document, Heading, Node
-from doctk.lsp.protocols import ModifiedRange, OperationResult, TreeNode, ValidationResult
+from doctk.integration.protocols import ModifiedRange, OperationResult, TreeNode, ValidationResult
 
 
 class DocumentTreeBuilder:

@@ -9,8 +9,8 @@ import traceback
 from typing import Any
 
 from doctk.core import Document
-from doctk.lsp.operations import DocumentTreeBuilder, StructureOperations
-from doctk.lsp.protocols import OperationResult, TreeNode
+from doctk.integration.operations import DocumentTreeBuilder, StructureOperations
+from doctk.integration.protocols import OperationResult, TreeNode
 
 
 class ExtensionBridge:

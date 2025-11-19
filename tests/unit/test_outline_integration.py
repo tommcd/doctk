@@ -1,7 +1,7 @@
 """Tests for outline tree building and integration."""
 
 from doctk.core import Document, Heading, Paragraph
-from doctk.lsp.operations import DocumentTreeBuilder
+from doctk.integration.operations import DocumentTreeBuilder
 
 
 class TestOutlineTreeBuilding:
@@ -251,7 +251,7 @@ class TestOutlineOperationsIntegration:
             ]
         )
 
-        from doctk.lsp.operations import StructureOperations
+        from doctk.integration.operations import StructureOperations
 
         # Promote h2 to h1
         result = StructureOperations.promote(doc, "h2-0")
@@ -279,7 +279,7 @@ class TestOutlineOperationsIntegration:
             ]
         )
 
-        from doctk.lsp.operations import StructureOperations
+        from doctk.integration.operations import StructureOperations
 
         # Demote h1 to h2
         result = StructureOperations.demote(doc, "h1-0")
@@ -307,7 +307,7 @@ class TestOutlineOperationsIntegration:
             ]
         )
 
-        from doctk.lsp.operations import StructureOperations
+        from doctk.integration.operations import StructureOperations
 
         # Move third up
         result = StructureOperations.move_up(doc, "h1-2")

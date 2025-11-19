@@ -249,7 +249,7 @@ class TestAPIConsistency:
     def test_all_operations_use_same_document_type(self):
         """Test that all operations use doctk.core.Document consistently."""
         from doctk.core import Document as CoreDocument
-        from doctk.lsp.operations import DocumentTreeBuilder, StructureOperations
+        from doctk.integration.operations import DocumentTreeBuilder, StructureOperations
 
         doc_text = "# Test\n\n## Section\n"
         doc = CoreDocument.from_string(doc_text)

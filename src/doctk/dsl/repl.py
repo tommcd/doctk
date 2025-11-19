@@ -9,12 +9,12 @@ from rich.console import Console
 from rich.table import Table
 
 from doctk.core import Document, Heading
-from doctk.lsp.operations import DocumentTreeBuilder, StructureOperations
+from doctk.integration.operations import DocumentTreeBuilder, StructureOperations
 
 if TYPE_CHECKING:
     from rich.tree import Tree
 
-    from doctk.lsp.protocols import TreeNode
+    from doctk.integration.protocols import TreeNode
 
 console = Console()
 

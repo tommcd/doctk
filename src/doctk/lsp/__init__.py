@@ -1,40 +1,52 @@
-"""Language Server Protocol support for doctk."""
+"""Language Server Protocol support for doctk.
 
-from doctk.lsp.bridge import ExtensionBridge
-from doctk.lsp.compat import (
+This module provides LSP-specific functionality for the doctk DSL.
+For core integration functionality (operations, bridge, memory, etc.),
+use doctk.integration instead.
+"""
+
+# Re-export core integration items for backward compatibility
+# DEPRECATED: Import from doctk.integration instead
+from doctk.integration import (
     CompatibilityChecker,
+    DocumentInterface,
+    DocumentOperation,
+    DocumentStateManager,
+    DocumentTreeBuilder,
+    ExtensionBridge,
+    LRUCache,
+    OperationResult,
+    PerformanceMonitor,
+    StructureOperations,
+    ValidationResult,
     VersionInfo,
     check_compatibility,
     check_feature,
     get_compatibility_checker,
     get_doctk_version,
 )
-from doctk.lsp.memory import DocumentStateManager, LRUCache
-from doctk.lsp.operations import DocumentTreeBuilder, StructureOperations
-from doctk.lsp.performance import PerformanceMonitor
-from doctk.lsp.protocols import (
-    DocumentInterface,
-    DocumentOperation,
-    OperationResult,
-    ValidationResult,
-)
+
+# LSP-specific exports
 from doctk.lsp.registry import OperationMetadata, OperationRegistry, ParameterInfo
 from doctk.lsp.server import DoctkLanguageServer, DocumentState
 
 __all__ = [
-    "CompatibilityChecker",
+    # LSP-specific items (primary exports)
     "DoctkLanguageServer",
+    "DocumentState",
+    "OperationMetadata",
+    "OperationRegistry",
+    "ParameterInfo",
+    # Core integration items (re-exported for backward compatibility)
+    # Use doctk.integration instead
+    "CompatibilityChecker",
     "DocumentInterface",
     "DocumentOperation",
-    "DocumentState",
     "DocumentStateManager",
     "DocumentTreeBuilder",
     "ExtensionBridge",
     "LRUCache",
-    "OperationMetadata",
-    "OperationRegistry",
     "OperationResult",
-    "ParameterInfo",
     "PerformanceMonitor",
     "StructureOperations",
     "ValidationResult",

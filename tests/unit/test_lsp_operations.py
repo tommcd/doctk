@@ -1,8 +1,8 @@
-"""Tests for LSP structure operations."""
+"""Tests for integration layer structure operations."""
 
 from doctk.core import Document, Heading, Paragraph
-from doctk.lsp.operations import DocumentTreeBuilder, StructureOperations
-from doctk.lsp.protocols import TreeNode
+from doctk.integration.operations import DocumentTreeBuilder, StructureOperations
+from doctk.integration.protocols import TreeNode
 
 
 class TestDocumentTreeBuilder:

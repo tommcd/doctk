@@ -116,7 +116,7 @@ class TestInterfacePluggability:
         assert isinstance(cli.operations, StructureOperations)
 
         # Operations should be the same type (same class, different instances)
-        assert type(simple.operations) == type(cli.operations)
+        assert type(simple.operations) is type(cli.operations)
 
     def test_interfaces_can_be_swapped(self, sample_document):
         """Test that interfaces can be swapped without changing core logic."""

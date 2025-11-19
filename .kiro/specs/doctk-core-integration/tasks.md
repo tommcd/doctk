@@ -316,24 +316,34 @@ This implementation plan breaks down the core integration layer and execution ca
     - All benchmarks now pass with optimized implementation
     - _Requirements: 17_
 
-- [ ] 11. Implement error recovery and resilience
+- [x] 11. Implement error recovery and resilience
 
-  - [ ] 11.1 Create ErrorHandler class
+  - [x] 11.1 Create ErrorHandler class
 
-    - Implement error classification (network, validation, system)
-    - Add retry logic with exponential backoff
+    - Implemented error classification (network, validation, system, parsing, operation, unknown)
+    - Added retry logic with exponential backoff
+    - Created RetryConfig for configurable retry behavior
+    - Implemented is_retryable() to determine which errors should be retried
+    - Location: `src/doctk/integration/errors.py` (ErrorHandler class)
     - _Requirements: 18.4_
 
-  - [ ] 11.2 Add comprehensive error logging
+  - [x] 11.2 Add comprehensive error logging
 
-    - Log detailed diagnostic information
-    - Include stack traces for debugging
+    - Implemented log_error() method with detailed diagnostic information
+    - All logging includes stack traces via exc_info=True
+    - Retry attempts log warnings with error category
+    - Successful recoveries log info messages
+    - Exported via `src/doctk/integration/__init__.py`
     - _Requirements: 18.5_
 
-  - [ ] 11.3 Write tests for error recovery
+  - [x] 11.3 Write tests for error recovery
 
-    - Test retry logic
-    - Test error classification
+    - Created 32 comprehensive tests in `tests/unit/test_error_handler.py`
+    - Tested error classification (9 tests covering all categories)
+    - Tested retry logic (13 tests including exponential backoff)
+    - Tested error logging (5 tests including stack traces)
+    - Tested statistics tracking (5 tests)
+    - All tests passing ✅
     - _Requirements: 18_
 
 - [ ] 12. Implement security features

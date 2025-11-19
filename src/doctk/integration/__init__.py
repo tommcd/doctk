@@ -14,6 +14,7 @@ from doctk.integration.compat import (
     get_compatibility_checker,
     get_doctk_version,
 )
+from doctk.integration.errors import ErrorCategory, ErrorHandler, RetryConfig
 from doctk.integration.memory import DocumentStateManager, LRUCache
 from doctk.integration.operations import DocumentTreeBuilder, StructureOperations
 from doctk.integration.performance import PerformanceMonitor
@@ -32,11 +33,14 @@ __all__ = [
     "DocumentOperation",
     "DocumentStateManager",
     "DocumentTreeBuilder",
+    "ErrorCategory",
+    "ErrorHandler",
     "ExtensionBridge",
     "LRUCache",
     "ModifiedRange",
     "OperationResult",
     "PerformanceMonitor",
+    "RetryConfig",
     "StructureOperations",
     "TreeNode",
     "ValidationResult",

@@ -256,7 +256,7 @@ This implementation plan breaks down the language server into discrete, actionab
     - Add memory usage monitoring
     - Evict least recently used documents when memory limit reached
     - _Requirements: 17.5_
-    - _Implemented in: src/doctk/lsp/memory.py_
+    - _Implemented in: src/doctk/integration/memory.py_
     - _Tests in: tests/unit/test_memory.py (22 tests, all passing)_
 
   - [x] 8.2 Write performance tests

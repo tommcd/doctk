@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
-**Version**: 0.1.0 (MVP Complete - Ready for Release)
+**Version**: 0.1.0-dev (MVP Complete - Pre-Release)
 
 ## Philosophy
 

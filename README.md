@@ -187,7 +187,7 @@ doc1.diff(doc2)       # Unique to doc1
 
 ## Project Status
 
-**Version**: 0.1.0 (MVP Complete - Ready for Release)
+**Version**: 0.1.0-dev (MVP Complete - Pre-Release)
 
 ✅ **Implemented**:
 
@@ -239,10 +239,14 @@ doc1.diff(doc2)       # Unique to doc1
 - Error recovery and resilience
 - Comprehensive E2E testing
 
-📋 **Remaining for v0.1.0 Release**:
+📋 **Before Public v0.1.0 Release**:
 
+See [Release Preparation Checklist](.kiro/specs/release-preparation/tasks.md) for detailed tasks:
+- Logo design and branding
+- Distribution strategy (PyPI vs local-only)
+- VS Code marketplace preparation (if publishing)
+- Documentation for end users
 - GitHub release and changelog
-- Publish VS Code extension to marketplace (optional)
 
 🚀 **Planned for v0.2.0**:
 

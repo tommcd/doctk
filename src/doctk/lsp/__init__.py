@@ -1,6 +1,14 @@
 """Language Server Protocol support for doctk."""
 
 from doctk.lsp.bridge import ExtensionBridge
+from doctk.lsp.compat import (
+    CompatibilityChecker,
+    VersionInfo,
+    check_compatibility,
+    check_feature,
+    get_compatibility_checker,
+    get_doctk_version,
+)
 from doctk.lsp.memory import DocumentStateManager, LRUCache
 from doctk.lsp.operations import DocumentTreeBuilder, StructureOperations
 from doctk.lsp.performance import PerformanceMonitor
@@ -14,6 +22,7 @@ from doctk.lsp.registry import OperationMetadata, OperationRegistry, ParameterIn
 from doctk.lsp.server import DoctkLanguageServer, DocumentState
 
 __all__ = [
+    "CompatibilityChecker",
     "DoctkLanguageServer",
     "DocumentInterface",
     "DocumentOperation",
@@ -29,4 +38,9 @@ __all__ = [
     "PerformanceMonitor",
     "StructureOperations",
     "ValidationResult",
+    "VersionInfo",
+    "check_compatibility",
+    "check_feature",
+    "get_compatibility_checker",
+    "get_doctk_version",
 ]

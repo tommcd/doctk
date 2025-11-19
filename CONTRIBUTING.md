@@ -84,16 +84,41 @@ uv run doctk demo
 
 ```
 doctk/
-├── src/doctk/         # Main source code
-│   ├── core.py        # Document/Node abstractions
-│   ├── operations.py  # Composable operations
-│   ├── outliner.py    # Structure visualization
-│   ├── cli.py         # Command-line interface
-│   ├── parsers/       # Format readers
-│   └── writers/       # Format writers
-├── tests/             # Test suite
-├── docs/              # Documentation
-└── examples/          # Example documents
+├── src/doctk/              # Main source code
+│   ├── core.py             # Document/Node abstractions
+│   ├── operations.py       # Composable operations
+│   ├── outliner.py         # Structure visualization
+│   ├── cli.py              # Command-line interface
+│   ├── parsers/            # Format readers
+│   ├── writers/            # Format writers
+│   ├── integration/        # Core integration layer (platform-agnostic)
+│   │   ├── operations.py   # Document structure operations
+│   │   ├── bridge.py       # JSON-RPC bridge
+│   │   ├── protocols.py    # Type definitions
+│   │   ├── memory.py       # Memory management
+│   │   └── performance.py  # Performance monitoring
+│   ├── dsl/                # DSL (Domain-Specific Language)
+│   │   ├── lexer.py        # Tokenization
+│   │   ├── parser.py       # AST generation
+│   │   ├── executor.py     # DSL execution
+│   │   ├── repl.py         # Interactive REPL
+│   │   └── codeblock.py    # Markdown code blocks
+│   └── lsp/                # Language Server Protocol
+│       ├── server.py       # LSP server
+│       ├── completion.py   # Code completion
+│       └── hover.py        # Hover documentation
+├── extensions/             # Editor extensions
+│   └── doctk-outliner/     # VS Code extension (TypeScript)
+├── tests/                  # Test suite
+│   ├── unit/               # Unit tests
+│   ├── e2e/                # End-to-end tests
+│   ├── quality/            # Quality/meta tests
+│   └── docs/               # Documentation tests
+├── docs/                   # Documentation
+│   ├── api/                # API reference docs
+│   ├── design/             # Design documents & ADRs
+│   └── development/        # Development guides
+└── examples/               # Example documents
 ```
 
 ## Development Workflow
@@ -222,6 +247,50 @@ git push origin feature/your-feature-name
 ```
 
 Then create a Pull Request on GitHub.
+
+## Key Modules
+
+### Core API (`src/doctk/core.py`)
+
+The foundation: `Document` and `Node` abstractions, immutable transformations.
+
+**When to modify:** Adding new node types, core document operations.
+
+### Integration Layer (`src/doctk/integration/`)
+
+Platform-agnostic bridge between core API and UIs. Includes:
+- **operations.py**: Document structure operations (promote, demote, nest, etc.)
+- **bridge.py**: JSON-RPC bridge for TypeScript-Python communication
+- **protocols.py**: Type definitions and interfaces
+- **memory.py**: LRU cache for document states
+- **performance.py**: Performance monitoring
+
+**When to modify:** Adding new operations, improving performance, memory management.
+
+**See:** [Core Integration API](docs/api/core-integration.md)
+
+### DSL Layer (`src/doctk/dsl/`)
+
+Domain-Specific Language for document manipulation. Includes:
+- **lexer.py**: Tokenization of DSL syntax
+- **parser.py**: AST generation
+- **executor.py**: DSL execution engine
+- **repl.py**: Interactive REPL
+- **codeblock.py**: Markdown code block execution
+
+**When to modify:** Extending DSL syntax, adding new operations to DSL.
+
+**See:** [DSL API Reference](docs/api/dsl.md)
+
+### LSP Layer (`src/doctk/lsp/`)
+
+Language Server Protocol implementation for editor support. Includes:
+- **server.py**: LSP server
+- **completion.py**: Code completion provider
+- **hover.py**: Hover documentation provider
+- **registry.py**: Operation registry
+
+**When to modify:** Adding LSP features, improving IDE integration.
 
 ## Code Quality Standards
 

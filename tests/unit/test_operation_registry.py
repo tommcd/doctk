@@ -305,3 +305,38 @@ class TestRegistryIntegration:
         assert not ops_without_examples, (
             f"Missing examples for operations: {', '.join(ops_without_examples)}"
         )
+
+    def test_search_operations_by_name(self):
+        """Test searching operations by name."""
+        registry = OperationRegistry()
+
+        # Search for "head" should find "heading"
+        results = registry.search_operations("head")
+        assert len(results) > 0, "Should find operations with 'head' in name"
+        assert any(op.name == "heading" for op in results)
+
+    def test_search_operations_by_description(self):
+        """Test searching operations by description."""
+        registry = OperationRegistry()
+
+        # Search for "level" should find operations that mention levels
+        results = registry.search_operations("level")
+        assert len(results) > 0, "Should find operations mentioning 'level'"
+
+    def test_search_operations_case_insensitive(self):
+        """Test that search is case-insensitive."""
+        registry = OperationRegistry()
+
+        # Both should find the same results
+        results_lower = registry.search_operations("select")
+        results_upper = registry.search_operations("SELECT")
+
+        assert len(results_lower) == len(results_upper)
+        assert results_lower[0].name == results_upper[0].name
+
+    def test_search_operations_no_results(self):
+        """Test searching for non-existent operations."""
+        registry = OperationRegistry()
+
+        results = registry.search_operations("nonexistent_operation_xyz")
+        assert len(results) == 0, "Should return empty list for no matches"

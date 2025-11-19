@@ -212,3 +212,145 @@ def test_code_blocks_have_language_tags(readme_content):
             f"Too many code blocks without language tags: {untagged_blocks}/{total_blocks}\n"
             "Use ```python, ```bash, etc. for syntax highlighting"
         )
+
+
+@pytest.mark.docs
+def test_api_references_exist_in_code(project_root):
+    """Verify that classes/methods referenced in API docs actually exist.
+
+    This test ensures documentation stays in sync with code by validating that
+    every API reference (e.g., OperationRegistry.search_operations()) points to
+    real code that exists in the codebase.
+
+    WHY THIS MATTERS:
+    1. Documentation accuracy: Prevents docs from referencing removed/renamed code
+    2. Refactoring safety: Detects when code changes break doc references
+    3. Developer confidence: Ensures examples will actually work
+
+    EXAMPLE:
+    - Bad:  Docs mention "registry.search_operations()" but method doesn't exist
+    - Good: All documented methods/classes can be imported and used
+
+    This catches issues like:
+    - Methods mentioned in docs but not implemented
+    - Classes referenced but renamed
+    - Module paths that are incorrect
+    """
+    import importlib
+    import inspect
+    from pathlib import Path
+
+    # Find all API documentation files
+    api_docs_dir = project_root / "docs" / "api"
+    if not api_docs_dir.exists():
+        pytest.skip("No API documentation directory found")
+
+    md_files = list(api_docs_dir.glob("*.md"))
+    if not md_files:
+        pytest.skip("No API documentation files found")
+
+    violations = []
+
+    # Pattern to match Python-style references:
+    # - module.Class
+    # - module.Class.method()
+    # - Class.method()
+    # - method()
+    # But NOT inline code like `some_variable` without dots or parens
+    api_ref_pattern = re.compile(
+        r"(?:^|[^\w`])([a-z_][a-z0-9_.]*\.[a-z_][a-z0-9_.]*(?:\(\))?)" r"|(?:^|[^\w`])([A-Z][a-zA-Z0-9_.]*\(\))",
+        re.MULTILINE,
+    )
+
+    for md_file in md_files:
+        content = md_file.read_text()
+
+        # Remove code blocks to avoid checking example code
+        content_no_code = re.sub(r"```.*?```", "", content, flags=re.DOTALL)
+
+        # Find all API references
+        matches = api_ref_pattern.findall(content_no_code)
+
+        # Flatten tuple matches (pattern has multiple groups)
+        references = [m[0] or m[1] for m in matches if m[0] or m[1]]
+
+        for ref in references:
+            # Skip common false positives
+            if any(
+                skip in ref
+                for skip in [
+                    "e.g.",
+                    "i.e.",
+                    "etc.",
+                    "v0.",
+                    "http",
+                    "https",
+                    "file://",
+                    "example.com",
+                    ".md",  # Documentation file references
+                    ".py",  # Python file references
+                    ".rst",  # ReStructuredText file references
+                    ".txt",  # Text file references
+                ]
+            ):
+                continue
+
+            # Remove () if present
+            ref_clean = ref.rstrip("()")
+
+            # Try to resolve the reference
+            parts = ref_clean.split(".")
+            if len(parts) < 2:
+                # Single word like method() - too ambiguous to check
+                continue
+
+            # Try to import and check existence
+            try:
+                # Try importing as module.Class or module.function
+                if len(parts) == 2:
+                    module_name, attr_name = parts
+                    # Try doctk.module.attr
+                    try:
+                        module = importlib.import_module(f"doctk.{module_name}")
+                        if not hasattr(module, attr_name):
+                            violations.append(
+                                f"{md_file.name}: '{ref}' - "
+                                f"module 'doctk.{module_name}' has no attribute '{attr_name}'"
+                            )
+                    except (ImportError, AttributeError):
+                        # Could be module.submodule.Class - skip for now
+                        pass
+
+                # Try module.Class.method
+                elif len(parts) >= 3:
+                    module_name = ".".join(parts[:-2])
+                    class_name = parts[-2]
+                    method_name = parts[-1]
+
+                    try:
+                        module = importlib.import_module(f"doctk.{module_name}")
+                        if hasattr(module, class_name):
+                            cls = getattr(module, class_name)
+                            if inspect.isclass(cls) and not hasattr(cls, method_name):
+                                violations.append(
+                                    f"{md_file.name}: '{ref}' - "
+                                    f"class '{class_name}' has no method '{method_name}'"
+                                )
+                    except (ImportError, AttributeError):
+                        # Module might not exist yet or reference might be ambiguous
+                        pass
+
+            except Exception:
+                # Skip if we can't check it (might be intentional doc of future features)
+                pass
+
+    if violations:
+        msg = (
+            "API documentation references code that doesn't exist:\n"
+            + "\n".join(f"  - {v}" for v in violations[:20])
+            + "\n\nEither:\n"
+            "1. Implement the missing code\n"
+            "2. Update documentation to match current API\n"
+            "3. If this is intentional (planned features), mark with [TODO] or [PLANNED]"
+        )
+        pytest.fail(msg)

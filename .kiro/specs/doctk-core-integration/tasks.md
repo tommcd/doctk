@@ -281,7 +281,7 @@ This implementation plan breaks down the core integration layer and execution ca
 
   - [x] 10.2 Implement memory management
 
-    - Implemented `LRUCache` class in `src/doctk/lsp/memory.py`
+    - Implemented `LRUCache` class in `src/doctk/integration/memory.py`
     - Implemented `DocumentStateManager` class with LRU caching
     - Added memory usage monitoring (500MB threshold)
     - Implemented automatic eviction of least recently used documents

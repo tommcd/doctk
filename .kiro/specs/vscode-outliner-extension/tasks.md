@@ -192,7 +192,7 @@ This implementation plan breaks down the VS Code outliner extension into discret
     - Implement `onTreeViewChange()` to handle tree operations
     - Add debouncing for rapid changes
     - _Requirements: 16.1, 16.2, 16.3_
-    - COMPLETED: Created DocumentSyncManager class in src/documentSyncManager.ts
+    - COMPLETED: Created DocumentSyncManager class in extensions/doctk-outliner/src/documentSyncManager.ts
     - Includes debouncing (configurable via doctk.outliner.refreshDelay)
     - Prevents circular updates with isUpdating flag
     - Tracks sync version and errors

@@ -159,7 +159,7 @@ class AIAgentSupport:
 
         Example:
             >>> support = AIAgentSupport(registry)
-            >>> suggestions = support.get_context_aware_suggestions('increase heading level')
+            >>> suggestions = support.get_context_aware_suggestions('decrease heading level')
             >>> print(suggestions[0].operation)
             'demote'
         """
@@ -168,91 +168,68 @@ class AIAgentSupport:
         # Simple keyword-based matching (can be enhanced with ML in the future)
         intent_lower = intent.lower()
 
-        # Structure operation keywords
-        if any(
-            kw in intent_lower
-            for kw in ["promote", "increase level", "move up", "lift", "raise"]
-        ):
-            if self.registry.operation_exists("promote"):
-                op = self.registry.get_operation("promote")
-                if op:
-                    suggestions.append(
-                        OperationSuggestion(
-                            operation="promote",
-                            confidence=0.9,
-                            reason="Promotes heading levels (e.g., h3 -> h2)",
-                            example=op.examples[0] if op.examples else "doc | promote()",
-                        )
-                    )
+        # Operation suggestion rules: (keywords, operation, reason, confidence)
+        suggestion_rules = [
+            (
+                ["promote", "increase level", "move up", "lift", "raise"],
+                "promote",
+                "Promotes heading levels (e.g., h3 -> h2)",
+                0.9,
+            ),
+            (
+                ["demote", "decrease", "decrease level", "move down", "lower"],
+                "demote",
+                "Demotes heading levels (e.g., h2 -> h3)",
+                0.9,
+            ),
+            (
+                ["nest", "indent", "move under"],
+                "nest",
+                "Nests sections under a target section",
+                0.85,
+            ),
+            (
+                ["unnest", "outdent", "move out"],
+                "unnest",
+                "Removes nesting from sections",
+                0.85,
+            ),
+        ]
 
-        if any(
-            kw in intent_lower
-            for kw in ["demote", "decrease", "decrease level", "move down", "lower"]
-        ):
-            if self.registry.operation_exists("demote"):
-                op = self.registry.get_operation("demote")
-                if op:
-                    suggestions.append(
-                        OperationSuggestion(
-                            operation="demote",
-                            confidence=0.9,
-                            reason="Demotes heading levels (e.g., h2 -> h3)",
-                            example=op.examples[0] if op.examples else "doc | demote()",
+        # Apply simple rules
+        for keywords, operation, reason, confidence in suggestion_rules:
+            if any(kw in intent_lower for kw in keywords):
+                if self.registry.operation_exists(operation):
+                    op = self.registry.get_operation(operation)
+                    if op:
+                        suggestions.append(
+                            OperationSuggestion(
+                                operation=operation,
+                                confidence=confidence,
+                                reason=reason,
+                                example=op.examples[0] if op.examples else f"doc | {operation}()",
+                            )
                         )
-                    )
 
-        # Selection operation keywords
+        # Selection operations (require additional context)
         if any(kw in intent_lower for kw in ["select", "find", "filter", "get"]):
-            if "heading" in intent_lower and self.registry.operation_exists("heading"):
-                op = self.registry.get_operation("heading")
-                if op:
-                    suggestions.append(
-                        OperationSuggestion(
-                            operation="heading",
-                            confidence=0.85,
-                            reason="Selects all heading nodes",
-                            example=op.examples[0] if op.examples else "doc | heading",
-                        )
-                    )
+            selection_ops = [
+                ("heading", "Selects all heading nodes"),
+                ("paragraph", "Selects all paragraph nodes"),
+            ]
 
-            if "paragraph" in intent_lower and self.registry.operation_exists("paragraph"):
-                op = self.registry.get_operation("paragraph")
-                if op:
-                    suggestions.append(
-                        OperationSuggestion(
-                            operation="paragraph",
-                            confidence=0.85,
-                            reason="Selects all paragraph nodes",
-                            example=op.examples[0] if op.examples else "doc | paragraph",
+            for op_name, reason in selection_ops:
+                if op_name in intent_lower and self.registry.operation_exists(op_name):
+                    op = self.registry.get_operation(op_name)
+                    if op:
+                        suggestions.append(
+                            OperationSuggestion(
+                                operation=op_name,
+                                confidence=0.85,
+                                reason=reason,
+                                example=op.examples[0] if op.examples else f"doc | {op_name}",
+                            )
                         )
-                    )
-
-        # Nesting keywords
-        if any(kw in intent_lower for kw in ["nest", "indent", "move under"]):
-            if self.registry.operation_exists("nest"):
-                op = self.registry.get_operation("nest")
-                if op:
-                    suggestions.append(
-                        OperationSuggestion(
-                            operation="nest",
-                            confidence=0.85,
-                            reason="Nests sections under a target section",
-                            example=op.examples[0] if op.examples else "doc | nest()",
-                        )
-                    )
-
-        if any(kw in intent_lower for kw in ["unnest", "outdent", "move out"]):
-            if self.registry.operation_exists("unnest"):
-                op = self.registry.get_operation("unnest")
-                if op:
-                    suggestions.append(
-                        OperationSuggestion(
-                            operation="unnest",
-                            confidence=0.85,
-                            reason="Removes nesting from sections",
-                            example=op.examples[0] if op.examples else "doc | unnest()",
-                        )
-                    )
 
         # Limit to max_suggestions
         return suggestions[:max_suggestions]

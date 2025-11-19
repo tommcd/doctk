@@ -6,7 +6,9 @@ providing intelligent code completion, validation, and documentation features.
 
 from __future__ import annotations
 
+import difflib
 import logging
+import re
 
 from lsprotocol.types import (
     TEXT_DOCUMENT_COMPLETION,
@@ -266,8 +268,10 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
                             # Check if operation exists
                             if not self.registry.operation_exists(op_name):
                                 # Unknown operation - provide suggestions
-                                # Note: FunctionCall objects don't have token attribute directly
-                                # We'd need to track token positions differently
+                                # LIMITATION: FunctionCall AST nodes don't preserve token positions.
+                                # All diagnostics currently report at line 0, column 0.
+                                # TODO: Enhance parser to include position info in AST nodes.
+                                # See: https://github.com/tommcd/doctk/pull/24#discussion_r3481216455
                                 line = 0
                                 column = 0
 
@@ -295,23 +299,32 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
                             # Validate operation arguments
                             else:
                                 op_metadata = self.registry.get_operation(op_name)
-                                if op_metadata and hasattr(op, "arguments"):
+                                if op_metadata:
                                     # Check required parameters
-                                    required_params = [
-                                        p.name for p in op_metadata.parameters if p.required
-                                    ]
-                                    provided_args = (
-                                        list(op.arguments.keys())
-                                        if isinstance(op.arguments, dict)
+                                    # Count both positional args and keyword args
+                                    num_positional = len(op.args) if hasattr(op, "args") else 0
+                                    provided_kwargs = (
+                                        list(op.kwargs.keys())
+                                        if hasattr(op, "kwargs") and isinstance(op.kwargs, dict)
                                         else []
                                     )
 
-                                    missing_params = [
-                                        p for p in required_params if p not in provided_args
+                                    required_params = [
+                                        p.name for p in op_metadata.parameters if p.required
                                     ]
 
-                                    if missing_params:
-                                        # Note: FunctionCall objects don't have token attribute directly
+                                    # For now, assume positional args satisfy required params in order
+                                    # This is a simplified check - full validation would need type checking
+                                    unsatisfied_params = max(0, len(required_params) - num_positional)
+                                    missing_params = [
+                                        p
+                                        for p in required_params[num_positional:]
+                                        if p not in provided_kwargs
+                                    ]
+
+                                    if missing_params and unsatisfied_params > 0:
+                                        # LIMITATION: FunctionCall AST nodes don't preserve token positions.
+                                        # TODO: Enhance parser to include position info in AST nodes.
                                         line = 0
                                         column = 0
 
@@ -410,21 +423,33 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
                 return None
 
             # Find the operation name before the cursor
-            # Look backwards from cursor to find an operation
+            # Walk backwards to find the opening parenthesis
             before_cursor = line[: position.character]
 
-            # Simple heuristic: look for word followed by '('
-            import re
+            # Find the last unclosed opening parenthesis
+            paren_depth = 0
+            open_paren_pos = -1
+            for i in range(len(before_cursor) - 1, -1, -1):
+                if before_cursor[i] == ')':
+                    paren_depth += 1
+                elif before_cursor[i] == '(':
+                    if paren_depth == 0:
+                        open_paren_pos = i
+                        break
+                    paren_depth -= 1
 
-            # Find the last word before cursor that might be an operation
-            match = re.search(r"(\w+)\s*\($", before_cursor)
-            if not match:
-                # Try to find operation without parenthesis
+            if open_paren_pos == -1:
+                # No opening parenthesis found, try simple word match
                 words = re.findall(r"\b\w+\b", before_cursor)
                 if not words:
                     return None
                 operation_name = words[-1]
             else:
+                # Find the operation name before the opening parenthesis
+                before_paren = before_cursor[:open_paren_pos].rstrip()
+                match = re.search(r"(\w+)\s*$", before_paren)
+                if not match:
+                    return None
                 operation_name = match.group(1)
 
             # Get operation metadata
@@ -477,8 +502,6 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
             lexer = Lexer(text)
             tokens = lexer.tokenize()
 
-            from doctk.dsl.parser import Parser
-
             parser = Parser(tokens)
             statements = parser.parse()  # Returns list[ASTNode], not an object
 
@@ -488,7 +511,11 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
                 if isinstance(statement, Pipeline) and statement.source:
                     # This is a pipeline starting with a source
                     # Create a symbol for the entire pipeline
-                    source_line = 0  # Default to line 0 since we don't have token info
+                    # LIMITATION: Pipeline AST nodes don't preserve source token positions.
+                    # All document symbols currently report at line 0.
+                    # TODO: Enhance parser to include position info in AST nodes.
+                    # See: https://github.com/tommcd/doctk/pull/24#discussion_r3481216455
+                    source_line = 0
 
                     # Find end line by looking at the last operation
                     end_line = source_line
@@ -519,7 +546,7 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
                     for op in statement.operations:
                         # FunctionCall has 'name' attribute, not 'operation_name'
                         if hasattr(op, "name"):
-                            # Note: FunctionCall doesn't have token, use statement line
+                            # LIMITATION: FunctionCall doesn't have token, all ops report at line 0
                             op_line = source_line
                             op_range = Range(
                                 start=Position(line=op_line, character=0),
@@ -556,8 +583,6 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
         Returns:
             List of similar operation names, sorted by similarity
         """
-        import difflib
-
         all_operations = self.registry.get_operation_names()
 
         # Use difflib to find close matches

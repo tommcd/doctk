@@ -206,6 +206,29 @@ class TestDocumentSymbols:
             assert symbol.range.start.line >= 0
             assert symbol.range.end.line >= symbol.range.start.line
 
+    def test_extract_symbols_multiline_position_tracking(
+        self, server: DoctkLanguageServer
+    ) -> None:
+        """Test symbol position tracking in multiline document.
+
+        NOTE: Current implementation reports all symbols at line 0 due to
+        parser limitations. This test documents the current behavior and will
+        need updating when parser position tracking is implemented.
+        See: https://github.com/tommcd/doctk/pull/24#discussion_r3481216455
+        """
+        text = """doc | heading | promote
+
+doc | paragraph | demote"""
+
+        symbols = server.extract_document_symbols(text)
+
+        # Currently all symbols report at line 0 (known limitation)
+        # When parser is enhanced with position tracking:
+        # - First pipeline should be at line 0
+        # - Second pipeline should be at line 2
+        if symbols:
+            assert all(s.range.start.line == 0 for s in symbols)
+
     def test_extract_symbols_multiple_pipelines(
         self, server: DoctkLanguageServer
     ) -> None:
@@ -275,6 +298,27 @@ class TestEnhancedDiagnostics:
             assert diag.range is not None
             assert diag.range.start.line >= 0
             assert diag.range.start.character >= 0
+
+    def test_diagnostic_positions_multiline_document(
+        self, server: DoctkLanguageServer
+    ) -> None:
+        """Test diagnostic positions in multiline document.
+
+        NOTE: Current implementation reports all positions at line 0 due to
+        parser limitations. This test documents the current behavior and will
+        need updating when parser position tracking is implemented.
+        See: https://github.com/tommcd/doctk/pull/24#discussion_r3481216455
+        """
+        text = """doc | heading
+| promote
+| invalid_operation"""
+
+        diagnostics = server.validate_syntax(text)
+
+        if diagnostics:
+            # Currently all diagnostics report at line 0 (known limitation)
+            # When parser is enhanced, this should report line 2 (0-indexed)
+            assert all(d.range.start.line == 0 for d in diagnostics)
 
     def test_diagnostic_is_actionable(self, server: DoctkLanguageServer) -> None:
         """Test that diagnostic messages are actionable."""

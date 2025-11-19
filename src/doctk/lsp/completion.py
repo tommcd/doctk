@@ -42,6 +42,7 @@ class CompletionAnalysis:
     character: int
     current_word: str
     line_text: str
+    operation_name: str | None = None  # Operation name when context is IN_OPERATION
 
 
 @dataclass
@@ -55,16 +56,17 @@ class CachedCompletion:
 class CompletionProvider:
     """Provides intelligent code completion for doctk DSL."""
 
-    def __init__(self, registry: OperationRegistry):
+    def __init__(self, registry: OperationRegistry, cache_ttl: float = 5.0):
         """
         Initialize completion provider.
 
         Args:
             registry: Operation registry for available operations
+            cache_ttl: Time-to-live for cached completions in seconds (default: 5.0)
         """
         self.registry = registry
         self.cache: dict[str, CachedCompletion] = {}
-        self.cache_ttl = 5.0  # 5 seconds TTL
+        self.cache_ttl = cache_ttl
 
     def provide_completions(
         self, document: str, position: Position
@@ -144,6 +146,7 @@ class CompletionProvider:
 
         # Determine context
         context = CompletionContext.UNKNOWN
+        operation_name: str | None = None
 
         # Check if we're at start of line (doc or identifier)
         if not text_before.strip():
@@ -163,6 +166,7 @@ class CompletionProvider:
                     # This indicates we're inside the operation's parameters
                     if text_after_pipe.strip() != first_word or text_after_pipe.endswith(" "):
                         context = CompletionContext.IN_OPERATION
+                        operation_name = first_word  # Store for parameter completions
                     else:
                         context = CompletionContext.AFTER_PIPE
                 else:
@@ -179,6 +183,7 @@ class CompletionProvider:
             character=position.character,
             current_word=current_word,
             line_text=line_text,
+            operation_name=operation_name,
         )
 
     def _start_of_line_completions(self) -> CompletionList:
@@ -277,22 +282,12 @@ class CompletionProvider:
         Returns:
             Completion list with parameter suggestions
         """
-        # Extract operation name from line
-        # Format: "operation_name param1 param2"
-        parts = analysis.line_text.strip().split()
-        if not parts:
+        # Use operation name from analysis (already extracted in _analyze_context)
+        if not analysis.operation_name:
             return CompletionList(is_incomplete=False, items=[])
-
-        # Get operation name (after last pipe)
-        text_after_pipe = analysis.line_text.split("|")[-1].strip()
-        op_parts = text_after_pipe.split()
-        if not op_parts:
-            return CompletionList(is_incomplete=False, items=[])
-
-        op_name = op_parts[0]
 
         # Get operation metadata
-        op_metadata = self.registry.get_operation(op_name)
+        op_metadata = self.registry.get_operation(analysis.operation_name)
         if not op_metadata or not op_metadata.parameters:
             return CompletionList(is_incomplete=False, items=[])
 
@@ -344,10 +339,10 @@ class CompletionProvider:
         Returns:
             Cached completion list or None if expired/not found
         """
-        if cache_key not in self.cache:
+        cached = self.cache.get(cache_key)
+        if cached is None:
             return None
 
-        cached = self.cache[cache_key]
         age = time.time() - cached.timestamp
 
         # Check if expired

@@ -32,7 +32,13 @@ This test suite performs three critical checks:
 **Fix violations by**:
 1. Creating the missing file
 2. Updating the spec to reference the correct file path
-3. Marking planned work with `[TODO]` or `[PLANNED]`
+3. Marking planned work with `[TODO]` or `[PLANNED]` on the same line as the file reference
+
+**Example of marking planned files**:
+```markdown
+- _[PLANNED] Tests in: tests/unit/test_future_feature.py_
+- _Tests in: tests/unit/test_existing.py_  # This must exist
+```
 
 ### 2. Code References Exist (`test_spec_code_references_exist`)
 
@@ -109,6 +115,7 @@ We don't control how specs are created, so we can't enforce that all references 
 - Patterns starting with: `src/`, `tests/`, `docs/`, `scripts/`, `examples/`, `extensions/`
 - File extensions: `.py`, `.md`, `.yaml`, `.yml`, `.toml`, `.txt`, `.sh`, `.ts`, `.tsx`, `.json`
 - Avoids false positives like matching `src/file.ts` in `extensions/foo/src/file.ts`
+- **Skips lines containing `[TODO]` or `[PLANNED]` markers** to allow referencing future files in task specs
 
 **API references detected**:
 - Python-style patterns: `Class.method()`, `module.Class.method()`

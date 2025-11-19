@@ -414,7 +414,7 @@ This implementation plan breaks down the language server into discrete, actionab
     - Test that document symbols show correct positions
     - Test multi-line documents with multiple operations
     - Test error recovery with position preservation
-    - _Tests in: tests/unit/test_parser_positions.py_
+    - _[PLANNED] Tests in: tests/unit/test_parser_positions.py_
     - _E2E tests in: tests/e2e/test_lsp_e2e.py_
 
 ## Notes

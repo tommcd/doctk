@@ -64,21 +64,28 @@ def test_spec_file_references_exist(project_root, spec_files):
         # Remove code blocks to avoid checking example code
         content_no_code = re.sub(r'```.*?```', '', content, flags=re.DOTALL)
 
-        # Find all file path references
-        matches = file_path_pattern.findall(content_no_code)
-
-        for file_path in matches:
-            # Skip common false positives
-            if any(skip in file_path for skip in ['example.py', 'foo.py', 'test.py']):
+        # Process line by line to check for TODO/PLANNED markers
+        lines = content_no_code.split('\n')
+        for line in lines:
+            # Skip lines marked with [TODO] or [PLANNED]
+            if '[TODO]' in line or '[PLANNED]' in line:
                 continue
 
-            # Check if file exists
-            full_path = project_root / file_path
-            if not full_path.exists():
-                violations.append(
-                    f"{spec_file.relative_to(project_root)}: "
-                    f"References non-existent file '{file_path}'"
-                )
+            # Find all file path references in this line
+            matches = file_path_pattern.findall(line)
+
+            for file_path in matches:
+                # Skip common false positives
+                if any(skip in file_path for skip in ['example.py', 'foo.py', 'test.py']):
+                    continue
+
+                # Check if file exists
+                full_path = project_root / file_path
+                if not full_path.exists():
+                    violations.append(
+                        f"{spec_file.relative_to(project_root)}: "
+                        f"References non-existent file '{file_path}'"
+                    )
 
     if violations:
         msg = (

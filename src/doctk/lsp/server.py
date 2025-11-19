@@ -43,7 +43,13 @@ from lsprotocol.types import (
 from pygls.lsp.server import LanguageServer
 
 from doctk.dsl.lexer import Lexer, LexerError
-from doctk.dsl.parser import ParseError, Parser, Pipeline
+from doctk.dsl.parser import (
+    FunctionCall,
+    ParseError,
+    Parser,
+    Pipeline,
+    Position as ASTPosition,
+)
 from doctk.lsp.ai_support import AIAgentSupport
 from doctk.lsp.completion import CompletionProvider
 from doctk.lsp.config import LSPConfiguration
@@ -330,12 +336,9 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
                             # Check if operation exists
                             if not self.registry.operation_exists(op_name):
                                 # Unknown operation - provide suggestions
-                                # LIMITATION: FunctionCall AST nodes don't preserve token positions.
-                                # All diagnostics currently report at line 0, column 0.
-                                # TODO: Enhance parser to include position info in AST nodes.
-                                # See: https://github.com/tommcd/doctk/pull/24#discussion_r3481216455
-                                line = 0
-                                column = 0
+                                # Get position from AST node (1-indexed) and convert to LSP (0-indexed)
+                                line = op.position.line - 1
+                                column = op.position.column - 1
 
                                 # Find similar operations for suggestions
                                 similar_ops = self._find_similar_operations(op_name)
@@ -389,10 +392,9 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
                                     ]
 
                                     if missing_params and unsatisfied_params > 0:
-                                        # LIMITATION: FunctionCall AST nodes don't preserve token positions.
-                                        # TODO: Enhance parser to include position info in AST nodes.
-                                        line = 0
-                                        column = 0
+                                        # Get position from AST node (1-indexed) and convert to LSP (0-indexed)
+                                        line = op.position.line - 1
+                                        column = op.position.column - 1
 
                                         message = (
                                             f"Operation '{op_name}' missing required parameters: "
@@ -637,21 +639,22 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
                 if isinstance(statement, Pipeline) and statement.source:
                     # This is a pipeline starting with a source
                     # Create a symbol for the entire pipeline
-                    # LIMITATION: Pipeline AST nodes don't preserve source token positions.
-                    # All document symbols currently report at line 0.
-                    # TODO: Enhance parser to include position info in AST nodes.
-                    # See: https://github.com/tommcd/doctk/pull/24#discussion_r3481216455
-                    source_line = 0
+                    # Get position from AST node (1-indexed) and convert to LSP (0-indexed)
+                    source_line = statement.position.line - 1
+                    source_column = statement.position.column - 1
 
                     # Find end line by looking at the last operation
                     end_line = source_line
+                    end_column = source_column + len(statement.source)
                     if statement.operations:
-                        # Operations don't have token info, use source line
-                        end_line = source_line
+                        # Use position from last operation
+                        last_op = statement.operations[-1]
+                        end_line = last_op.position.line - 1
+                        end_column = (last_op.position.column - 1) + len(last_op.name)
 
                     symbol_range = Range(
-                        start=Position(line=source_line, character=0),
-                        end=Position(line=end_line, character=0),
+                        start=Position(line=source_line, character=source_column),
+                        end=Position(line=end_line, character=end_column),
                     )
 
                     # Create a symbol for the pipeline
@@ -672,11 +675,12 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
                     for op in statement.operations:
                         # FunctionCall has 'name' attribute, not 'operation_name'
                         if hasattr(op, "name"):
-                            # LIMITATION: FunctionCall doesn't have token, all ops report at line 0
-                            op_line = source_line
+                            # Get position from AST node (1-indexed) and convert to LSP (0-indexed)
+                            op_line = op.position.line - 1
+                            op_column = op.position.column - 1
                             op_range = Range(
-                                start=Position(line=op_line, character=0),
-                                end=Position(line=op_line, character=0),
+                                start=Position(line=op_line, character=op_column),
+                                end=Position(line=op_line, character=op_column + len(op.name)),
                             )
 
                             op_symbol = DocumentSymbol(

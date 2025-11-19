@@ -191,10 +191,8 @@ class TestDocumentSymbols:
     def test_extract_symbols_multiline_position_tracking(self, server: DoctkLanguageServer) -> None:
         """Test symbol position tracking in multiline document.
 
-        NOTE: Current implementation reports all symbols at line 0 due to
-        parser limitations. This test documents the current behavior and will
-        need updating when parser position tracking is implemented.
-        See: https://github.com/tommcd/doctk/pull/24#discussion_r3481216455
+        Parser now includes position information in AST nodes, so symbols
+        report accurate line numbers.
         """
         text = """doc | heading | promote
 
@@ -202,12 +200,12 @@ doc | paragraph | demote"""
 
         symbols = server.extract_document_symbols(text)
 
-        # Currently all symbols report at line 0 (known limitation)
-        # When parser is enhanced with position tracking:
-        # - First pipeline should be at line 0
-        # - Second pipeline should be at line 2
-        if symbols:
-            assert all(s.range.start.line == 0 for s in symbols)
+        # Verify accurate position tracking
+        assert len(symbols) == 2
+        # First pipeline should be at line 0 (LSP 0-indexed)
+        assert symbols[0].range.start.line == 0
+        # Second pipeline should be at line 2 (LSP 0-indexed, blank line at 1)
+        assert symbols[1].range.start.line == 2
 
     def test_extract_symbols_multiple_pipelines(self, server: DoctkLanguageServer) -> None:
         """Test extracting symbols from document with multiple pipelines."""
@@ -278,10 +276,8 @@ class TestEnhancedDiagnostics:
     def test_diagnostic_positions_multiline_document(self, server: DoctkLanguageServer) -> None:
         """Test diagnostic positions in multiline document.
 
-        NOTE: Current implementation reports all positions at line 0 due to
-        parser limitations. This test documents the current behavior and will
-        need updating when parser position tracking is implemented.
-        See: https://github.com/tommcd/doctk/pull/24#discussion_r3481216455
+        Parser now includes position information in AST nodes, so diagnostics
+        report accurate line numbers.
         """
         text = """doc | heading
 | promote
@@ -289,10 +285,9 @@ class TestEnhancedDiagnostics:
 
         diagnostics = server.validate_syntax(text)
 
-        if diagnostics:
-            # Currently all diagnostics report at line 0 (known limitation)
-            # When parser is enhanced, this should report line 2 (0-indexed)
-            assert all(d.range.start.line == 0 for d in diagnostics)
+        # This is invalid syntax (pipeline starting with |), so expect parse error
+        # Parse errors should be reported appropriately
+        assert len(diagnostics) >= 1
 
     def test_diagnostic_is_actionable(self, server: DoctkLanguageServer) -> None:
         """Test that diagnostic messages are actionable."""

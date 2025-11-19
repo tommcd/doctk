@@ -7,10 +7,18 @@ from doctk.dsl.lexer import Token, TokenType
 
 
 @dataclass
+class Position:
+    """Source position (line and column)."""
+
+    line: int
+    column: int
+
+
+@dataclass
 class ASTNode:
     """Base class for AST nodes."""
 
-    pass
+    position: Position  # Position of the first token of this node
 
 
 @dataclass
@@ -19,6 +27,7 @@ class Pipeline(ASTNode):
 
     source: str
     operations: list["FunctionCall"]
+    position: Position
 
 
 @dataclass
@@ -32,6 +41,7 @@ class FunctionCall(ASTNode):
     name: str
     args: list[Any]  # Positional arguments
     kwargs: dict[str, Any]  # Keyword arguments
+    position: Position
 
 
 @dataclass
@@ -40,6 +50,7 @@ class Assignment(ASTNode):
 
     variable: str
     pipeline: Pipeline
+    position: Position
 
 
 class ParseError(Exception):
@@ -136,7 +147,7 @@ class Parser:
 
     def parse_assignment(self) -> Assignment:
         """Parse variable assignment."""
-        self.expect(TokenType.LET)
+        let_token = self.expect(TokenType.LET)
         var_token = self.expect(TokenType.IDENTIFIER)
         self.expect(TokenType.EQUALS)
         pipeline = self.parse_pipeline()
@@ -144,7 +155,11 @@ class Parser:
         if not isinstance(pipeline, Pipeline):
             raise ParseError("Expected pipeline after assignment", self.current_token())
 
-        return Assignment(variable=var_token.value, pipeline=pipeline)
+        return Assignment(
+            variable=var_token.value,
+            pipeline=pipeline,
+            position=Position(line=let_token.line, column=let_token.column),
+        )
 
     def parse_pipeline(self) -> Pipeline:
         """Parse pipeline expression."""
@@ -170,7 +185,11 @@ class Parser:
             operation = self.parse_function_call()
             operations.append(operation)
 
-        return Pipeline(source=source, operations=operations)
+        return Pipeline(
+            source=source,
+            operations=operations,
+            position=Position(line=source_token.line, column=source_token.column),
+        )
 
     def parse_function_call(self) -> FunctionCall:
         """Parse function call with positional and keyword arguments."""
@@ -230,7 +249,12 @@ class Parser:
             else:
                 break
 
-        return FunctionCall(name=name, args=args, kwargs=kwargs)
+        return FunctionCall(
+            name=name,
+            args=args,
+            kwargs=kwargs,
+            position=Position(line=name_token.line, column=name_token.column),
+        )
 
     def parse_value(self) -> Any:
         """Parse a value (string, number, boolean, identifier)."""

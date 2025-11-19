@@ -1,215 +1,170 @@
-I need you to implement the next deliverable unit of work from the Kiro specs located in `.kiro/specs/`.
+# Implement Next Task Across All Specs
 
-## Target Spec
-
-**Work on spec**: `{{SPEC_NAME}}`
-
-Replace `{{SPEC_NAME}}` with one of:
-
-- `doctk-core-integration`
-- `vscode-outliner-extension`
-- `doctk-language-server`
+I need you to analyze all Kiro specs in `.kiro/specs/`, assess the current state, and suggest the next best task(s) to work on.
 
 ## Your Mission
 
-Implement the **minimum set of tasks** that delivers a **testable, working unit** of functionality for the specified spec. Work incrementally, delivering small working pieces rather than attempting everything at once.
+1. **Assess the current state** across all specs
+1. **Identify critical issues** (failing tests, missing tests, blockers)
+1. **Suggest the next few steps** with rationale
+1. **Offer options** for what to work on next
+1. **Implement** the chosen task(s) once I approve
 
-## Implementation Process
+## Assessment Process
 
-Work through the following phases systematically:
+### Phase 1: Understand the Landscape
 
-### Phase 1: Planning & Assessment
+1. **Read the implementation guide**: Start with `claude-code-kiro-spec-prompt.md` to understand how specs work
 
-1. **Read the implementation order**: Start by reading `.kiro/specs/IMPLEMENTATION_ORDER.md` to understand:
+1. **Read the dependency structure**: Check `.kiro/specs/IMPLEMENTATION_ORDER.md` to understand:
 
    - Dependencies between specs
    - What must be done sequentially
-   - What blockers exist for your target spec
-   - Whether your spec's dependencies are satisfied
+   - What can be done in parallel
 
-1. **Read the spec guide**: Read `claude-code-kiro-spec-prompt.md` to understand how to work with Kiro specifications
+1. **Survey all specs**: For each spec in `.kiro/specs/`, read:
 
-1. **Analyze your target spec**: For `.kiro/specs/{{SPEC_NAME}}/`, read in this order:
+   - `requirements.md` - what needs to be built
+   - `design.md` - how it should be built
+   - `tasks.md` - implementation plan and current status (look for `[x]` completed vs `[ ]` incomplete)
 
-   - `requirements.md` - understand what needs to be built
-   - `design.md` - understand how it should be built
-   - `tasks.md` - see the implementation plan and current status
-
-1. **Identify the next deliverable unit**: Based on `tasks.md`, determine:
-
-   - What is the next uncompleted task (first `[ ]` in the list)?
-   - What is the minimum set of tasks that delivers something testable?
-   - Are there any blockers from other specs that must be resolved first?
-   - Check IMPLEMENTATION_ORDER.md to verify dependencies are satisfied
-
-1. **Verify completed tasks**: For all tasks marked complete `[x]` in your spec:
-
-   - Check that the code actually exists
-   - Verify it matches the requirements
-   - Ensure it follows the design document
-   - If anything is incomplete or incorrect, fix it before proceeding
-
-1. **Announce your plan**: Before starting implementation, clearly state:
-
-   - Which spec you're working on ({{SPEC_NAME}})
-   - Which tasks you're implementing (minimum set for a deliverable unit)
-   - Why this is the next logical step
-   - What will be testable after completion
-   - Confirmation that all dependencies from other specs are satisfied
-
-### Phase 2: Implementation
-
-For the selected deliverable unit (minimum set of tasks):
-
-1. **Implement the tasks** following the design document exactly
-
-1. **Write tests** for the new functionality:
-
-   - Unit tests for individual components
-   - Integration tests for component interactions
-   - E2E tests if appropriate for this deliverable
-
-1. **Run comprehensive quality checks** before marking complete:
+1. **Check quality status**: Run quality checks to identify issues:
 
    ```bash
-   # Run all tests
-   uv run pytest -m "slow or not slow"
+   # Run all tests to find failures
+   uv run pytest -x --tb=short
 
-   # Run all tox quality checks
-   tox -e ruff           # Python linting
-   tox -e shellcheck     # Shell script linting
-   tox -e docs           # Documentation checks
+   # Check for linting issues
+   tox -e ruff
 
-   # Run mypy for type checking
+   # Check for type errors
    uv run mypy src/doctk
    ```
 
-1. **Fix ALL issues found**:
+### Phase 2: Analyze and Prioritize
 
-   - All tests must pass (zero failures)
-   - All linting must pass (zero warnings/errors)
-   - All type checking must pass (zero mypy errors)
-   - All documentation checks must pass
-   - Zero errors, zero warnings, zero issues
+Based on your assessment, identify:
+
+1. **Critical blockers**:
+
+   - Failing tests that need fixing
+   - Missing tests for completed features
+   - Dependency violations (tasks marked complete but dependencies incomplete)
+   - Quality issues (linting errors, type errors)
+
+1. **Next logical tasks**:
+
+   - First incomplete task in each spec's `tasks.md`
+   - Tasks whose dependencies are satisfied
+   - Tasks that unblock other work
+
+1. **Parallel opportunities**:
+
+   - Tasks in different specs that can be done simultaneously
+   - Independent tasks within the same spec
+
+### Phase 3: Present Options
+
+**Before implementing anything**, present your findings:
+
+1. **Current State Summary**:
+
+   - Which specs are complete, in-progress, or not started
+   - Any failing tests or quality issues
+   - Any blockers or dependency issues
+
+1. **Recommended Next Steps** (2-4 options):
+
+   - For each option, explain:
+     - Which spec(s) and task(s)
+     - Why this is a good next step
+     - What it will accomplish
+     - Estimated complexity (small/medium/large)
+     - Any dependencies or prerequisites
+
+1. **Ask for direction**:
+
+   - "Which option would you like me to proceed with?"
+   - "Or would you prefer a different approach?"
+
+## Implementation Process
+
+Once I approve an option, proceed with implementation:
+
+1. **Announce your plan**: Clearly state which spec(s) and task(s) you're implementing
+
+1. **Implement incrementally**:
+
+   - Follow the design document exactly
+   - Write tests for new functionality
+   - Run quality checks frequently
+   - Fix issues immediately
+
+1. **Verify quality** before marking complete:
+
+   ```bash
+   # All tests must pass
+   uv run pytest -m "slow or not slow"
+
+   # All linting must pass
+   tox -e ruff
+   tox -e shellcheck
+
+   # All type checking must pass
+   uv run mypy src/doctk
+
+   # Documentation must build
+   tox -e docs
+   ```
 
 1. **Update documentation**:
 
-   - Mark completed tasks in `.kiro/specs/{{SPEC_NAME}}/tasks.md` with `[x]`
-   - Update the spec's `design.md` if implementation revealed necessary changes
-   - Do NOT update IMPLEMENTATION_ORDER.md (it tracks dependencies, not completion status)
-
-1. **Verify the deliverable**: Confirm that:
-
-   - The implemented unit is testable and working
-   - All quality checks pass
-   - Documentation is updated
-   - The next person knows what to do next (from tasks.md)
-
-### Phase 3: Delivery & Handoff
-
-After completing the deliverable unit:
-
-1. **Final verification**:
-
-   - Run complete test suite: `uv run pytest -m "slow or not slow"`
-   - Run all tox environments: `tox`
-   - Run mypy type checking: `uv run mypy src/doctk`
-   - Verify environment: `./scripts/check-environment.sh`
-
-1. **Commit your work**:
-
-   - Create a clear commit message describing what was delivered
-   - Reference the spec and task numbers
-   - Mention what is now testable/working
-
-1. **Update tracking documents**:
-
-   - Ensure `.kiro/specs/{{SPEC_NAME}}/tasks.md` reflects completed work
-   - Update any relevant README files
-   - Do NOT update IMPLEMENTATION_ORDER.md (it's a static dependency guide)
+   - Mark completed tasks with `[x]` in the spec's `tasks.md`
+   - Update `design.md` if implementation revealed necessary changes
+   - Add comments explaining complex logic
 
 1. **Prepare for next iteration**:
 
-   - Clearly state what was accomplished
-   - Identify what should be done next (from tasks.md)
-   - Note any blockers or dependencies for the next unit
-   - Suggest the next minimum deliverable unit
+   - Run final quality checks
+   - Commit your work with clear messages
+   - Present the updated state and suggest next steps
 
-## Quality Standards (CRITICAL)
+## Quality Standards
 
-Before marking ANY task as complete, ensure:
+Before marking ANY task as complete:
 
-- ✅ All tests pass (unit, e2e, quality, docs) - zero failures
-- ✅ All linting passes (ruff, shellcheck, shfmt, markdownlint) - zero warnings/errors
-- ✅ All type checking passes (mypy) - zero errors
-- ✅ All documentation builds successfully
-- ✅ Code follows project conventions (see CLAUDE.md)
-- ✅ Absolutely zero warnings, errors, or issues
+- ✅ All tests pass - zero failures
+- ✅ All linting passes - zero warnings/errors
+- ✅ All type checking passes - zero errors
+- ✅ Documentation builds successfully
+- ✅ Code follows project conventions
 
-## Mypy Configuration
+## Key Principles
 
-If mypy is not configured in tox.ini, add this section:
-
-```ini
-[testenv:mypy]
-description = Run mypy type checking
-deps = mypy
-commands = mypy src/doctk --strict
-```
-
-Then ensure it passes before marking tasks complete.
-
-## Implementation Guidelines
-
-- **Work on your assigned spec**: Focus on `.kiro/specs/{{SPEC_NAME}}/`
-- **Work incrementally**: Deliver small, testable units rather than attempting everything at once
-- **Follow dependencies**: Check IMPLEMENTATION_ORDER.md to ensure your spec's dependencies are satisfied
-- **Minimum viable deliverable**: Pick the smallest set of tasks that delivers something testable and working
-- **Verify constantly**: Run quality checks after every significant change, not just at the end
-- **Fix everything**: Address all warnings and errors immediately - don't accumulate technical debt
-- **Follow design**: Implement exactly what's specified in design documents
-- **Meet requirements**: Satisfy all acceptance criteria from requirements.md
-- **Update task tracking**: Keep `.kiro/specs/{{SPEC_NAME}}/tasks.md` current with `[x]` for completed tasks
-- **Be thorough**: Verify that tasks marked as complete are actually complete before proceeding
-- **Enable the next person**: Leave clear documentation about what's done and what's next in tasks.md
+- **Be dynamic**: Don't assume anything about current state - always check
+- **Be thorough**: Verify that tasks marked complete are actually complete
+- **Be strategic**: Suggest tasks that maximize progress and unblock other work
+- **Be flexible**: Offer multiple options so I can guide priorities
+- **Be incremental**: Deliver small, testable units rather than large changes
+- **Be quality-focused**: Fix issues immediately, don't accumulate technical debt
 
 ## Project Context
 
-The doctk project is a Python document manipulation toolkit with these characteristics:
+The doctk project is a Python document manipulation toolkit:
 
 - Uses `uv` for Python package management
 - Uses `tox` for test orchestration and quality checks
 - Follows strict quality standards (documented in CLAUDE.md)
 - Values immutability, type safety, and composability
-- Requires comprehensive testing and documentation for all code
+- Requires comprehensive testing and documentation
 
 ## Getting Started
 
-1. **Replace `{{SPEC_NAME}}`** in this prompt with your target spec name
-1. Read `.kiro/specs/IMPLEMENTATION_ORDER.md` to verify your spec's dependencies are satisfied
-1. Read the spec guide (`claude-code-kiro-spec-prompt.md`) to understand how to work with specs
-1. Read `.kiro/specs/{{SPEC_NAME}}/tasks.md` to see what's done and what's next
-1. Identify the next minimum deliverable unit from tasks.md
-1. Announce your plan before starting implementation
-1. Implement, test, verify, document, and deliver
+1. Read the spec guide (`claude-code-kiro-spec-prompt.md`)
+1. Read the dependency structure (`.kiro/specs/IMPLEMENTATION_ORDER.md`)
+1. Survey all specs and their current state
+1. Run quality checks to identify issues
+1. Present your assessment and recommendations
+1. Wait for my approval before implementing
 
-As you work, feel free to show your progress, ask questions if requirements are unclear, and share any issues you encounter. The goal is to deliver working, tested functionality incrementally while maintaining the project's high quality standards.
-
-## Key Principle: Incremental Delivery
-
-**Don't try to implement everything at once.** Instead:
-
-- Pick the next logical unit from `.kiro/specs/{{SPEC_NAME}}/tasks.md`
-- Implement the minimum set of tasks that delivers something testable
-- Verify it works completely
-- Update task documentation (mark `[x]` in tasks.md, update design.md if needed)
-- Commit and hand off
-- Let the next iteration pick up the next unit
-
-This approach ensures:
-
-- Continuous progress with working, tested code
-- Clear handoff points between work sessions
-- Reduced risk of large, untested changes
-- Better tracking of what's done and what's next
-- Multiple specs can be worked on in parallel by different instances
+Remember: Your job is to be my intelligent assistant who understands the full picture and helps me make informed decisions about what to work on next. Don't just blindly implement - think strategically and present options.

@@ -128,7 +128,7 @@ This implementation plan breaks down the language server into discrete, actionab
     - Ensure 200ms response time
     - Cache documentation where appropriate
     - _Requirements: 10.5_
-    - _Implemented in: src/doctk/lsp/hover.py (LRU cache with 5s TTL)_
+    - _Implemented in: src/doctk/lsp/hover.py (TTL-based cache with 5s expiration, automatic periodic cleanup)_
 
   - [x] 4.4 Write tests for hover provider
 

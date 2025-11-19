@@ -9,9 +9,9 @@ import time
 from unittest.mock import MagicMock
 
 import pytest
-from lsprotocol.types import Hover, MarkupContent, MarkupKind, Position
+from lsprotocol.types import MarkupContent, MarkupKind, Position
 
-from doctk.lsp.hover import HoverAnalysis, HoverProvider
+from doctk.lsp.hover import HoverProvider
 from doctk.lsp.registry import OperationMetadata, OperationRegistry, ParameterInfo
 
 
@@ -54,6 +54,13 @@ def mock_registry() -> OperationRegistry:
                 required=False,
                 description="Text content to match",
                 default=None,
+            ),
+            ParameterInfo(
+                name="limit",
+                type="int",
+                required=False,
+                description="Maximum number of results to return",
+                default=10,
             ),
         ],
         return_type="Document",
@@ -289,14 +296,18 @@ class TestParameterHover:
 
     def test_hover_parameter_shows_default(self, hover_provider: HoverProvider) -> None:
         """Test parameter hover shows default value if available."""
-        document = "doc | where level=2"
-        position = Position(line=0, character=13)
+        document = "doc | where limit=5"
+        position = Position(line=0, character=13)  # On "limit"
 
         hover = hover_provider.provide_hover(document, position)
 
         assert hover is not None
-        # The level parameter has default=None in our mock
-        # This test verifies the formatting works
+        content = hover.contents.value
+
+        # The limit parameter has default=10 in our mock
+        # Verify the default value appears in the hover content
+        assert "default" in content.lower() or "10" in content
+        assert "limit" in content
 
 
 class TestHoverCaching:

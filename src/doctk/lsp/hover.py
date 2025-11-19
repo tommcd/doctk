@@ -58,6 +58,8 @@ class HoverProvider:
         self.registry = registry
         self.cache: dict[str, CachedHover] = {}
         self.cache_ttl = cache_ttl
+        self._cleanup_counter = 0
+        self._cleanup_interval = 100  # Cleanup every 100 operations
 
     def provide_hover(
         self, document: str, position: Position
@@ -101,6 +103,12 @@ class HoverProvider:
         # Cache the result (even if None)
         self._cache_hover(cache_key, hover)
 
+        # Periodic automatic cache cleanup to prevent unbounded growth
+        self._cleanup_counter += 1
+        if self._cleanup_counter >= self._cleanup_interval:
+            self.cleanup_expired_cache()
+            self._cleanup_counter = 0
+
         return hover
 
     def _analyze_position(
@@ -139,9 +147,11 @@ class HoverProvider:
 
         # Find which word the cursor is on
         current_word = ""
+        current_word_match = None
         for match in matches:
             if match.start() <= position.character <= match.end():
                 current_word = match.group()
+                current_word_match = match
                 break
 
         if not current_word:
@@ -170,11 +180,11 @@ class HoverProvider:
             is_parameter = False
         else:
             # Check if current_word is followed by = (parameter name pattern)
-            # Use regex to find word followed by optional whitespace and =
-            word_followed_by_equals = re.search(
-                rf'\b{re.escape(current_word)}\s*=',
-                line_text
-            )
+            # Search only from the end of the current word to avoid matching duplicates
+            word_followed_by_equals = False
+            if current_word_match:
+                text_after_word = line_text[current_word_match.end():]
+                word_followed_by_equals = bool(re.match(r'^\s*=', text_after_word))
 
             if word_followed_by_equals:
                 # This is a parameter name
@@ -182,11 +192,10 @@ class HoverProvider:
                 parameter_name = current_word
 
                 # Find the operation this parameter belongs to
-                # Look backwards for operation name (after | or at start)
-                text_after_pipe = text_before.split("|")[-1]
-                op_match = re.search(r'([a-zA-Z_][a-zA-Z0-9_]*)', text_after_pipe)
-                if op_match and self.registry.operation_exists(op_match.group()):
-                    operation_name = op_match.group()
+                # Look backwards for operation name, searching across lines if needed
+                operation_name = self._find_operation_for_parameter(
+                    lines, position.line, text_before
+                )
             # Check if it's an operation
             elif self.registry.operation_exists(current_word):
                 is_operation = True
@@ -200,6 +209,51 @@ class HoverProvider:
             operation_name=operation_name,
             parameter_name=parameter_name,
         )
+
+    def _find_operation_for_parameter(
+        self, lines: list[str], current_line: int, text_before: str
+    ) -> str | None:
+        """
+        Find the operation name that a parameter belongs to.
+
+        Searches backward from the parameter position to find the last valid
+        operation name. Handles multiline cases and junk text.
+
+        Args:
+            lines: All lines in the document
+            current_line: Current line number (0-indexed)
+            text_before: Text before cursor on current line
+
+        Returns:
+            Operation name or None if not found
+        """
+        # Get text to search: current line segment after last pipe
+        text_to_search = text_before.split("|")[-1]
+
+        # If no pipe in current text, search backward across previous lines
+        if "|" not in text_before:
+            # Build text from previous lines until we find a pipe
+            for line_idx in range(current_line - 1, -1, -1):
+                prev_line = lines[line_idx] if line_idx < len(lines) else ""
+                if "|" in prev_line:
+                    # Found pipe - take text after last pipe from this line
+                    text_to_search = prev_line.split("|")[-1] + "\n" + text_to_search
+                    break
+                else:
+                    # No pipe yet - prepend entire line
+                    text_to_search = prev_line + "\n" + text_to_search
+
+        # Find all identifiers in the text after pipe
+        # Match all words (identifiers) in the text
+        all_identifiers: list[str] = re.findall(r'[a-zA-Z_][a-zA-Z0-9_]*', text_to_search)
+
+        # Validate identifiers right-to-left to find the last valid operation
+        # This handles cases like "junk where level=2" -> finds "where" not "junk"
+        for identifier in reversed(all_identifiers):
+            if self.registry.operation_exists(identifier):
+                return identifier
+
+        return None
 
     def _create_operation_hover(self, operation_name: str) -> Hover | None:
         """
@@ -424,12 +478,10 @@ class HoverProvider:
         Remove all expired entries from cache.
 
         This should be called periodically to prevent unbounded memory growth.
+        Iterates over a copy of cache items in a single pass for efficiency.
         """
         current_time = time.time()
-        expired_keys = [
-            key
-            for key, cached in self.cache.items()
-            if current_time - cached.timestamp > self.cache_ttl
-        ]
-        for key in expired_keys:
-            del self.cache[key]
+        # Iterate over copy to avoid modification during iteration
+        for key, cached in list(self.cache.items()):
+            if current_time - cached.timestamp > self.cache_ttl:
+                del self.cache[key]

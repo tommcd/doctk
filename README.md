@@ -241,7 +241,7 @@ doc1.diff(doc2)       # Unique to doc1
 
 📋 **Before Public v0.1.0 Release**:
 
-See [Release Preparation Checklist](.kiro/specs/release-preparation/tasks.md) for detailed tasks:
+See the release preparation checklist (`.kiro/specs/release-preparation/tasks.md`) for detailed tasks:
 - Logo design and branding
 - Distribution strategy (PyPI vs local-only)
 - VS Code marketplace preparation (if publishing)

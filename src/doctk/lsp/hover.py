@@ -61,9 +61,7 @@ class HoverProvider:
         self._cleanup_counter = 0
         self._cleanup_interval = 100  # Cleanup every 100 operations
 
-    def provide_hover(
-        self, document: str, position: Position
-    ) -> Hover | None:
+    def provide_hover(self, document: str, position: Position) -> Hover | None:
         """
         Provide hover information at the given position.
 
@@ -95,10 +93,7 @@ class HoverProvider:
         if analysis.is_operation and analysis.word:
             hover = self._create_operation_hover(analysis.word)
         elif analysis.is_parameter and analysis.parameter_name and analysis.operation_name:
-            hover = self._create_parameter_hover(
-                analysis.operation_name,
-                analysis.parameter_name
-            )
+            hover = self._create_parameter_hover(analysis.operation_name, analysis.parameter_name)
 
         # Cache the result (even if None)
         self._cache_hover(cache_key, hover)
@@ -111,9 +106,7 @@ class HoverProvider:
 
         return hover
 
-    def _analyze_position(
-        self, document: str, position: Position
-    ) -> HoverAnalysis:
+    def _analyze_position(self, document: str, position: Position) -> HoverAnalysis:
         """
         Analyze cursor position to identify word and context.
 
@@ -140,7 +133,7 @@ class HoverProvider:
 
         # Find the word under cursor
         # Word boundaries: whitespace, |, (, ), =
-        word_pattern = r'[a-zA-Z_][a-zA-Z0-9_]*'
+        word_pattern = r"[a-zA-Z_][a-zA-Z0-9_]*"
 
         # Find all words in the line
         matches = list(re.finditer(word_pattern, line_text))
@@ -165,7 +158,7 @@ class HoverProvider:
 
         # Determine if it's an operation or parameter
         # Get text before the word
-        text_before = line_text[:position.character]
+        text_before = line_text[: position.character]
 
         # Check if word is an operation (appears after | or at start, not after =)
         is_operation = False
@@ -183,8 +176,8 @@ class HoverProvider:
             # Search only from the end of the current word to avoid matching duplicates
             word_followed_by_equals = False
             if current_word_match:
-                text_after_word = line_text[current_word_match.end():]
-                word_followed_by_equals = bool(re.match(r'^\s*=', text_after_word))
+                text_after_word = line_text[current_word_match.end() :]
+                word_followed_by_equals = bool(re.match(r"^\s*=", text_after_word))
 
             if word_followed_by_equals:
                 # This is a parameter name
@@ -245,7 +238,7 @@ class HoverProvider:
 
         # Find all identifiers in the text after pipe
         # Match all words (identifiers) in the text
-        all_identifiers: list[str] = re.findall(r'[a-zA-Z_][a-zA-Z0-9_]*', text_to_search)
+        all_identifiers: list[str] = re.findall(r"[a-zA-Z_][a-zA-Z0-9_]*", text_to_search)
 
         # Validate identifiers right-to-left to find the last valid operation
         # This handles cases like "junk where level=2" -> finds "where" not "junk"
@@ -273,16 +266,9 @@ class HoverProvider:
         # Format hover content
         content = self._format_operation_documentation(metadata)
 
-        return Hover(
-            contents=MarkupContent(
-                kind=MarkupKind.Markdown,
-                value=content
-            )
-        )
+        return Hover(contents=MarkupContent(kind=MarkupKind.Markdown, value=content))
 
-    def _create_parameter_hover(
-        self, operation_name: str, parameter_name: str
-    ) -> Hover | None:
+    def _create_parameter_hover(self, operation_name: str, parameter_name: str) -> Hover | None:
         """
         Create hover documentation for a parameter.
 
@@ -311,12 +297,7 @@ class HoverProvider:
         # Format parameter documentation
         content = self._format_parameter_documentation(param_info, operation_name)
 
-        return Hover(
-            contents=MarkupContent(
-                kind=MarkupKind.Markdown,
-                value=content
-            )
-        )
+        return Hover(contents=MarkupContent(kind=MarkupKind.Markdown, value=content))
 
     def _format_operation_documentation(self, metadata: OperationMetadata) -> str:
         """
@@ -355,9 +336,7 @@ class HoverProvider:
             for param in metadata.parameters:
                 required_marker = "" if param.required else " (optional)"
                 default_marker = f" = {param.default}" if param.default is not None else ""
-                lines.append(
-                    f"- `{param.name}`: `{param.type}`{required_marker}{default_marker}"
-                )
+                lines.append(f"- `{param.name}`: `{param.type}`{required_marker}{default_marker}")
                 if param.description:
                     lines.append(f"  - {param.description}")
             lines.append("")
@@ -378,9 +357,7 @@ class HoverProvider:
 
         return "\n".join(lines).rstrip()
 
-    def _format_parameter_documentation(
-        self, param: ParameterInfo, operation_name: str
-    ) -> str:
+    def _format_parameter_documentation(self, param: ParameterInfo, operation_name: str) -> str:
         """
         Format parameter information as markdown documentation.
 
@@ -430,9 +407,7 @@ class HoverProvider:
         else:
             return f"unknown:{analysis.word}"
 
-    def _get_cached_hover(
-        self, cache_key: str, default: object = None
-    ) -> Hover | None | object:
+    def _get_cached_hover(self, cache_key: str, default: object = None) -> Hover | None | object:
         """
         Get cached hover if not expired.
 

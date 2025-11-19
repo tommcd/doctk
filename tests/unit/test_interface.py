@@ -32,18 +32,15 @@ class MockInterface(DocumentInterface):
     def apply_operation(self, operation: Any) -> OperationResult:
         """Apply operation using shared StructureOperations."""
         if not self.document or not self.selected_node_id:
-            return OperationResult(
-                success=False,
-                error="No document loaded or no node selected"
-            )
+            return OperationResult(success=False, error="No document loaded or no node selected")
 
         # Map operation names to methods
         op_map = {
-            'promote': self.operations.promote,
-            'demote': self.operations.demote,
-            'move_up': self.operations.move_up,
-            'move_down': self.operations.move_down,
-            'unnest': self.operations.unnest,
+            "promote": self.operations.promote,
+            "demote": self.operations.demote,
+            "move_up": self.operations.move_up,
+            "move_down": self.operations.move_down,
+            "unnest": self.operations.unnest,
         }
 
         op_fn = op_map.get(operation)
@@ -120,6 +117,7 @@ class TestDocumentInterfaceContract:
 
     def test_interface_requires_all_methods(self):
         """Test that incomplete implementations fail."""
+
         class IncompleteInterface(DocumentInterface):
             def display_tree(self, tree: Any) -> None:
                 pass
@@ -132,10 +130,10 @@ class TestDocumentInterfaceContract:
         interface = MockInterface()
 
         # Verify all abstract methods are implemented
-        assert hasattr(interface, 'display_tree')
-        assert hasattr(interface, 'get_user_selection')
-        assert hasattr(interface, 'apply_operation')
-        assert hasattr(interface, 'show_error')
+        assert hasattr(interface, "display_tree")
+        assert hasattr(interface, "get_user_selection")
+        assert hasattr(interface, "apply_operation")
+        assert hasattr(interface, "show_error")
 
     def test_interface_methods_are_callable(self):
         """Test that all interface methods are callable."""
@@ -190,7 +188,7 @@ class TestMockInterfaceOperations:
         interface.selected_node_id = "h2-0"
 
         # Apply promote operation
-        result = interface.apply_operation('promote')
+        result = interface.apply_operation("promote")
 
         assert result.success
         assert result.document is not None
@@ -209,7 +207,7 @@ class TestMockInterfaceOperations:
         interface.selected_node_id = "h1-0"
 
         # Apply demote operation
-        result = interface.apply_operation('demote')
+        result = interface.apply_operation("demote")
 
         assert result.success
         assert result.document is not None
@@ -229,11 +227,11 @@ class TestMockInterfaceOperations:
         interface.selected_node_id = "h1-1"  # Second heading
 
         # Apply move_up operation
-        result = interface.apply_operation('move_up')
+        result = interface.apply_operation("move_up")
 
         assert result.success
         # Verify order changed (Second should be first now)
-        lines = result.document.split('\n')
+        lines = result.document.split("\n")
         assert "# Second" in lines[0]
 
     def test_move_down_operation_through_interface(self):
@@ -250,11 +248,11 @@ class TestMockInterfaceOperations:
         interface.selected_node_id = "h1-0"  # First heading
 
         # Apply move_down operation
-        result = interface.apply_operation('move_down')
+        result = interface.apply_operation("move_down")
 
         assert result.success
         # Verify order changed (First should be second now)
-        lines = result.document.split('\n')
+        lines = result.document.split("\n")
         assert "# Second" in lines[0]
 
     def test_unnest_operation_through_interface(self):
@@ -270,7 +268,7 @@ class TestMockInterfaceOperations:
         interface.selected_node_id = "h2-0"
 
         # Apply unnest operation (should promote)
-        result = interface.apply_operation('unnest')
+        result = interface.apply_operation("unnest")
 
         assert result.success
         assert "# Section" in result.document
@@ -283,7 +281,7 @@ class TestInterfaceErrorHandling:
         """Test operation fails when no document is loaded."""
         interface = MockInterface()
 
-        result = interface.apply_operation('promote')
+        result = interface.apply_operation("promote")
 
         assert not result.success
         assert "No document loaded" in result.error
@@ -296,7 +294,7 @@ class TestInterfaceErrorHandling:
         interface.load_document(doc)
         # Don't set selected_node_id
 
-        result = interface.apply_operation('promote')
+        result = interface.apply_operation("promote")
 
         assert not result.success
         assert "no node selected" in result.error.lower()
@@ -309,7 +307,7 @@ class TestInterfaceErrorHandling:
         interface.load_document(doc)
         interface.selected_node_id = "h1-0"
 
-        result = interface.apply_operation('invalid_operation')
+        result = interface.apply_operation("invalid_operation")
 
         assert not result.success
         assert "Unknown operation" in result.error
@@ -338,7 +336,7 @@ class TestInterfaceStateManagement:
         assert interface.document.nodes[0].level == 2
 
         # Apply promote
-        result = interface.apply_operation('promote')
+        result = interface.apply_operation("promote")
 
         assert result.success
         # Verify document was updated
@@ -362,7 +360,7 @@ class TestInterfaceStateManagement:
 
         # Select and demote the h1 (should change tree structure)
         interface.selected_node_id = "h1-0"
-        result = interface.apply_operation('demote')
+        result = interface.apply_operation("demote")
 
         assert result.success
         # Tree should be rebuilt with new structure
@@ -409,7 +407,7 @@ class TestInterfaceIntegration:
 
         # Test promoting h3
         interface.selected_node_id = "h3-0"
-        result = interface.apply_operation('promote')
+        result = interface.apply_operation("promote")
 
         assert result.success
         # Verify level changed
@@ -428,12 +426,12 @@ class TestInterfaceIntegration:
         interface.selected_node_id = "h3-0"
 
         # Promote twice
-        result1 = interface.apply_operation('promote')
+        result1 = interface.apply_operation("promote")
         assert result1.success
 
         # After first promote, it's h2-0
         interface.selected_node_id = "h2-0"
-        result2 = interface.apply_operation('promote')
+        result2 = interface.apply_operation("promote")
         assert result2.success
 
         # Should now be h1
@@ -455,7 +453,7 @@ class TestInterfaceImmutability:
         original_level = original_doc.nodes[0].level
 
         # Apply operation
-        result = interface.apply_operation('promote')
+        result = interface.apply_operation("promote")
 
         assert result.success
         # Original document should be unchanged
@@ -475,7 +473,7 @@ class TestInterfaceGranularEdits:
         interface.load_document(doc)
         interface.selected_node_id = "h2-0"
 
-        result = interface.apply_operation('promote')
+        result = interface.apply_operation("promote")
 
         assert result.success
         assert result.modified_ranges is not None
@@ -489,17 +487,17 @@ class TestInterfaceGranularEdits:
         interface.load_document(doc)
         interface.selected_node_id = "h2-0"
 
-        result = interface.apply_operation('promote')
+        result = interface.apply_operation("promote")
 
         assert result.success
         range_data = result.modified_ranges[0]
 
         # Verify range has required fields
-        assert hasattr(range_data, 'start_line')
-        assert hasattr(range_data, 'start_column')
-        assert hasattr(range_data, 'end_line')
-        assert hasattr(range_data, 'end_column')
-        assert hasattr(range_data, 'new_text')
+        assert hasattr(range_data, "start_line")
+        assert hasattr(range_data, "start_column")
+        assert hasattr(range_data, "end_line")
+        assert hasattr(range_data, "end_column")
+        assert hasattr(range_data, "new_text")
 
         # Verify new_text contains promoted heading
         assert "# Section" in range_data.new_text

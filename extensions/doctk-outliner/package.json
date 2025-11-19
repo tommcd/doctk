@@ -53,6 +53,11 @@
         "icon": "$(trash)"
       },
       {
+        "command": "doctk.rename",
+        "title": "doctk: Rename Section",
+        "icon": "$(edit)"
+      },
+      {
         "command": "doctk.refresh",
         "title": "doctk: Refresh Outline",
         "icon": "$(refresh)"
@@ -91,6 +96,11 @@
           "command": "doctk.delete",
           "when": "view == doctkOutline",
           "group": "edit@1"
+        },
+        {
+          "command": "doctk.rename",
+          "when": "view == doctkOutline",
+          "group": "edit@2"
         }
       ]
     },
@@ -123,6 +133,12 @@
         "command": "doctk.delete",
         "key": "delete",
         "mac": "delete",
+        "when": "focusedView == doctkOutline"
+      },
+      {
+        "command": "doctk.rename",
+        "key": "F2",
+        "mac": "F2",
         "when": "focusedView == doctkOutline"
       }
     ],

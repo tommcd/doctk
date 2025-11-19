@@ -513,7 +513,7 @@ class TestCompletionIntegration:
         duration = time.time() - start
 
         # Should be fast (under 200ms)
-        assert duration < 0.2, f"Completion took {duration*1000:.1f}ms (exceeds 200ms)"
+        assert duration < 0.2, f"Completion took {duration * 1000:.1f}ms (exceeds 200ms)"
         assert len(completions.items) > 0
 
     def test_cached_completion_performance_under_50ms(self):
@@ -532,5 +532,5 @@ class TestCompletionIntegration:
         duration = time.time() - start
 
         # Should be very fast (under 50ms for cached)
-        assert duration < 0.05, f"Cached completion took {duration*1000:.1f}ms (exceeds 50ms)"
+        assert duration < 0.05, f"Cached completion took {duration * 1000:.1f}ms (exceeds 50ms)"
         assert len(completions.items) > 0

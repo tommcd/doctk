@@ -28,9 +28,7 @@ class CodeBlockExecutor:
 
     # Pattern to match fenced code blocks with language identifier
     # Matches: ```doctk\n<code>\n```
-    CODE_BLOCK_PATTERN = re.compile(
-        r"^```(doctk)\s*\n(.*?)\n```$", re.MULTILINE | re.DOTALL
-    )
+    CODE_BLOCK_PATTERN = re.compile(r"^```(doctk)\s*\n(.*?)\n```$", re.MULTILINE | re.DOTALL)
 
     def __init__(self) -> None:
         """Initialize code block executor."""
@@ -97,9 +95,7 @@ class CodeBlockExecutor:
         """
         return code_block.code
 
-    def execute_code_block(
-        self, code_block: CodeBlock, document: Document[Any]
-    ) -> Document[Any]:
+    def execute_code_block(self, code_block: CodeBlock, document: Document[Any]) -> Document[Any]:
         """
         Execute a single code block on a document.
 
@@ -150,9 +146,7 @@ class CodeBlockExecutor:
         except Exception as e:
             raise ExecutionError(f"Execution failed: {e}") from e
 
-    def execute_file(
-        self, markdown_path: str | Path, block_index: int = 0
-    ) -> Document[Any]:
+    def execute_file(self, markdown_path: str | Path, block_index: int = 0) -> Document[Any]:
         """
         Execute a specific code block from a Markdown file.
 

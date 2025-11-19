@@ -99,24 +99,7 @@ After installing doctk, you can optionally install the VS Code extension for vis
 
 ### Installation Steps
 
-**Option 1: Install from Repository**
-
-```bash
-# After cloning and installing doctk:
-code --install-extension extensions/doctk-outliner/doctk-outliner-0.1.0.vsix
-```
-
-**Option 2: Manual Installation via VS Code**
-
-1. Locate the `.vsix` file at `extensions/doctk-outliner/doctk-outliner-0.1.0.vsix`
-2. Open VS Code
-3. Open the Extensions view (`Ctrl+Shift+X` or `Cmd+Shift+X`)
-4. Click the "..." menu button at the top
-5. Select "Install from VSIX..."
-6. Navigate to and select the `.vsix` file
-7. Reload VS Code when prompted
-
-**Option 3: Build from Source**
+**Option 1: Build from Source** (recommended)
 
 ```bash
 cd extensions/doctk-outliner
@@ -125,6 +108,23 @@ npm run compile
 npx @vscode/vsce package
 code --install-extension doctk-outliner-0.1.0.vsix
 ```
+
+**Note:** The `.vsix` file is not included in the repository (it's gitignored). You must either build it yourself (Option 1) or download a pre-built version from [GitHub Releases](https://github.com/tommcd/doctk/releases) when available.
+
+**Option 2: Install from Command Line** (after building or downloading)
+
+```bash
+code --install-extension path/to/doctk-outliner-0.1.0.vsix
+```
+
+**Option 3: Install via VS Code UI** (after building or downloading)
+
+1. Open VS Code
+2. Open the Extensions view (`Ctrl+Shift+X` or `Cmd+Shift+X`)
+3. Click the "..." menu button at the top
+4. Select "Install from VSIX..."
+5. Navigate to and select the `.vsix` file
+6. Reload VS Code when prompted
 
 ### Verify Extension Installation
 

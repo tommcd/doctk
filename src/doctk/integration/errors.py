@@ -96,25 +96,28 @@ class ErrorHandler:
             return ErrorCategory.PARSING
 
         # Validation errors (check early to avoid "io" in "validation" matching SYSTEM)
-        # Consolidated type-based and message-based checks for consistency
-        if (
+        # Consolidated type-based and message-based checks
+        is_validation_error_type = (
             "validation" in error_type_lower
             or "valueerror" in error_type_lower
             or "typeerror" in error_type_lower
-        ):
-            return ErrorCategory.VALIDATION
-
-        if any(keyword in error_msg for keyword in ["invalid", "required", "missing", "expected"]):
+        )
+        is_validation_error_msg = any(
+            keyword in error_msg for keyword in ["invalid", "required", "missing", "expected"]
+        )
+        if is_validation_error_type or is_validation_error_msg:
             return ErrorCategory.VALIDATION
 
         # Network errors
-        if any(
+        # Consolidated type-based and message-based checks
+        is_network_error_type = any(
             keyword in error_type_lower
             for keyword in ["connection", "timeout", "network", "socket"]
-        ):
-            return ErrorCategory.NETWORK
-
-        if any(keyword in error_msg for keyword in ["connection", "timeout", "network"]):
+        )
+        is_network_error_msg = any(
+            keyword in error_msg for keyword in ["connection", "timeout", "network"]
+        )
+        if is_network_error_type or is_network_error_msg:
             return ErrorCategory.NETWORK
 
         # System errors

@@ -127,22 +127,7 @@ doctk includes a VS Code extension with visual document outlining and manipulati
 - doctk package installed (see [Installation](#installation) above)
 - VS Code 1.80.0 or higher
 
-**Option 1: Install from repository** (recommended for now)
-
-```bash
-# After cloning the repository and installing doctk:
-code --install-extension extensions/doctk-outliner/doctk-outliner-0.1.0.vsix
-```
-
-**Option 2: Install manually via VS Code UI**
-
-1. Download or locate `extensions/doctk-outliner/doctk-outliner-0.1.0.vsix`
-2. Open VS Code
-3. Open Extensions view (`Ctrl+Shift+X` / `Cmd+Shift+X`)
-4. Click "..." menu → "Install from VSIX..."
-5. Select the `.vsix` file
-
-**Option 3: Build from source**
+**Option 1: Build from source** (recommended)
 
 ```bash
 cd extensions/doctk-outliner
@@ -151,6 +136,21 @@ npm run compile
 npx @vscode/vsce package
 code --install-extension doctk-outliner-0.1.0.vsix
 ```
+
+**Note:** The `.vsix` file is not included in the repository (it's gitignored). You must either build it yourself (Option 1) or download a pre-built version from [GitHub Releases](https://github.com/tommcd/doctk/releases) when available.
+
+**Option 2: Install from command line** (after building or downloading)
+
+```bash
+code --install-extension path/to/doctk-outliner-0.1.0.vsix
+```
+
+**Option 3: Install via VS Code UI** (after building or downloading)
+
+1. Open VS Code
+2. Open Extensions view (`Ctrl+Shift+X` / `Cmd+Shift+X`)
+3. Click "..." menu → "Install from VSIX..."
+4. Navigate to and select the `.vsix` file
 
 ### Using the Extension
 

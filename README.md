@@ -322,6 +322,7 @@ Full documentation is available at [https://tommcd.github.io/doctk/](https://tom
 - [Extending the DSL](https://tommcd.github.io/doctk/guides/extending-dsl/) - Add custom operations
 
 **Additional Resources:**
+- [Design Rationale](docs/design/01-initial-design.md) - Design principles and decisions
 - [POC Summary](docs/POC-SUMMARY.md) - Proof-of-concept validation
 - [Complete Specification](docs/SPECIFICATION.md) - Full technical specification
 

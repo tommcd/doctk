@@ -491,7 +491,7 @@ doc | promote h2-0
 
         try:
             # Find and execute code blocks
-            with open(markdown_path, "r") as f:
+            with open(markdown_path) as f:
                 content = f.read()
 
             executor = CodeBlockExecutor()

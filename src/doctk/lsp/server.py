@@ -9,9 +9,12 @@ from __future__ import annotations
 import logging
 
 from lsprotocol.types import (
+    TEXT_DOCUMENT_COMPLETION,
     TEXT_DOCUMENT_DID_CHANGE,
     TEXT_DOCUMENT_DID_CLOSE,
     TEXT_DOCUMENT_DID_OPEN,
+    CompletionList,
+    CompletionParams,
     Diagnostic,
     DiagnosticSeverity,
     DidChangeTextDocumentParams,
@@ -24,6 +27,8 @@ from pygls.lsp.server import LanguageServer
 
 from doctk.dsl.lexer import Lexer, LexerError
 from doctk.dsl.parser import ParseError, Parser
+from doctk.lsp.completion import CompletionProvider
+from doctk.lsp.registry import OperationRegistry
 
 # Get logger for this module
 # Note: Logging configuration is handled by the consuming application or main()
@@ -55,6 +60,10 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
         """Initialize the doctk language server."""
         super().__init__("doctk-lsp", "v0.1.0")
         self.documents: dict[str, DocumentState] = {}
+
+        # Initialize operation registry and completion provider
+        self.registry = OperationRegistry()
+        self.completion_provider = CompletionProvider(self.registry)
 
         # Register handlers
         self._register_handlers()
@@ -108,6 +117,27 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
             uri = params.text_document.uri
             if uri in self.documents:
                 del self.documents[uri]
+
+        @self.feature(TEXT_DOCUMENT_COMPLETION)  # type: ignore[misc]
+        async def completions(
+            _ls: LanguageServer, params: CompletionParams
+        ) -> CompletionList:
+            """Handle completion request."""
+            logger.info(
+                f"Completion requested at {params.position.line}:{params.position.character}"
+            )
+
+            uri = params.text_document.uri
+
+            # Get document text
+            if uri not in self.documents:
+                logger.warning(f"Document not found for completion: {uri}")
+                return CompletionList(is_incomplete=False, items=[])
+
+            text = self.documents[uri].text
+
+            # Provide completions
+            return self.completion_provider.provide_completions(text, params.position)
 
     async def parse_and_validate(self, uri: str, text: str) -> None:
         """

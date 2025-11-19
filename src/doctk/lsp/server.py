@@ -9,7 +9,6 @@ from __future__ import annotations
 import difflib
 import logging
 import re
-import traceback
 
 from lsprotocol.types import (
     TEXT_DOCUMENT_COMPLETION,
@@ -421,14 +420,13 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
         except Exception as e:
             # Generic error - comprehensive logging with stack trace
             # This provides detailed diagnostic information for troubleshooting
-            stack_trace = traceback.format_exc()
+            # Note: exc_info=True automatically captures and formats the stack trace
             logger.error(
                 f"Unexpected error parsing document: {e}",
                 exc_info=True,
                 extra={
                     "error_type": type(e).__name__,
                     "error_message": str(e),
-                    "stack_trace": stack_trace,
                     "text_length": len(text),
                     "text_preview": text[:100] if len(text) > 100 else text,
                 },
@@ -531,14 +529,13 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
 
         except Exception as e:
             # Comprehensive error logging with stack trace
-            stack_trace = traceback.format_exc()
+            # Note: exc_info=True automatically captures and formats the stack trace
             logger.error(
                 f"Error providing signature help: {e}",
                 exc_info=True,
                 extra={
                     "error_type": type(e).__name__,
                     "error_message": str(e),
-                    "stack_trace": stack_trace,
                     "position": f"{position.line}:{position.character}",
                     "text_length": len(text),
                 },
@@ -629,14 +626,13 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
 
         except Exception as e:
             # Comprehensive error logging with stack trace
-            stack_trace = traceback.format_exc()
+            # Note: exc_info=True automatically captures and formats the stack trace
             logger.error(
                 f"Error extracting document symbols: {e}",
                 exc_info=True,
                 extra={
                     "error_type": type(e).__name__,
                     "error_message": str(e),
-                    "stack_trace": stack_trace,
                     "text_length": len(text),
                 },
             )

@@ -4,6 +4,8 @@ These tests verify that the language server can be started, stopped, and
 properly handles client connections.
 """
 
+import pytest  # noqa: F401 - Reserved for future pytest.skip() usage
+
 from doctk.lsp.server import DoctkLanguageServer
 
 

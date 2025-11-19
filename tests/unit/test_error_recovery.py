@@ -10,6 +10,7 @@ from unittest.mock import patch
 from lsprotocol.types import DiagnosticSeverity, Position
 
 from doctk.lsp import DoctkLanguageServer
+from doctk.lsp.server import DocumentState
 
 
 class TestGracefulDegradation:
@@ -114,7 +115,6 @@ class TestGracefulDegradation:
         # Create a document state
         uri = "file:///test.tk"
         text = "doc | select heading"
-        from doctk.lsp.server import DocumentState
 
         server.documents[uri] = DocumentState(uri, text, 1)
 
@@ -132,7 +132,6 @@ class TestGracefulDegradation:
         # Create a document state
         uri = "file:///test.tk"
         text = "doc | select heading"
-        from doctk.lsp.server import DocumentState
 
         server.documents[uri] = DocumentState(uri, text, 1)
 
@@ -236,7 +235,6 @@ class TestErrorRecoveryPatterns:
 
         # Create a document state
         uri = "file:///test.tk"
-        from doctk.lsp.server import DocumentState
 
         server.documents[uri] = DocumentState(uri, "doc | select heading", 1)
 
@@ -254,7 +252,6 @@ class TestErrorRecoveryPatterns:
 
         # Validate first document (invalid)
         uri1 = "file:///test1.tk"
-        from doctk.lsp.server import DocumentState
 
         server.documents[uri1] = DocumentState(uri1, "doc | @invalid", 1)
         diagnostics1 = server.validate_syntax("doc | @invalid")

@@ -1,7 +1,5 @@
 """Tests for memory management functionality."""
 
-import pytest
-
 from doctk.core import Document, Heading, Paragraph
 from doctk.lsp.memory import DocumentState, DocumentStateManager, LRUCache
 
@@ -249,10 +247,10 @@ class TestDocumentStateManager:
         assert manager.get_cache_size() == 5
 
     def test_eviction_count(self):
-        """Test that eviction count is tracked."""
-        manager = DocumentStateManager(max_cache_size=2)
+        """Test that size-based eviction count is tracked separately."""
+        manager = DocumentStateManager(max_cache_size=2, enable_memory_monitoring=False)
 
-        # Add 3 documents to trigger eviction
+        # Add 3 documents to trigger size-based eviction
         for i in range(3):
             doc = Document([Heading(level=1, text=f"Test {i}")])
             manager.put_document(f"file:///test{i}.md", doc)
@@ -260,6 +258,10 @@ class TestDocumentStateManager:
         stats = manager.get_statistics()
         # One document should have been evicted (cache size = 2, added 3)
         assert manager.get_cache_size() == 2
+        # Assert that size-based eviction was tracked
+        assert stats["size_evictions"] == 1
+        assert stats["memory_evictions"] == 0
+        assert stats["total_evictions"] == 1
 
     def test_document_state_dataclass(self):
         """Test DocumentState dataclass."""

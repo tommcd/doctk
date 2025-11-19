@@ -20,6 +20,7 @@ class DocumentTreeBuilder:
         self.node_map: dict[str, Node] = {}
         self.parent_map: dict[str, str] = {}
         self._line_position_cache: dict[int, int] = {}  # Cache: node_index -> line_number
+        self._line_count_cache: dict[int, int] = {}  # Cache: node_index -> line_count
         self._build_node_map()
         self._build_line_position_cache()
 
@@ -36,9 +37,10 @@ class DocumentTreeBuilder:
 
     def _build_line_position_cache(self) -> None:
         """
-        Build a cache of line positions for all nodes (O(n) operation).
+        Build a cache of line positions and line counts for all nodes (O(n) operation).
 
         This eliminates the O(n²) complexity from repeated line calculations.
+        Includes fallback handling for nodes that cannot be matched.
         """
         # Get document text and split into lines
         doc_text = self.document.to_string()
@@ -49,24 +51,36 @@ class DocumentTreeBuilder:
             # Get the text for this node
             temp_doc = Document([node])
             search_text = temp_doc.to_string().strip()
+            num_node_lines = search_text.count("\n") + 1
+
+            # Cache line count to avoid repeated Document creation
+            self._line_count_cache[node_index] = num_node_lines
 
             # Find this text in the remaining lines
+            found = False
             for line_idx in range(current_line, len(lines)):
                 line_content = lines[line_idx].rstrip("\n")
                 # Check if this line starts the node
-                if search_text.startswith(line_content) or line_content.startswith(
-                    search_text.split("\n")[0]
+                # Improved matching: check for empty lines to avoid false positives
+                if line_content and (
+                    search_text.startswith(line_content)
+                    or line_content.startswith(search_text.split("\n")[0])
                 ):
                     # Found the start of this node
                     self._line_position_cache[node_index] = line_idx
+                    found = True
 
                     # Skip past this node
-                    num_node_lines = search_text.count("\n") + 1
                     current_line = line_idx + num_node_lines
                     # Skip any blank lines after this node
                     while current_line < len(lines) and lines[current_line].strip() == "":
                         current_line += 1
                     break
+
+            # Fallback: if node not found, estimate position
+            if not found:
+                self._line_position_cache[node_index] = current_line
+                current_line += num_node_lines
 
     def build_tree_with_ids(self) -> TreeNode:
         """
@@ -129,19 +143,29 @@ class DocumentTreeBuilder:
 
         return root
 
-    def _calculate_node_line(self, node_index: int, lines: list[str]) -> int | None:
+    def get_node_line_position(self, node_index: int) -> int | None:
         """
-        Calculate the line number where a node starts (uses cache for O(1) lookup).
+        Get the cached line position for a node (public accessor method).
 
         Args:
             node_index: Index of the node in the document
-            lines: Lines of the document text (unused, kept for compatibility)
 
         Returns:
             Line number (0-indexed) or None if not found
         """
-        # Use cached line position (O(1) lookup)
         return self._line_position_cache.get(node_index)
+
+    def get_node_line_count(self, node_index: int) -> int | None:
+        """
+        Get the cached line count for a node (public accessor method).
+
+        Args:
+            node_index: Index of the node in the document
+
+        Returns:
+            Number of lines the node occupies, or None if not found
+        """
+        return self._line_count_cache.get(node_index)
 
     def find_node(self, node_id: str) -> Node | None:
         """
@@ -367,15 +391,19 @@ class DiffComputer:
         except ValueError:
             return None
 
-        # Use cached line position from builder (O(1) lookup)
-        start_line = builder._line_position_cache.get(node_index)
+        # Use cached line position from builder via public accessor (O(1) lookup)
+        start_line = builder.get_node_line_position(node_index)
         if start_line is None:
             return None
 
-        # Calculate how many lines this node occupies
-        temp_doc = Document([node])
-        search_text = temp_doc.to_string().strip()
-        num_node_lines = search_text.count("\n") + 1
+        # Use cached line count to avoid repeated Document creation
+        num_node_lines = builder.get_node_line_count(node_index)
+        if num_node_lines is None:
+            # Fallback: calculate line count if not cached
+            temp_doc = Document([node])
+            search_text = temp_doc.to_string().strip()
+            num_node_lines = search_text.count("\n") + 1
+
         end_line = start_line + num_node_lines - 1
 
         return (start_line, end_line)

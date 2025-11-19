@@ -695,6 +695,47 @@ def test_script_execution():
 
 1. **Performance Monitoring**: Built-in telemetry helps identify bottlenecks and ensures performance requirements are met.
 
+### Known Architectural Limitations (Tech Debt)
+
+#### 1. Node ID Remapping Due to String Serialization (P2 - Future Improvement)
+
+**Problem**: `StructureOperations` returns serialized strings (required for JSON-RPC), forcing re-parsing and node ID regeneration. This causes:
+- DSL executor must re-parse after every operation
+- Code block chaining requires `chain_state=False` workaround
+- Multi-step operations are fragile (IDs change between steps)
+- Unnecessary performance overhead
+
+**Root Cause**: Operations designed for external JSON-RPC API are being used by internal Python code.
+
+**Proper Architecture**: Should have two separate APIs:
+- **Internal API**: Python operations returning `Document` objects with stable node tracking
+- **External API**: JSON-RPC wrapper that serializes Document → string for TypeScript
+
+**Current Workaround**:
+- DSL executor re-parses after each operation
+- Code blocks default to `chain_state=False` (independent execution)
+- Documentation warns users about ID remapping
+
+**Future Improvement** (tracked in tasks.md):
+```python
+# Internal API (should exist but doesn't)
+class InternalOperations:
+    def promote(self, doc: Document, node_id: str) -> Document:
+        """Returns Document with stable node IDs."""
+        # Direct Document manipulation, no serialization
+
+# External API (current StructureOperations)
+class StructureOperations:
+    def promote(self, doc: Document, node_id: str) -> OperationResult:
+        """Returns serialized string for JSON-RPC."""
+        internal_result = InternalOperations().promote(doc, node_id)
+        return OperationResult(document=internal_result.to_string(), ...)
+```
+
+**Priority**: P2 (important but not blocking MVP)
+**Effort**: Medium (requires refactoring StructureOperations)
+**Impact**: Improves DSL executor reliability, enables true code block chaining, better performance
+
 ### Trade-offs
 
 1. **Full Document Replacement vs. Incremental Edits**

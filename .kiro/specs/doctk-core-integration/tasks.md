@@ -401,6 +401,56 @@ This implementation plan breaks down the core integration layer and execution ca
     - Provide examples for JupyterLab integration
     - Document extension points
 
+## Future Improvements (Post-MVP)
+
+### Task 16: Refactor to Separate Internal and External Operation APIs (P2)
+
+**Problem**: Current architecture mixes concerns - DSL executor (internal Python) uses StructureOperations designed for JSON-RPC (external TypeScript communication).
+
+**Impact**:
+- Node ID remapping on every operation
+- Code block chaining limitations
+- Unnecessary serialize/deserialize overhead
+- Fragile multi-step operations
+
+**Proposed Solution**:
+
+- [ ] 16.1 Create InternalOperations class
+
+  - Implement operations that return Document objects directly
+  - Maintain stable node IDs across transformations
+  - No serialization overhead
+  - Use immutable Document updates with ID preservation
+
+- [ ] 16.2 Refactor StructureOperations as JSON-RPC wrapper
+
+  - Keep current StructureOperations for JSON-RPC bridge
+  - Delegate to InternalOperations for actual transformations
+  - Serialize results to OperationResult for TypeScript
+
+- [ ] 16.3 Update DSL executor to use InternalOperations
+
+  - Eliminate re-parsing after each operation
+  - Enable true code block chaining (chain_state=True works properly)
+  - Improve performance (no serialize/deserialize cycles)
+
+- [ ] 16.4 Add stable node ID tracking to Document
+
+  - Add node_id field to Node dataclass
+  - Preserve IDs across immutable transformations
+  - Update DocumentTreeBuilder to use existing IDs when available
+
+- [ ] 16.5 Write migration tests
+
+  - Ensure JSON-RPC API backward compatibility
+  - Test internal API with stable IDs
+  - Verify DSL executor improvements
+
+**Priority**: P2 (important future improvement, not blocking MVP)
+**Effort**: Medium (2-3 days)
+**Dependencies**: MVP complete, core integration stable
+**References**: See design.md "Known Architectural Limitations"
+
 ## Notes
 
 - Each task should be completed and verified before moving to the next
@@ -408,3 +458,4 @@ This implementation plan breaks down the core integration layer and execution ca
 - Performance requirements should be validated throughout development
 - Tasks marked with [x] are already completed
 - Integration with doctk core API should be verified at each step
+- Future improvements (Task 16+) are tracked but deferred post-MVP

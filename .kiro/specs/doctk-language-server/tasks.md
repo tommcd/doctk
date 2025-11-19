@@ -248,20 +248,23 @@ This implementation plan breaks down the language server into discrete, actionab
     - _Requirements: 18_
     - _Tests in: tests/unit/test_error_recovery.py (20 tests, all passing)_
 
-- [ ] 8. Implement memory management
+- [x] 8. Implement memory management
 
-  - [ ] 8.1 Add LRU cache for document states
+  - [x] 8.1 Add LRU cache for document states
 
     - Implement DocumentStateManager with LRU cache
     - Add memory usage monitoring
     - Evict least recently used documents when memory limit reached
     - _Requirements: 17.5_
+    - _Implemented in: src/doctk/lsp/memory.py_
+    - _Tests in: tests/unit/test_memory.py (22 tests, all passing)_
 
-  - [ ] 8.2 Write performance tests
+  - [x] 8.2 Write performance tests
 
     - Test memory usage stays under 500MB
     - Test with large documents
     - _Requirements: 17_
+    - _Tests in: tests/unit/test_memory.py::TestMemoryPerformance (8 tests, all passing)_
 
 - [ ] 9. Add configuration and customization
 
@@ -292,21 +295,23 @@ This implementation plan breaks down the language server into discrete, actionab
     - Test dynamic settings updates
     - _Requirements: 19_
 
-- [ ] 10. Python dependencies and packaging
+- [x] 10. Python dependencies and packaging
 
-  - [ ] 10.1 Set up uv dependency management
+  - [x] 10.1 Set up uv dependency management
 
     - Create pyproject.toml with dependencies
     - Configure pygls and doctk dependencies
     - Add dev dependencies for testing
     - _Requirements: 7.1_
+    - _Implemented in: pyproject.toml (pygls>=1.0.0 in dependencies)_
 
-  - [ ] 10.2 Create language server entry point
+  - [x] 10.2 Create language server entry point
 
     - Create main script for language server
     - Handle command-line arguments
     - Set up logging
     - _Requirements: 7.1_
+    - _Implemented in: src/doctk/lsp/server.py (main() function, lines 532-544)_
 
 - [ ] 11. End-to-end integration and testing
 

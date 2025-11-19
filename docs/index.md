@@ -77,7 +77,7 @@ Inspired by category theory, set theory, and the Zen of Python, `doctk` provides
 
 ```python
 from doctk import Document
-from doctk.operations import select, where, promote
+from doctk.operations import select, where, promote, demote
 from doctk.integration import StructureOperations
 
 # Load document
@@ -89,10 +89,9 @@ result = doc | select(heading) | where(level=3) | promote()
 # Save
 result.to_file("guide_updated.md")
 
-# Structure operations
-ops = StructureOperations(doc)
-result = ops.move_up(node_id="h2-intro")
-result = ops.nest(node_id="h3-details", under_id="h2-intro")
+# Structure operations (static methods)
+result = StructureOperations.move_up(doc, node_id="h2-intro")
+result = StructureOperations.nest(doc, node_id="h3-details", under_id="h2-intro")
 ```
 
 ### Interactive REPL
@@ -117,7 +116,9 @@ move_up(2)
 nest(3, under=1)
 ```
 
-Execute with: `doctk execute script.tk guide.md -o output.md`
+Execute with: `doctk execute script.tk guide.md`
+
+**Note**: The script modifies the input file in place.
 
 ---
 

@@ -346,7 +346,7 @@ This implementation plan breaks down the core integration layer and execution ca
     - All tests passing ✅
     - _Requirements: 18_
 
-- [ ]* 12. ~~Implement security features~~ **NOT APPLICABLE for Local Tool**
+- [ ]* 12. ~~Implement security features~~ **Not Applicable for Local Tool**
 
   **Rationale**: This task was originally designed for web services or multi-tenant systems. However, doctk is a **local CLI tool** that users run on their own machines with their own documents. The proposed "security" features don't provide value in this context:
 

@@ -41,7 +41,7 @@ pip install -e .
 doctk repl guide.md
 
 # Execute script files
-doctk execute script.tk guide.md -o guide_updated.md
+doctk execute script.tk guide.md
 
 # View document outline
 doctk outline README.md --headings-only
@@ -75,10 +75,9 @@ result = doc | select(heading) | where(level=3) | promote()
 # Save
 result.to_file("guide_updated.md")
 
-# Structure operations (move, nest, unnest)
-ops = StructureOperations(doc)
-result = ops.move_up(node_id="h2-intro")
-result = ops.nest(node_id="h3-details", under_id="h2-intro")
+# Structure operations (static methods)
+result = StructureOperations.move_up(doc, node_id="h2-intro")
+result = StructureOperations.nest(doc, node_id="h3-details", under_id="h2-intro")
 ```
 
 ## DSL and Interactive REPL
@@ -105,7 +104,9 @@ move_up(2)
 nest(3, under=1)
 ```
 
-Execute with: `doctk execute script.tk guide.md -o output.md`
+Execute with: `doctk execute script.tk guide.md`
+
+**Note**: The script modifies the input file in place. To preserve the original, make a copy first.
 
 ## VS Code Extension
 
@@ -122,9 +123,11 @@ doctk includes a VS Code extension with visual document outlining and manipulati
 **Installation:**
 
 ```bash
-# Install the extension
+# Install the extension (.vsix available in GitHub releases)
 code --install-extension extensions/doctk-outliner/doctk-outliner-0.1.0.vsix
 ```
+
+**Note**: The `.vsix` file is available in [GitHub Releases](https://github.com/tommcd/doctk/releases) or can be built from source with `npm run package` in the `extensions/doctk-outliner/` directory.
 
 **Usage:**
 1. Open any Markdown file in VS Code

@@ -4,8 +4,21 @@
 **Project Version**: 0.1.0 (Alpha - POC Complete)
 **Repository**: https://github.com/tommcd/doctk
 
+## Quick Start for AI Assistants
+
+**Before diving into this document**, note that the `.kiro/steering/` directory contains automatically-included context documents:
+
+- **product.md** - What doctk is and its philosophy
+- **tech.md** - Tech stack, build system, and common commands
+- **structure.md** - Project organization and conventions
+
+These steering documents are always available in your context and provide essential project information. Reference them first for quick answers about conventions, commands, and structure.
+
+**For spec-based development work**, see [`claude-code-kiro-spec-prompt.md`](claude-code-kiro-spec-prompt.md) for detailed guidance on implementing Kiro specs.
+
 ## Table of Contents
 
+1. [Understanding the .kiro Directory](#understanding-the-kiro-directory)
 1. [Project Overview](#project-overview)
 1. [Repository Structure](#repository-structure)
 1. [Development Workflow](#development-workflow)
@@ -15,10 +28,9 @@
 1. [Common Tasks](#common-tasks)
 1. [Important Patterns](#important-patterns)
 1. [External Tools System](#external-tools-system)
-1. [Working with Kiro Specs](#working-with-kiro-specs)
 1. [Quick Reference](#quick-reference)
 
----
+______________________________________________________________________
 
 ## Project Overview
 
@@ -116,9 +128,9 @@ doctk/
 ├── .github/
 │   └── workflows/tests.yml    # GitHub Actions CI/CD
 │
-├── .kiro/                     # Project specifications & steering
-│   ├── specs/
-│   └── steering/
+├── .kiro/                     # Kiro configuration
+│   ├── specs/                 # Feature specifications (requirements, design, tasks)
+│   └── steering/              # AI assistant guidance (always-available context)
 │
 ├── .pre-commit-config.yaml    # Pre-commit hooks
 ├── .markdownlint.yaml         # Markdown linting rules
@@ -865,9 +877,27 @@ See "Add an External Tool" in [Common Tasks](#common-tasks).
 
 ______________________________________________________________________
 
-## Working with Kiro Specs
+## Understanding the .kiro Directory
 
-### Overview
+The `.kiro/` directory contains two important subdirectories for AI assistants:
+
+### .kiro/steering/
+
+**Purpose**: Provides always-available context and guidance for AI assistants.
+
+Steering documents are automatically included in your context and contain:
+
+- **product.md** - Product overview, philosophy, and current status
+- **tech.md** - Tech stack, build system, common commands, testing strategy
+- **structure.md** - Project organization, folder structure, naming conventions
+- **python-wsl-uv.md** - Python environment and WSL-specific command rules
+- **validate-spec-accuracy.md** - Spec validation testing guidelines
+
+**When to reference**: Anytime you need to understand project conventions, tech stack, or structure without asking basic questions.
+
+### .kiro/specs/
+
+**Purpose**: Contains structured feature specifications for incremental development.
 
 doctk uses **Kiro specs** for structured feature development. A Kiro spec formalizes the design and implementation process through a three-document structure that defines WHAT needs to be built, HOW it will be built, and the step-by-step implementation plan.
 
@@ -935,23 +965,28 @@ cat .kiro/specs/<spec-name>/tasks.md
 
 | Need | Location |
 |------|----------|
+| Project conventions | `.kiro/steering/` (auto-included) |
+| Product overview | `.kiro/steering/product.md` |
+| Tech stack & commands | `.kiro/steering/tech.md` |
+| Project structure | `.kiro/steering/structure.md` |
 | Find specs | `.kiro/specs/<spec-name>/` |
 | Read requirements | `.kiro/specs/<spec-name>/requirements.md` |
 | Read design | `.kiro/specs/<spec-name>/design.md` |
 | Track progress | `.kiro/specs/<spec-name>/tasks.md` |
-| Implementation guide | `claude-code-kiro-spec-prompt.md` |
+| Spec implementation guide | `claude-code-kiro-spec-prompt.md` |
 
-### Detailed Guide
+### Detailed Spec Implementation Guide
 
 For comprehensive instructions on working with Kiro specs, including:
 
+- Understanding the .kiro directory structure
 - How to read and interpret requirements
 - Understanding design documents
 - Task execution best practices
 - Progress tracking conventions
 - Tips for successful spec implementation
 
-**See**: `claude-code-kiro-spec-prompt.md` in the repository root.
+**See**: [`claude-code-kiro-spec-prompt.md`](claude-code-kiro-spec-prompt.md) in the repository root.
 
 ______________________________________________________________________
 
@@ -1000,6 +1035,8 @@ Run `python3 scripts/show-tox-commands.py` for full list.
 
 | Need | Location |
 |------|----------|
+| Project conventions | `.kiro/steering/*.md` |
+| Feature specs | `.kiro/specs/<spec-name>/` |
 | Add node type | `src/doctk/core.py` |
 | Add operation | `src/doctk/operations.py` |
 | Add CLI command | `src/doctk/cli.py` |

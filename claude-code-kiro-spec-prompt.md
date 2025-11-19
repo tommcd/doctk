@@ -2,13 +2,37 @@
 
 You are Claude Code, and you're being asked to implement tasks from a Kiro spec. This guide explains how to read, understand, and execute spec-based development work.
 
-## What is a Kiro Spec?
+## Understanding the .kiro Directory
 
-A Kiro spec is a structured approach to building features. It formalizes the design and implementation process through three key documents:
+The `.kiro/` directory contains two important subdirectories:
+
+### .kiro/steering/
+
+**Purpose**: Provides always-available context and guidance for AI assistants working in this codebase.
+
+Steering documents are automatically included in your context and contain:
+
+- **product.md** - Product overview, philosophy, and current status
+- **tech.md** - Tech stack, build system, common commands
+- **structure.md** - Project organization, folder structure, conventions
+- **python-wsl-uv.md** - Python environment and WSL-specific rules
+- **validate-spec-accuracy.md** - Spec validation testing guidelines
+
+These documents help you understand the project without needing to ask basic questions.
+
+### .kiro/specs/
+
+**Purpose**: Contains structured feature specifications for incremental development.
+
+Each spec is a formalized design and implementation process with three documents:
 
 1. **requirements.md** - Defines WHAT needs to be built
 1. **design.md** - Defines HOW it will be built
 1. **tasks.md** - Defines the step-by-step implementation plan
+
+## What is a Kiro Spec?
+
+A Kiro spec is a structured approach to building features. It formalizes the design and implementation process through three key documents located in `.kiro/specs/<spec-name>/`:
 
 ## How to Work with Specs
 
@@ -116,13 +140,24 @@ This task tells you to:
 1. Test the main setup script
 1. This satisfies requirements 2.1, 2.2, and 2.3
 
-## Finding Specs
+## Finding Specs and Steering Documents
+
+### Specs
 
 Specs are located in `.kiro/specs/<spec-name>/`:
 
 - Each spec has its own folder
 - Look for `requirements.md`, `design.md`, and `tasks.md`
 - If `tasks.md` doesn't exist yet, you may need to create it based on the design
+
+### Steering Documents
+
+Steering documents are located in `.kiro/steering/`:
+
+- These are automatically included in your context
+- They provide project-wide conventions, tech stack info, and structure
+- Reference them when you need to understand project standards
+- Common files: `product.md`, `tech.md`, `structure.md`
 
 ## When Tasks Are Complete
 

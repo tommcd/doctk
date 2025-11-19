@@ -4,6 +4,7 @@ These tests verify that the language server can be started, stopped, and
 properly handles client connections.
 """
 
+import pytest  # noqa: F401 - Reserved for future pytest.skip() usage
 
 from doctk.lsp.server import DoctkLanguageServer
 
@@ -81,7 +82,9 @@ class TestLanguageServerDocumentHandling:
 
         # Should have no errors for valid syntax
         assert isinstance(diagnostics, list)
-        assert len(diagnostics) == 0, f"Valid syntax should produce no diagnostics, got: {diagnostics}"
+        assert len(diagnostics) == 0, (
+            f"Valid syntax should produce no diagnostics, got: {diagnostics}"
+        )
 
     def test_parse_and_validate_invalid_document(self):
         """Test parsing and validation of a document with errors."""
@@ -151,7 +154,9 @@ class TestLanguageServerFeatureProviders:
 
         # Signature help may or may not be available depending on cursor position
         # This test verifies the method doesn't crash
-        assert sig_help is None or (hasattr(sig_help, "signatures") and len(sig_help.signatures) >= 0)
+        assert sig_help is None or (
+            hasattr(sig_help, "signatures") and len(sig_help.signatures) >= 0
+        )
 
     def test_document_symbols_integration(self):
         """Test that document symbols can be extracted."""

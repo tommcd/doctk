@@ -171,9 +171,7 @@ class DocumentStateManager:
             document: Document to cache
             metadata: Optional metadata about the document
         """
-        state = DocumentState(
-            uri=uri, document=document, metadata=metadata or {}, access_count=0
-        )
+        state = DocumentState(uri=uri, document=document, metadata=metadata or {}, access_count=0)
         self.cache.put(uri, state)
 
         # Enforce memory limit after insertion to ensure we don't exceed threshold
@@ -298,9 +296,7 @@ class DocumentStateManager:
             Dictionary with cache statistics including both size-based
             and memory-based eviction counts
         """
-        total_accesses = sum(
-            state.access_count for state in self.cache.cache.values()
-        )
+        total_accesses = sum(state.access_count for state in self.cache.cache.values())
         return {
             "cache_size": len(self.cache),
             "max_cache_size": self.cache.maxsize,

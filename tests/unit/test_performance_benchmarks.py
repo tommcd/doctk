@@ -147,8 +147,7 @@ class TestPerformanceBenchmarks:
 
         # Requirement 17.1: Must complete within 1 second
         assert duration <= TREE_BUILDING_TARGET_THRESHOLD, (
-            f"Tree building took {duration:.3f}s "
-            f"(requirement: ≤ {TREE_BUILDING_TARGET_THRESHOLD}s)"
+            f"Tree building took {duration:.3f}s (requirement: ≤ {TREE_BUILDING_TARGET_THRESHOLD}s)"
         )
 
     @pytest.mark.parametrize(
@@ -204,8 +203,7 @@ class TestPerformanceBenchmarks:
 
         # Performance requirement: ≤ 2 seconds
         assert duration <= STRUCTURAL_OPERATION_THRESHOLD, (
-            f"{operation_name} took {duration:.3f}s "
-            f"(required: ≤ {STRUCTURAL_OPERATION_THRESHOLD}s)"
+            f"{operation_name} took {duration:.3f}s (required: ≤ {STRUCTURAL_OPERATION_THRESHOLD}s)"
         )
 
     def test_multiple_operations_sequential(self):
@@ -317,9 +315,9 @@ class TestPerformanceBenchmarks:
         # Verify slow operations detection works
         slow_ops = self.monitor.get_slow_operations()
         # With small document (100 headings), operations should be fast
-        assert len(slow_ops) == 0 or all(
-            duration < 1.0 for _, duration in slow_ops
-        ), "Operations on small document should be fast"
+        assert len(slow_ops) == 0 or all(duration < 1.0 for _, duration in slow_ops), (
+            "Operations on small document should be fast"
+        )
 
 
 @pytest.mark.slow

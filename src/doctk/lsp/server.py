@@ -277,7 +277,9 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
                                     suggestions = ", ".join(f"'{op}'" for op in similar_ops[:3])
                                     message += f". Did you mean: {suggestions}?"
                                 else:
-                                    message += ". Use completion (Ctrl+Space) to see available operations."
+                                    message += (
+                                        ". Use completion (Ctrl+Space) to see available operations."
+                                    )
 
                                 diagnostic = Diagnostic(
                                     range=Range(
@@ -309,7 +311,9 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
 
                                     # For now, assume positional args satisfy required params in order
                                     # This is a simplified check - full validation would need type checking
-                                    unsatisfied_params = max(0, len(required_params) - num_positional)
+                                    unsatisfied_params = max(
+                                        0, len(required_params) - num_positional
+                                    )
                                     missing_params = [
                                         p
                                         for p in required_params[num_positional:]
@@ -342,6 +346,17 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
 
         except ParseError as e:
             # Parser error with token information
+            # Log detailed error information for debugging
+            logger.error(
+                f"Parse error: {e}",
+                exc_info=True,
+                extra={
+                    "error_type": "ParseError",
+                    "token": str(e.token) if e.token else None,
+                    "text_length": len(text),
+                },
+            )
+
             line = 0
             column = 0
 
@@ -350,12 +365,18 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
                 line = max(0, e.token.line - 1)
                 column = max(0, e.token.column - 1)
 
+            # Provide actionable diagnostic with context
+            message = str(e)
+            # Add helpful hint for common parse errors
+            if "Expected" in message and "got" in message:
+                message += " (Tip: Check for missing or extra operators like '|')"
+
             diagnostic = Diagnostic(
                 range=Range(
                     start=Position(line=line, character=column),
                     end=Position(line=line, character=column + 1),
                 ),
-                message=str(e),
+                message=message,
                 severity=DiagnosticSeverity.Error,
                 source="doctk-lsp",
             )
@@ -363,31 +384,62 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
 
         except LexerError as e:
             # Lexer error with line/column information
+            # Log detailed error information for debugging
+            logger.error(
+                f"Lexer error: {e}",
+                exc_info=True,
+                extra={
+                    "error_type": "LexerError",
+                    "line": e.line,
+                    "column": e.column,
+                    "text_length": len(text),
+                },
+            )
+
             # LexerError has line/column as attributes (1-indexed)
             # Convert to 0-indexed positions for LSP
             line = max(0, e.line - 1)
             column = max(0, e.column - 1)
+
+            # Provide actionable diagnostic
+            message = str(e)
+            if "Unknown character" in message:
+                message += " (Tip: Only use valid doctk DSL syntax)"
 
             diagnostic = Diagnostic(
                 range=Range(
                     start=Position(line=line, character=column),
                     end=Position(line=line, character=column + 1),
                 ),
-                message=str(e),
+                message=message,
                 severity=DiagnosticSeverity.Error,
                 source="doctk-lsp",
             )
             diagnostics.append(diagnostic)
 
         except Exception as e:
-            # Generic error
-            logger.error(f"Error parsing document: {e}")
+            # Generic error - comprehensive logging with stack trace
+            # This provides detailed diagnostic information for troubleshooting
+            # Note: exc_info=True automatically captures and formats the stack trace
+            logger.error(
+                f"Unexpected error parsing document: {e}",
+                exc_info=True,
+                extra={
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "text_length": len(text),
+                    "text_preview": text[:100] if len(text) > 100 else text,
+                },
+            )
+
+            # Still provide a diagnostic to the user, even if parsing completely failed
+            # This is graceful degradation - we show what we can
             diagnostic = Diagnostic(
                 range=Range(
                     start=Position(line=0, character=0),
                     end=Position(line=0, character=1),
                 ),
-                message=f"Parse error: {str(e)}",
+                message=f"Internal error: {str(e)}. Check the output panel for details.",
                 severity=DiagnosticSeverity.Error,
                 source="doctk-lsp",
             )
@@ -424,9 +476,9 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
             paren_depth = 0
             open_paren_pos = -1
             for i in range(len(before_cursor) - 1, -1, -1):
-                if before_cursor[i] == ')':
+                if before_cursor[i] == ")":
                     paren_depth += 1
-                elif before_cursor[i] == '(':
+                elif before_cursor[i] == "(":
                     if paren_depth == 0:
                         open_paren_pos = i
                         break
@@ -476,7 +528,19 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
             return SignatureHelp(signatures=[signature], active_signature=0, active_parameter=0)
 
         except Exception as e:
-            logger.error(f"Error providing signature help: {e}")
+            # Comprehensive error logging with stack trace
+            # Note: exc_info=True automatically captures and formats the stack trace
+            logger.error(
+                f"Error providing signature help: {e}",
+                exc_info=True,
+                extra={
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "position": f"{position.line}:{position.character}",
+                    "text_length": len(text),
+                },
+            )
+            # Graceful degradation - return None rather than crashing
             return None
 
     def extract_document_symbols(self, text: str) -> list[DocumentSymbol]:
@@ -561,8 +625,18 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
                     symbols.append(symbol)
 
         except Exception as e:
-            logger.error(f"Error extracting document symbols: {e}")
-            # Return empty list on error rather than None
+            # Comprehensive error logging with stack trace
+            # Note: exc_info=True automatically captures and formats the stack trace
+            logger.error(
+                f"Error extracting document symbols: {e}",
+                exc_info=True,
+                extra={
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "text_length": len(text),
+                },
+            )
+            # Graceful degradation - return empty list rather than crashing
             return []
 
         return symbols

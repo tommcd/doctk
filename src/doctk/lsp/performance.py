@@ -95,9 +95,7 @@ class PerformanceMonitor:
         """
         self.stats.setdefault(operation, OperationStats(operation_name=operation))
 
-        metric = Metric(
-            timestamp=time.time(), duration=duration, metadata=metadata or {}
-        )
+        metric = Metric(timestamp=time.time(), duration=duration, metadata=metadata or {})
         self.stats[operation].add_metric(metric)
 
         # Enforce metric retention limit to prevent unbounded memory growth
@@ -188,9 +186,9 @@ class PerformanceMonitor:
         for operation, avg_duration in slow_ops:
             stats = self.stats[operation]
             lines.append(
-                f"  - {operation}: avg={avg_duration*1000:.0f}ms, "
-                f"min={stats.min_duration*1000:.0f}ms, "
-                f"max={stats.max_duration*1000:.0f}ms, "
+                f"  - {operation}: avg={avg_duration * 1000:.0f}ms, "
+                f"min={stats.min_duration * 1000:.0f}ms, "
+                f"max={stats.max_duration * 1000:.0f}ms, "
                 f"calls={stats.total_calls}"
             )
         return "\n".join(lines)
@@ -207,9 +205,9 @@ class PerformanceMonitor:
         lines = ["Performance Summary:"]
         for name, stats in sorted(self.stats.items()):
             lines.append(
-                f"  {name}: avg={stats.average_duration*1000:.2f}ms, "
-                f"min={stats.min_duration*1000:.2f}ms, "
-                f"max={stats.max_duration*1000:.2f}ms, "
+                f"  {name}: avg={stats.average_duration * 1000:.2f}ms, "
+                f"min={stats.min_duration * 1000:.2f}ms, "
+                f"max={stats.max_duration * 1000:.2f}ms, "
                 f"calls={stats.total_calls}"
             )
 

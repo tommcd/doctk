@@ -26,10 +26,10 @@ def generate_large_document(num_headings: int, output_file: Path) -> None:
         # Create a balanced tree: h1 -> h2 -> h3 -> h4 -> h5 -> h6
         headings_per_level = {
             1: num_headings // 100,  # ~1% h1
-            2: num_headings // 20,   # ~5% h2
-            3: num_headings // 10,   # ~10% h3
-            4: num_headings // 5,    # ~20% h4
-            5: num_headings // 3,    # ~33% h5
+            2: num_headings // 20,  # ~5% h2
+            3: num_headings // 10,  # ~10% h3
+            4: num_headings // 5,  # ~20% h4
+            5: num_headings // 3,  # ~33% h5
         }
         # Level 6 gets the remaining headings
         headings_per_level[6] = num_headings - sum(headings_per_level.values())  # Remaining ~31%

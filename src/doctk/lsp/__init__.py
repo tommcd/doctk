@@ -2,6 +2,7 @@
 
 from doctk.lsp.bridge import ExtensionBridge
 from doctk.lsp.operations import DocumentTreeBuilder, StructureOperations
+from doctk.lsp.performance import PerformanceMonitor
 from doctk.lsp.protocols import (
     DocumentInterface,
     DocumentOperation,
@@ -22,6 +23,7 @@ __all__ = [
     "OperationRegistry",
     "OperationResult",
     "ParameterInfo",
+    "PerformanceMonitor",
     "StructureOperations",
     "ValidationResult",
 ]

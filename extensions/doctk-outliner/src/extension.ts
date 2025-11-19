@@ -146,6 +146,9 @@ export async function activate(context: vscode.ExtensionContext) {
           return;
         }
 
+        // Trim text once and reuse (avoid multiple trim() calls and inconsistent user feedback)
+        const trimmedText = newText.trim();
+
         // Update the heading in the document
         const editor = vscode.window.activeTextEditor;
         if (!editor || !node.range) {
@@ -159,7 +162,7 @@ export async function activate(context: vscode.ExtensionContext) {
           // Extract the heading line and replace only the text part (preserve the # symbols)
           const headingLine = editor.document.lineAt(node.range.start.line);
           const headingPrefix = '#'.repeat(node.level) + ' ';
-          const newHeadingLine = headingPrefix + newText.trim();
+          const newHeadingLine = headingPrefix + trimmedText;
 
           // Replace the entire line
           const lineRange = new vscode.Range(
@@ -173,11 +176,12 @@ export async function activate(context: vscode.ExtensionContext) {
             throw new Error('Failed to apply edit');
           }
 
-          // Refresh tree view
-          outlineProvider.refresh();
+          // Rebuild tree with updated document content (not just refresh UI)
+          // This ensures the tree displays the new heading text immediately
+          outlineProvider.updateFromDocument(editor.document);
         });
 
-        vscode.window.showInformationMessage(`Renamed heading to: ${newText}`);
+        vscode.window.showInformationMessage(`Renamed heading to: ${trimmedText}`);
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to rename section: ${error instanceof Error ? error.message : String(error)}`);
       }

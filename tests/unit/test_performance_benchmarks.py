@@ -21,14 +21,12 @@ from doctk.lsp.performance import PerformanceMonitor
 # Performance thresholds from requirements.md (Requirement 17)
 STRUCTURAL_OPERATION_THRESHOLD = 2.0  # seconds (Requirement 17.4)
 TREE_BUILDING_TARGET_THRESHOLD = 1.0  # seconds (Requirement 17.1)
-TREE_BUILDING_BASELINE_THRESHOLD = 5.0  # seconds (current implementation)
 DOCUMENT_GENERATION_SANITY_THRESHOLD = 5.0  # seconds
 SEQUENTIAL_OPERATIONS_THRESHOLD = 10.0  # seconds
 MEMORY_THRESHOLD_MB = 500.0  # MB (Requirement 17.5)
 
-# Scalability thresholds
+# Scalability thresholds (now that Task 10.1 is complete)
 SCALING_RATIO_TARGET = 15.0  # Target for linear scaling (100→1000 headings)
-SCALING_RATIO_BASELINE = 120.0  # Current O(n²) baseline
 
 
 def _get_memory_usage_mb() -> float:
@@ -120,21 +118,17 @@ class TestPerformanceBenchmarks:
             f"(should be < {DOCUMENT_GENERATION_SANITY_THRESHOLD}s)"
         )
 
-    def test_tree_building_1000_headings_performance_baseline(self):
+    def test_tree_building_1000_headings_performance(self):
         """
         Requirement 17.1: Documents with up to 1000 headings SHALL render
         tree view within 1 second.
 
-        Current Status: BASELINE TEST
-        - Current implementation: ~3.8s for tree building
-        - Target (Requirement 17.1): ≤ 1.0s
-        - Optimization planned: Tasks 10.1 (incremental parsing) and 10.2 (memory management)
+        Status: Task 10.1 (incremental parsing) COMPLETE
+        - Implemented line position caching to eliminate O(n²) behavior
+        - Tree building now uses O(n) cached lookups instead of repeated traversals
+        - Target: ≤ 1.0s for 1000 headings
 
-        Known Issue: _calculate_node_line() has O(n²) complexity due to
-        repeated document traversal for line number calculation.
-
-        This test establishes a performance baseline and will be tightened
-        once optimization tasks are complete.
+        This test verifies the optimization successfully meets the requirement.
         """
         doc = generate_large_document(1000)
 
@@ -151,20 +145,10 @@ class TestPerformanceBenchmarks:
         assert tree.id == "root"
         assert tree.label == "Document"
 
-        # Current baseline: Allow 5 seconds (will be tightened to 1s in Task 10.1/10.2)
-        assert duration <= TREE_BUILDING_BASELINE_THRESHOLD, (
-            f"Tree building took {duration:.3f}s "
-            f"(current baseline: ≤ {TREE_BUILDING_BASELINE_THRESHOLD}s, "
-            f"target requirement: ≤ {TREE_BUILDING_TARGET_THRESHOLD}s)"
+        # Requirement 17.1: Must complete within 1 second
+        assert duration <= TREE_BUILDING_TARGET_THRESHOLD, (
+            f"Tree building took {duration:.3f}s (requirement: ≤ {TREE_BUILDING_TARGET_THRESHOLD}s)"
         )
-
-        # Document current performance for tracking
-        if duration > TREE_BUILDING_TARGET_THRESHOLD:
-            # This is expected with current implementation
-            print(
-                f"\nPerformance note: Tree building took {duration:.3f}s "
-                f"(exceeds target of {TREE_BUILDING_TARGET_THRESHOLD}s, optimization needed)"
-            )
 
     @pytest.mark.parametrize(
         "operation_name,operation_func,node_args",
@@ -351,14 +335,12 @@ class TestPerformanceScalability:
         Test: Tree building should scale approximately linearly with
         document size (not exponentially).
 
-        Current Status: BASELINE TEST
-        - Current implementation: O(n²) due to _calculate_node_line()
-        - Scaling ratio: ~55x for 100→1000 headings (quadratic behavior)
-        - Target: O(n) linear scaling (~10x for 100→1000)
-        - Optimization planned: Task 10.1 (incremental parsing)
+        Status: Task 10.1 (incremental parsing) COMPLETE
+        - Implemented line position caching with O(n) complexity
+        - Scaling should now be approximately linear
+        - Target: <15x scaling ratio for 100→1000 headings (10x is ideal for perfect O(n))
 
-        This test documents current scaling behavior and will be tightened
-        once optimization is implemented.
+        This test verifies the optimization achieves linear scaling.
         """
         sizes = [100, 500, 1000]
         durations: list[float] = []
@@ -374,25 +356,14 @@ class TestPerformanceScalability:
             assert stats is not None
             durations.append(stats.average_duration)
 
-        # Calculate scaling ratio
+        # Calculate scaling ratio (100 → 1000 headings)
         ratio = durations[2] / durations[0] if durations[0] > 0 else float("inf")
 
-        # Current baseline: Allow quadratic scaling (will be improved to linear in Task 10.1)
-        # With O(n²): 100→1000 is 100x data, expect ~100x time
-        assert ratio < SCALING_RATIO_BASELINE, (
+        # Requirement: Linear scaling (10x data → ~15x time max)
+        assert ratio < SCALING_RATIO_TARGET, (
             f"Scaling ratio: {ratio:.2f}x "
-            f"(current baseline: < {SCALING_RATIO_BASELINE}x, "
-            f"target: < {SCALING_RATIO_TARGET}x)"
+            f"(requirement: < {SCALING_RATIO_TARGET}x for linear scaling)"
         )
-
-        # Document current performance for tracking
-        if ratio > SCALING_RATIO_TARGET:
-            # This is expected with current O(n²) implementation
-            print(
-                f"\nPerformance note: Scaling ratio is {ratio:.2f}x "
-                f"(exceeds target of {SCALING_RATIO_TARGET}x for linear scaling, "
-                "optimization needed)"
-            )
 
     def test_operation_performance_with_varying_sizes(self):
         """

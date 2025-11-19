@@ -218,10 +218,10 @@
           "default": 1000,
           "description": "Number of headings to consider a document 'large'"
         },
-        "doctk.performance.enableVirtualization": {
+        "doctk.performance.enableLazyLoading": {
           "type": "boolean",
           "default": true,
-          "description": "Enable virtualization for large documents"
+          "description": "Enable lazy loading for large documents (start nodes collapsed)"
         }
       }
     }

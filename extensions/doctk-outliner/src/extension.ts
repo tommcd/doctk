@@ -5,10 +5,12 @@
 import * as vscode from 'vscode';
 import { DocumentOutlineProvider } from './outlineProvider';
 import { PythonBridge } from './pythonBridge';
+import { DocumentSyncManager } from './documentSyncManager';
 import { OutlineNode } from './types';
 
 let outlineProvider: DocumentOutlineProvider;
 let pythonBridge: PythonBridge;
+let syncManager: DocumentSyncManager;
 let treeView: vscode.TreeView<any>;
 
 /**
@@ -37,12 +39,22 @@ export async function activate(context: vscode.ExtensionContext) {
   // Initialize outline provider with Python bridge for centralized ID generation
   outlineProvider = new DocumentOutlineProvider(pythonBridge);
 
+  // Initialize document synchronization manager
+  const config_sync = vscode.workspace.getConfiguration('doctk.outliner');
+  const refreshDelay = config_sync.get('refreshDelay', 300);
+  syncManager = new DocumentSyncManager(outlineProvider, refreshDelay);
+
   // Register tree data provider with drag-and-drop support
   treeView = vscode.window.createTreeView('doctkOutline', {
     treeDataProvider: outlineProvider,
     showCollapseAll: true,
     canSelectMany: false,
     dragAndDropController: outlineProvider,
+  });
+
+  // Register sync manager for disposal
+  context.subscriptions.push({
+    dispose: () => syncManager.dispose(),
   });
 
   // Register commands
@@ -99,7 +111,7 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
       if (editor && editor.document.languageId === 'markdown') {
-        outlineProvider.updateFromDocument(editor.document);
+        syncManager.onDocumentChange(editor.document);
       } else {
         outlineProvider.clear();
       }
@@ -111,7 +123,24 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.workspace.onDidChangeTextDocument((event) => {
       const editor = vscode.window.activeTextEditor;
       if (editor && event.document === editor.document && event.document.languageId === 'markdown') {
-        outlineProvider.updateFromDocument(event.document);
+        syncManager.onDocumentChange(event.document);
+      }
+    })
+  );
+
+  // Listen for external file changes (Requirement 16.5)
+  context.subscriptions.push(
+    vscode.workspace.onDidSaveTextDocument((document) => {
+      // Check if this save was triggered externally (not by our extension)
+      const editor = vscode.window.activeTextEditor;
+      if (
+        editor &&
+        document === editor.document &&
+        document.languageId === 'markdown' &&
+        !syncManager.isCurrentlyUpdating()
+      ) {
+        // Treat as potential external change
+        syncManager.onExternalChange(document);
       }
     })
   );
@@ -119,7 +148,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // Initialize with current editor if it's markdown
   const editor = vscode.window.activeTextEditor;
   if (editor && editor.document.languageId === 'markdown') {
-    outlineProvider.updateFromDocument(editor.document);
+    syncManager.onDocumentChange(editor.document);
   }
 
   // Register tree view
@@ -145,7 +174,8 @@ async function executeOperation(operation: string, node: OutlineNode): Promise<v
     return;
   }
 
-  try {
+  // Wrap operation in sync manager to prevent circular updates
+  await syncManager.onTreeViewChange(async () => {
     // Get document text
     const documentText = document.getText();
 
@@ -195,15 +225,12 @@ async function executeOperation(operation: string, node: OutlineNode): Promise<v
 
       await vscode.workspace.applyEdit(edit);
 
-      // Update tree view
+      // Update tree view (sync manager handles preventing circular updates)
       outlineProvider.updateFromDocument(document);
     } else {
-      vscode.window.showErrorMessage(`Operation failed: ${result.error}`);
+      throw new Error(result.error || 'Operation failed');
     }
-  } catch (error) {
-    vscode.window.showErrorMessage(`Error executing operation: ${error}`);
-    console.error('Operation error:', error);
-  }
+  });
 }
 
 /**

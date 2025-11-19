@@ -164,29 +164,43 @@ This implementation plan breaks down the VS Code outliner extension into discret
     - Test shortcuts only work when tree view is focused
     - _Requirements: 5_
 
-- [ ] 7. Implement document synchronization
+- [x] 7. Implement document synchronization
 
-  - [ ] 7.1 Create DocumentSyncManager class
+  - [x] 7.1 Create DocumentSyncManager class
 
     - Implement `onDocumentChange()` to handle editor changes
     - Implement `onTreeViewChange()` to handle tree operations
     - Add debouncing for rapid changes
     - _Requirements: 16.1, 16.2, 16.3_
+    - COMPLETED: Created DocumentSyncManager class in src/documentSyncManager.ts
+    - Includes debouncing (configurable via doctk.outliner.refreshDelay)
+    - Prevents circular updates with isUpdating flag
+    - Tracks sync version and errors
 
-  - [ ] 7.2 Add bidirectional sync between editor and tree
+  - [x] 7.2 Add bidirectional sync between editor and tree
 
     - Listen to document change events
     - Update tree view when document changes
     - Update document when tree view changes
     - Detect and handle external file modifications
     - _Requirements: 16.1, 16.2, 16.5_
+    - COMPLETED: Integrated DocumentSyncManager into extension.ts
+    - Listens to onDidChangeActiveTextEditor and onDidChangeTextDocument
+    - Listens to onDidSaveTextDocument for external changes
+    - Updates tree view via syncManager.onDocumentChange()
+    - Wraps operations in syncManager.onTreeViewChange()
 
-  - [ ] 7.3 Handle synchronization errors
+  - [x] 7.3 Handle synchronization errors
 
     - Detect sync failures
     - Display error messages
     - Attempt recovery
     - _Requirements: 16.4_
+    - COMPLETED: DocumentSyncManager includes comprehensive error handling
+    - Records sync errors with timestamps and sources
+    - Shows user-friendly error messages for non-recoverable errors
+    - Attempts automatic recovery for recoverable errors
+    - Maintains error history (max 10 errors, auto-clears after 1 minute)
 
   - [ ] 7.4 Write tests for synchronization
 
@@ -195,6 +209,7 @@ This implementation plan breaks down the VS Code outliner extension into discret
     - Test debouncing behavior
     - Test error recovery
     - _Requirements: 16_
+    - NOTE: Deferred to Task 13 (E2E testing) as it requires VS Code extension test harness setup
 
 - [ ] 8. Implement granular document edits (CRITICAL from PR #6 review)
 

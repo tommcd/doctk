@@ -117,9 +117,7 @@ class TestStructuredDocumentation:
         assert isinstance(docs.related_operations, list)
         assert docs.category
 
-    def test_get_structured_docs_for_unknown_operation(
-        self, ai_support: AIAgentSupport
-    ) -> None:
+    def test_get_structured_docs_for_unknown_operation(self, ai_support: AIAgentSupport) -> None:
         """Test getting structured docs for unknown operation returns None."""
         docs = ai_support.get_structured_docs("nonexistent_operation_xyz")
         assert docs is None
@@ -253,13 +251,9 @@ class TestContextAwareSuggestions:
 
         assert len(suggestions) <= 3
 
-    def test_suggestions_empty_for_unrelated_intent(
-        self, ai_support: AIAgentSupport
-    ) -> None:
+    def test_suggestions_empty_for_unrelated_intent(self, ai_support: AIAgentSupport) -> None:
         """Test that unrelated intent returns empty or minimal suggestions."""
-        suggestions = ai_support.get_context_aware_suggestions(
-            "random unrelated gibberish xyz123"
-        )
+        suggestions = ai_support.get_context_aware_suggestions("random unrelated gibberish xyz123")
 
         # Should return a list (even if empty)
         assert isinstance(suggestions, list)

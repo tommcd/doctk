@@ -119,8 +119,7 @@ class AIAgentSupport:
 
         # Convert examples from strings to structured format
         examples = [
-            {"code": ex, "description": f"Example usage of {operation}"}
-            for ex in metadata.examples
+            {"code": ex, "description": f"Example usage of {operation}"} for ex in metadata.examples
         ]
 
         # Find related operations (same category)

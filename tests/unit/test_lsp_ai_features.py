@@ -17,9 +17,7 @@ def server() -> DoctkLanguageServer:
 class TestSignatureHelp:
     """Test signature help feature."""
 
-    def test_signature_help_for_operation_with_params(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_signature_help_for_operation_with_params(self, server: DoctkLanguageServer) -> None:
         """Test signature help for operation with parameters."""
         # Test with nest operation which has parameters
         text = "doc | nest("
@@ -42,9 +40,7 @@ class TestSignatureHelp:
                 if signature.parameters:
                     assert len(signature.parameters) > 0
 
-    def test_signature_help_for_operation_without_params(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_signature_help_for_operation_without_params(self, server: DoctkLanguageServer) -> None:
         """Test signature help for operation without parameters."""
         # Test with promote which has no parameters
         text = "doc | promote("
@@ -69,9 +65,7 @@ class TestSignatureHelp:
         # Should return None for unknown operation
         assert result is None
 
-    def test_signature_help_no_operation_at_cursor(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_signature_help_no_operation_at_cursor(self, server: DoctkLanguageServer) -> None:
         """Test signature help when cursor is not at an operation."""
         text = "doc | "
         position = Position(line=0, character=6)
@@ -82,9 +76,7 @@ class TestSignatureHelp:
         # This is acceptable behavior
         assert result is None or len(result.signatures) == 0
 
-    def test_signature_help_out_of_bounds_position(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_signature_help_out_of_bounds_position(self, server: DoctkLanguageServer) -> None:
         """Test signature help with out of bounds position."""
         text = "doc | promote"
         position = Position(line=10, character=0)  # Line doesn't exist
@@ -123,9 +115,7 @@ class TestSignatureHelp:
 class TestDocumentSymbols:
     """Test document symbols extraction."""
 
-    def test_extract_symbols_from_simple_pipeline(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_extract_symbols_from_simple_pipeline(self, server: DoctkLanguageServer) -> None:
         """Test extracting symbols from a simple pipeline."""
         text = "doc | select heading | promote"
 
@@ -141,9 +131,7 @@ class TestDocumentSymbols:
             pipeline = symbols[0]
             assert "Pipeline" in pipeline.name or "doc" in pipeline.name
 
-    def test_extract_symbols_with_multiple_operations(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_extract_symbols_with_multiple_operations(self, server: DoctkLanguageServer) -> None:
         """Test extracting symbols from pipeline with multiple operations."""
         text = "doc | heading | promote | demote"
 
@@ -156,13 +144,9 @@ class TestDocumentSymbols:
             # Check that operation names are present
             op_names = [child.name for child in symbols[0].children]
             # At least some operation names should be present
-            assert any(
-                name in ["heading", "promote", "demote", "select"] for name in op_names
-            )
+            assert any(name in ["heading", "promote", "demote", "select"] for name in op_names)
 
-    def test_extract_symbols_from_multiline_document(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_extract_symbols_from_multiline_document(self, server: DoctkLanguageServer) -> None:
         """Test extracting symbols from multiline document."""
         text = """doc | select heading
 | promote
@@ -191,9 +175,7 @@ class TestDocumentSymbols:
         # Should handle gracefully and return empty list
         assert isinstance(symbols, list)
 
-    def test_extract_symbols_preserves_line_info(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_extract_symbols_preserves_line_info(self, server: DoctkLanguageServer) -> None:
         """Test that extracted symbols preserve line information."""
         text = "doc | heading"
 
@@ -206,9 +188,7 @@ class TestDocumentSymbols:
             assert symbol.range.start.line >= 0
             assert symbol.range.end.line >= symbol.range.start.line
 
-    def test_extract_symbols_multiline_position_tracking(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_extract_symbols_multiline_position_tracking(self, server: DoctkLanguageServer) -> None:
         """Test symbol position tracking in multiline document.
 
         NOTE: Current implementation reports all symbols at line 0 due to
@@ -229,9 +209,7 @@ doc | paragraph | demote"""
         if symbols:
             assert all(s.range.start.line == 0 for s in symbols)
 
-    def test_extract_symbols_multiple_pipelines(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_extract_symbols_multiple_pipelines(self, server: DoctkLanguageServer) -> None:
         """Test extracting symbols from document with multiple pipelines."""
         text = """doc | heading | promote
 doc | paragraph | demote"""
@@ -270,13 +248,13 @@ class TestEnhancedDiagnostics:
                 or "available operations" in unknown_op_diagnostic.message
             )
 
-    def test_diagnostic_for_missing_required_params(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_diagnostic_for_missing_required_params(self, server: DoctkLanguageServer) -> None:
         """Test diagnostic for missing required parameters."""
         # Skip if no operations with required parameters exist
         ops_with_required = [
-            op for op in server.registry.get_all_operations() if any(p.required for p in op.parameters)
+            op
+            for op in server.registry.get_all_operations()
+            if any(p.required for p in op.parameters)
         ]
 
         if not ops_with_required:
@@ -285,9 +263,7 @@ class TestEnhancedDiagnostics:
         # This test is conceptual - actual validation depends on DSL parser
         # supporting argument parsing, which may not be implemented yet
 
-    def test_diagnostic_provides_line_and_column(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_diagnostic_provides_line_and_column(self, server: DoctkLanguageServer) -> None:
         """Test that diagnostics include accurate line and column info."""
         text = "doc | unknown_xyz"
 
@@ -299,9 +275,7 @@ class TestEnhancedDiagnostics:
             assert diag.range.start.line >= 0
             assert diag.range.start.character >= 0
 
-    def test_diagnostic_positions_multiline_document(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_diagnostic_positions_multiline_document(self, server: DoctkLanguageServer) -> None:
         """Test diagnostic positions in multiline document.
 
         NOTE: Current implementation reports all positions at line 0 due to
@@ -350,13 +324,9 @@ class TestEnhancedDiagnostics:
 
         if diagnostics:
             # Unknown operations should be errors
-            assert any(
-                diag.severity == DiagnosticSeverity.Error for diag in diagnostics
-            )
+            assert any(diag.severity == DiagnosticSeverity.Error for diag in diagnostics)
 
-    def test_multiple_diagnostics_for_multiple_errors(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_multiple_diagnostics_for_multiple_errors(self, server: DoctkLanguageServer) -> None:
         """Test that multiple errors generate multiple diagnostics."""
         text = "doc | invalid1 | invalid2"
 
@@ -366,9 +336,7 @@ class TestEnhancedDiagnostics:
         # (or at least report all issues found)
         assert isinstance(diagnostics, list)
 
-    def test_diagnostic_for_valid_syntax_is_empty(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_diagnostic_for_valid_syntax_is_empty(self, server: DoctkLanguageServer) -> None:
         """Test that valid syntax produces no diagnostics."""
         # Use a known operation
         if server.registry.operation_exists("heading"):
@@ -387,9 +355,7 @@ class TestEnhancedDiagnostics:
 class TestSimilarOperationFinder:
     """Test similar operation finding."""
 
-    def test_find_similar_operations_exact_match(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_find_similar_operations_exact_match(self, server: DoctkLanguageServer) -> None:
         """Test finding similar operations for exact match."""
         if not server.registry.operation_exists("promote"):
             pytest.skip("promote operation not available")
@@ -425,9 +391,7 @@ class TestSimilarOperationFinder:
         # Should return empty list or very few results
         assert len(similar) <= 2
 
-    def test_find_similar_operations_case_insensitive(
-        self, server: DoctkLanguageServer
-    ) -> None:
+    def test_find_similar_operations_case_insensitive(self, server: DoctkLanguageServer) -> None:
         """Test that similarity matching is case-aware."""
         if not server.registry.operation_exists("promote"):
             pytest.skip("promote operation not available")

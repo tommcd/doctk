@@ -219,8 +219,7 @@ class TestPerformanceBenchmarks:
 
         # Performance requirement: ≤ 2 seconds
         assert duration <= STRUCTURAL_OPERATION_THRESHOLD, (
-            f"{operation_name} took {duration:.3f}s "
-            f"(required: ≤ {STRUCTURAL_OPERATION_THRESHOLD}s)"
+            f"{operation_name} took {duration:.3f}s (required: ≤ {STRUCTURAL_OPERATION_THRESHOLD}s)"
         )
 
     def test_multiple_operations_sequential(self):
@@ -332,9 +331,9 @@ class TestPerformanceBenchmarks:
         # Verify slow operations detection works
         slow_ops = self.monitor.get_slow_operations()
         # With small document (100 headings), operations should be fast
-        assert len(slow_ops) == 0 or all(
-            duration < 1.0 for _, duration in slow_ops
-        ), "Operations on small document should be fast"
+        assert len(slow_ops) == 0 or all(duration < 1.0 for _, duration in slow_ops), (
+            "Operations on small document should be fast"
+        )
 
 
 @pytest.mark.slow

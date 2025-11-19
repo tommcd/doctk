@@ -21,6 +21,7 @@ import gc
 import tempfile
 import time
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -128,8 +129,6 @@ class TestE2EPerformanceREPL:
         repl = REPL()
 
         start_time = time.perf_counter()
-        from unittest.mock import patch
-
         with patch("doctk.dsl.repl.console"):
             repl.execute_command(f"load {large_document_file}")
         duration = time.perf_counter() - start_time
@@ -458,8 +457,6 @@ class TestE2EPerformanceMemory:
 
         # Create REPL and load document
         repl = REPL()
-        from unittest.mock import patch
-
         with patch("doctk.dsl.repl.console"):
             repl.execute_command(f"load {large_document_file}")
 

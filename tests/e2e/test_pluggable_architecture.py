@@ -7,7 +7,6 @@ This test module validates Requirement 15: Pluggable Interface Architecture
 - Future extensibility: New interfaces can be added easily
 """
 
-import json
 from typing import Any
 
 import pytest

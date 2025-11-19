@@ -331,7 +331,7 @@ class TestScriptFileExecution:
         try:
             # Execute script and save
             executor = ScriptExecutor()
-            result_doc = executor.execute_file_and_save(script_path, doc_path)
+            executor.execute_file_and_save(script_path, doc_path)
 
             # Verify the saved document was updated
             saved_doc = Document.from_file(doc_path)

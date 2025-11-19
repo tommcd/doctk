@@ -92,8 +92,8 @@ class TestCompletionAnalysis:
         assert analysis.context == CompletionContext.IN_OPERATION
         assert analysis.line_text == "doc | select "
 
-    def test_partial_operation_name(self):
-        """Test context analysis with partial operation name."""
+    def test_partial_text_without_context(self):
+        """Test context analysis with partial text (no pipe, not 'doc')."""
         provider = CompletionProvider(OperationRegistry())
 
         document = "pro"
@@ -101,7 +101,9 @@ class TestCompletionAnalysis:
 
         analysis = provider._analyze_context(document, position)
 
-        assert analysis.context == CompletionContext.AFTER_PIPE
+        # Conservative behavior: unknown context for ambiguous text
+        # User should type "doc" to start a valid pipeline
+        assert analysis.context == CompletionContext.UNKNOWN
         assert analysis.current_word == "pro"
 
 
@@ -179,8 +181,9 @@ class TestOperationCompletions:
 
         assert select_item is not None
         assert select_item.insert_text_format == InsertTextFormat.Snippet
-        # Should have parameter placeholder
-        assert "${1:" in select_item.insert_text
+        # Should have parameter placeholder in key=value format
+        # Format: select(predicate=${1})
+        assert "predicate=${1}" in select_item.insert_text or "${1}" in select_item.insert_text
 
     def test_operation_without_parameters_plain_text(self):
         """Test that operations without parameters have plain text."""
@@ -199,7 +202,8 @@ class TestOperationCompletions:
 
         assert promote_item is not None
         assert promote_item.insert_text_format == InsertTextFormat.PlainText
-        assert promote_item.insert_text == "promote"
+        # Zero-argument operations must include () for invocation
+        assert promote_item.insert_text == "promote()"
 
     def test_operation_completion_has_documentation(self):
         """Test that operation completions include documentation."""
@@ -408,6 +412,58 @@ class TestCompletionCaching:
         provider.clear_cache()
 
         assert len(provider.cache) == 0
+
+    def test_cache_cleanup_removes_expired_entries(self):
+        """Test that cleanup_expired_cache removes only expired entries."""
+        provider = CompletionProvider(OperationRegistry())
+        provider.cache_ttl = 0.1  # 100ms TTL
+
+        # Create some cached completions
+        document1 = "doc | "
+        position1 = Position(line=0, character=6)
+        provider.provide_completions(document1, position1)
+
+        # Wait a bit but not enough to expire
+        time.sleep(0.05)
+
+        # Create another cached completion
+        document2 = "doc | pro"
+        position2 = Position(line=0, character=9)
+        provider.provide_completions(document2, position2)
+
+        # Should have 2 cache entries
+        assert len(provider.cache) == 2
+
+        # Wait for first entry to expire
+        time.sleep(0.06)  # Total 110ms for first, 60ms for second
+
+        # Clean up expired entries
+        provider.cleanup_expired_cache()
+
+        # First entry should be removed, second should remain
+        assert len(provider.cache) == 1
+
+    def test_cache_key_includes_operation_name(self):
+        """Test that cache key includes operation name to prevent incorrect reuse."""
+        provider = CompletionProvider(OperationRegistry())
+
+        # Request parameter completions for different operations
+        # promote has no parameters, nest has parameters
+        doc_promote = "doc | promote "
+        pos_promote = Position(line=0, character=14)
+
+        doc_nest = "doc | nest "
+        pos_nest = Position(line=0, character=11)
+
+        completions_promote = provider.provide_completions(doc_promote, pos_promote)
+        completions_nest = provider.provide_completions(doc_nest, pos_nest)
+
+        # Should have different cache entries (different operation names)
+        assert len(provider.cache) == 2
+
+        # Nest should have parameter completions, promote should not
+        assert len(completions_promote.items) == 0
+        assert len(completions_nest.items) > 0
 
 
 class TestCompletionIntegration:

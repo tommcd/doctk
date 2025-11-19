@@ -173,9 +173,11 @@ class CompletionProvider:
                     context = CompletionContext.AFTER_PIPE
             else:
                 context = CompletionContext.AFTER_PIPE
-        # Default to after pipe for partial matches
-        elif text_before.strip() and not text_before.strip().startswith("doc"):
-            context = CompletionContext.AFTER_PIPE
+        # For any other non-empty text that doesn't fit above patterns,
+        # default to UNKNOWN context (be conservative to avoid misclassification)
+        # Users can type "doc" to get into a valid pipeline context
+        elif text_before.strip():
+            context = CompletionContext.UNKNOWN
 
         return CompletionAnalysis(
             context=context,
@@ -241,16 +243,17 @@ class CompletionProvider:
 
             # Create snippet for operations with parameters
             if op.parameters:
-                # Create snippet with placeholders
+                # Create snippet with key=value placeholders (DSL uses named parameters)
+                # Use numbered tab stops: ${1}, ${2}, etc. for values
                 param_placeholders = ", ".join(
-                    f"${{{i+1}:{param.name}}}"
+                    f"{param.name}=${{{i+1}}}"
                     for i, param in enumerate(op.parameters)
                 )
                 insert_text = f"{op.name}({param_placeholders})"
                 insert_text_format = InsertTextFormat.Snippet
             else:
-                # No parameters - simple completion
-                insert_text = op.name
+                # No parameters - must include () for invocation (operations are factories)
+                insert_text = f"{op.name}()"
                 insert_text_format = InsertTextFormat.PlainText
 
             item = CompletionItem(
@@ -325,7 +328,10 @@ class CompletionProvider:
         Returns:
             Cache key string
         """
-        return f"{analysis.context.value}:{analysis.current_word}"
+        # Include operation_name in cache key to prevent incorrect reuse
+        # across different operations (critical for IN_OPERATION context)
+        op_suffix = f":{analysis.operation_name}" if analysis.operation_name else ""
+        return f"{analysis.context.value}:{analysis.current_word}{op_suffix}"
 
     def _get_cached_completion(
         self, cache_key: str
@@ -370,3 +376,20 @@ class CompletionProvider:
     def clear_cache(self) -> None:
         """Clear all cached completions."""
         self.cache.clear()
+
+    def cleanup_expired_cache(self) -> None:
+        """
+        Remove all expired entries from cache.
+
+        This should be called periodically to prevent unbounded memory growth
+        from unused cache entries. In practice, the language server should call
+        this method on a timer or after a certain number of requests.
+        """
+        current_time = time.time()
+        expired_keys = [
+            key
+            for key, cached in self.cache.items()
+            if current_time - cached.timestamp > self.cache_ttl
+        ]
+        for key in expired_keys:
+            del self.cache[key]

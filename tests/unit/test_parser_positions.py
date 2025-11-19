@@ -4,8 +4,6 @@ This test suite verifies that the DSL parser correctly captures and propagates
 source position information (line and column numbers) for all AST nodes.
 """
 
-import pytest
-
 from doctk.dsl.lexer import Lexer
 from doctk.dsl.parser import Assignment, FunctionCall, Parser, Pipeline, Position
 

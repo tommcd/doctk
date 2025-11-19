@@ -27,7 +27,6 @@ class Pipeline(ASTNode):
 
     source: str
     operations: list["FunctionCall"]
-    position: Position
 
 
 @dataclass
@@ -41,7 +40,6 @@ class FunctionCall(ASTNode):
     name: str
     args: list[Any]  # Positional arguments
     kwargs: dict[str, Any]  # Keyword arguments
-    position: Position
 
 
 @dataclass
@@ -50,7 +48,6 @@ class Assignment(ASTNode):
 
     variable: str
     pipeline: Pipeline
-    position: Position
 
 
 class ParseError(Exception):

@@ -43,13 +43,7 @@ from lsprotocol.types import (
 from pygls.lsp.server import LanguageServer
 
 from doctk.dsl.lexer import Lexer, LexerError
-from doctk.dsl.parser import (
-    FunctionCall,
-    ParseError,
-    Parser,
-    Pipeline,
-    Position as ASTPosition,
-)
+from doctk.dsl.parser import ParseError, Parser, Pipeline
 from doctk.lsp.ai_support import AIAgentSupport
 from doctk.lsp.completion import CompletionProvider
 from doctk.lsp.config import LSPConfiguration

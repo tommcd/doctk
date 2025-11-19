@@ -4,9 +4,6 @@ This test suite verifies that the LSP server correctly uses position information
 from AST nodes when reporting diagnostics and document symbols.
 """
 
-import pytest
-from lsprotocol.types import Position
-
 from doctk.lsp.registry import OperationRegistry
 from doctk.lsp.server import DoctkLanguageServer
 

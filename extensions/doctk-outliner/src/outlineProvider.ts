@@ -1,5 +1,23 @@
 /**
  * Document outline provider for VS Code tree view.
+ *
+ * ## Performance Optimizations
+ *
+ * ### Virtual Scrolling (Automatic)
+ * VS Code's TreeView provides automatic virtualization - only visible tree items
+ * are rendered in the DOM. This happens automatically through the TreeDataProvider
+ * interface and requires no manual implementation. The TreeView efficiently handles
+ * documents with thousands of nodes by rendering only what's currently visible.
+ *
+ * ### Lazy Loading (Implemented)
+ * For large documents (configurable threshold, default 1000 headings), the tree
+ * starts with nodes in a collapsed state. VS Code only calls getChildren() when
+ * a node is expanded, enabling on-demand loading. This significantly improves
+ * initial rendering performance for large documents.
+ *
+ * Configuration:
+ * - doctk.performance.largeDocumentThreshold: Number of headings to trigger optimizations
+ * - doctk.performance.enableVirtualization: Enable/disable lazy loading behavior
  */
 
 import * as vscode from 'vscode';
@@ -12,6 +30,9 @@ import { PythonBridge } from './pythonBridge';
  * Implements VS Code's TreeDataProvider and TreeDragAndDropController interfaces
  * to display document headings in a hierarchical tree view with interactive
  * drag-and-drop operations for restructuring documents.
+ *
+ * Performance: Optimized for documents with 1000+ headings through automatic
+ * virtualization (VS Code built-in) and lazy loading (collapsible state management).
  */
 export class DocumentOutlineProvider
   implements
@@ -46,18 +67,49 @@ export class DocumentOutlineProvider
   }
 
   /**
+   * Check if the current document is considered "large" based on heading count.
+   * Large documents use performance optimizations like lazy loading.
+   *
+   * @returns True if document exceeds the large document threshold
+   */
+  private isLargeDocument(): boolean {
+    if (!this.documentTree) {
+      return false;
+    }
+
+    const config = vscode.workspace.getConfiguration('doctk.performance');
+    const threshold = config.get('largeDocumentThreshold', 1000);
+    const enableVirtualization = config.get('enableVirtualization', true);
+
+    if (!enableVirtualization) {
+      return false;
+    }
+
+    // Count total nodes in tree
+    const totalNodes = this.documentTree.nodeMap.size;
+    return totalNodes >= threshold;
+  }
+
+  /**
    * Get tree item representation for a node.
    *
    * @param element - The outline node
    * @returns TreeItem for display in the tree view
    */
   getTreeItem(element: OutlineNode): vscode.TreeItem {
-    const treeItem = new vscode.TreeItem(
-      element.label,
-      element.children.length > 0
-        ? vscode.TreeItemCollapsibleState.Expanded
-        : vscode.TreeItemCollapsibleState.None
-    );
+    // Determine collapsible state based on document size
+    // For large documents, start nodes collapsed to enable lazy loading
+    // For normal documents, start nodes expanded for convenience
+    let collapsibleState: vscode.TreeItemCollapsibleState;
+    if (element.children.length > 0) {
+      collapsibleState = this.isLargeDocument()
+        ? vscode.TreeItemCollapsibleState.Collapsed
+        : vscode.TreeItemCollapsibleState.Expanded;
+    } else {
+      collapsibleState = vscode.TreeItemCollapsibleState.None;
+    }
+
+    const treeItem = new vscode.TreeItem(element.label, collapsibleState);
 
     // Set description to show level
     treeItem.description = `h${element.level}`;
@@ -259,7 +311,7 @@ export class DocumentOutlineProvider
 
     const nodeMap = new Map<string, OutlineNode>();
     const stack: OutlineNode[] = [root];
-    let headingCounters = new Map<number, number>();
+    const headingCounters = new Map<number, number>();
 
     // Parse document line by line
     for (let i = 0; i < document.lineCount; i++) {

@@ -120,19 +120,46 @@ doctk includes a VS Code extension with visual document outlining and manipulati
 - 🔄 **Real-time synchronization** with editor
 - ⚡ **Performance optimized** for large documents (1000+ headings)
 
-**Installation:**
+### Installing the Extension
+
+**Prerequisites:**
+- Python 3.12+ installed
+- doctk package installed (see [Installation](#installation) above)
+- VS Code 1.80.0 or higher
+
+**Option 1: Install from repository** (recommended for now)
 
 ```bash
-# Install the extension (.vsix available in GitHub releases)
+# After cloning the repository and installing doctk:
 code --install-extension extensions/doctk-outliner/doctk-outliner-0.1.0.vsix
 ```
 
-**Note**: The `.vsix` file is available in [GitHub Releases](https://github.com/tommcd/doctk/releases) or can be built from source with `npm run package` in the `extensions/doctk-outliner/` directory.
+**Option 2: Install manually via VS Code UI**
 
-**Usage:**
-1. Open any Markdown file in VS Code
-2. Open the "Document Outline" view in the sidebar
-3. Use drag-and-drop, context menu, or keyboard shortcuts to manipulate document structure
+1. Download or locate `extensions/doctk-outliner/doctk-outliner-0.1.0.vsix`
+2. Open VS Code
+3. Open Extensions view (`Ctrl+Shift+X` / `Cmd+Shift+X`)
+4. Click "..." menu → "Install from VSIX..."
+5. Select the `.vsix` file
+
+**Option 3: Build from source**
+
+```bash
+cd extensions/doctk-outliner
+npm install
+npm run compile
+npx @vscode/vsce package
+code --install-extension doctk-outliner-0.1.0.vsix
+```
+
+### Using the Extension
+
+1. Open any Markdown (`.md`) file in VS Code
+2. The "Document Outline" view appears automatically in the Explorer sidebar
+3. If not visible: **View → Open View → Document Outline**
+4. Use drag-and-drop, context menu, or keyboard shortcuts to manipulate sections
+
+For detailed usage instructions, see the [extension README](extensions/doctk-outliner/README.md).
 
 ## Language Server
 

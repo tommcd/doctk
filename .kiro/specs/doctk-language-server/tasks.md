@@ -138,39 +138,44 @@ This implementation plan breaks down the language server into discrete, actionab
     - _Requirements: 10_
     - _Tests in: tests/unit/test_hover_provider.py (29 tests, all passing, 92.48% coverage)_
 
-- [ ] 5. Add AI agent support to language server
+- [x] 5. Add AI agent support to language server
 
-  - [ ] 5.1 Implement structured information endpoints
+  - [x] 5.1 Implement structured information endpoints
 
     - Create `get_operation_catalog()` method
     - Return complete operation metadata in JSON format
     - Include all parameters, types, and examples
     - _Requirements: 11.1, 11.2_
+    - _Implemented in: src/doctk/lsp/ai_support.py (AIAgentSupport class)_
 
-  - [ ] 5.2 Add signature help support
+  - [x] 5.2 Add signature help support
 
     - Implement LSP signature help feature
     - Provide parameter information during typing
     - _Requirements: 11.3_
+    - _Implemented in: src/doctk/lsp/server.py (provide_signature_help method)_
 
-  - [ ] 5.3 Add document symbols support
+  - [x] 5.3 Add document symbols support
 
     - Implement LSP document symbols feature
     - Return all operations and their locations
     - _Requirements: 11.4_
+    - _Implemented in: src/doctk/lsp/server.py (extract_document_symbols method)_
 
-  - [ ] 5.4 Enhance diagnostics for AI consumption
+  - [x] 5.4 Enhance diagnostics for AI consumption
 
     - Ensure diagnostic messages are actionable
     - Include fix suggestions where possible
     - _Requirements: 11.5_
+    - _Implemented in: src/doctk/lsp/server.py (enhanced validate_syntax with suggestions)_
 
-  - [ ] 5.5 Write tests for AI agent features
+  - [x] 5.5 Write tests for AI agent features
 
     - Test operation catalog generation
     - Test signature help
     - Test document symbols
     - _Requirements: 11_
+    - _Tests in: tests/unit/test_ai_support.py (18 tests), tests/unit/test_lsp_ai_features.py (26 tests)_
 
 - [ ] 6. Connect language server to VS Code extension
 

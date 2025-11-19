@@ -177,35 +177,40 @@ This implementation plan breaks down the language server into discrete, actionab
     - _Requirements: 11_
     - _Tests in: tests/unit/test_ai_support.py (18 tests), tests/unit/test_lsp_ai_features.py (26 tests)_
 
-- [ ] 6. Connect language server to VS Code extension
+- [x] 6. Connect language server to VS Code extension
 
-  - [ ] 6.1 Create DoctkLanguageClient class
+  - [x] 6.1 Create DoctkLanguageClient class
 
     - Set up LanguageClient with server options
     - Configure document selectors for .tk files and doctk language
     - Set up file watchers
     - _Requirements: 7.1, 7.2_
+    - _Implemented in: extensions/doctk-outliner/src/languageClient.ts_
 
-  - [ ] 6.2 Implement server lifecycle management
+  - [x] 6.2 Implement server lifecycle management
 
     - Start language server on extension activation
     - Stop server on deactivation
-    - Handle server crashes with automatic restart
+    - Handle server crashes with automatic restart (exponential backoff, max 3 attempts)
     - _Requirements: 7.3, 18.1_
+    - _Implemented in: extensions/doctk-outliner/src/languageClient.ts:start(), stop(), handleServerCrash()_
+    - _Integrated in: extensions/doctk-outliner/src/extension.ts:activate(), deactivate()_
 
-  - [ ] 6.3 Configure server command to use uv
+  - [x] 6.3 Configure server command to use uv
 
-    - Set server command to `uv run python`
+    - Set server command to `uv run python -m doctk.lsp.server`
     - Pass correct working directory
     - Set up environment variables if needed
     - _Requirements: 7.1_
+    - _Implemented in: extensions/doctk-outliner/src/languageClient.ts:start() (lines 54-63)_
 
-  - [ ] 6.4 Write integration tests for LSP connection
+  - [x] 6.4 Write integration tests for LSP connection
 
     - Test server startup and connection
     - Test server restart on crash
     - Test LSP feature activation
     - _Requirements: 7, 18_
+    - _Tests in: tests/unit/test_lsp_client_integration.py (16 tests, all passing)_
 
 - [ ] 7. Implement error recovery and resilience
 

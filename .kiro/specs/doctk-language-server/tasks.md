@@ -382,6 +382,41 @@ This implementation plan breaks down the language server into discrete, actionab
       - _Testing strategy_
       - _Future enhancements_
 
+- [ ] 13. Enhance parser with position tracking
+
+  - [ ] 13.1 Add position information to AST nodes
+
+    - Modify DSL parser to track source positions (line/column) for all AST nodes
+    - Add `position: Position` field to AST node classes
+    - Update parser to capture and propagate position information during parsing
+    - _Current limitation: See TODOs in src/doctk/lsp/server.py (lines 335, 393, 642)_
+    - _Target: src/doctk/dsl/parser.py_
+
+  - [ ] 13.2 Update diagnostics to use accurate positions
+
+    - Modify `validate_syntax()` to report diagnostics at actual error locations
+    - Replace hardcoded `(line: 0, column: 0)` with positions from AST nodes
+    - Test that parse errors report correct line/column numbers
+    - _Current behavior: All diagnostics report at position (0, 0)_
+    - _Target: src/doctk/lsp/server.py:335_
+
+  - [ ] 13.3 Update document symbols to use accurate positions
+
+    - Modify `extract_document_symbols()` to use positions from AST nodes
+    - Report each pipeline/operation at its actual source location
+    - Test that document symbols show correct line numbers
+    - _Current behavior: Symbols always report at line 0_
+    - _Target: src/doctk/lsp/server.py:393, 642_
+
+  - [ ] 13.4 Write tests for position accuracy
+
+    - Test that parse errors report correct positions
+    - Test that document symbols show correct positions
+    - Test multi-line documents with multiple operations
+    - Test error recovery with position preservation
+    - _Tests in: tests/unit/test_parser_positions.py_
+    - _E2E tests in: tests/e2e/test_lsp_e2e.py_
+
 ## Notes
 
 - Each task should be completed and verified before moving to the next

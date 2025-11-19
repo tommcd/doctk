@@ -103,9 +103,14 @@ This implementation plan breaks down the VS Code outliner extension into discret
     - Handle drop errors gracefully
     - _Requirements: 2.4, 2.5_
     - COMPLETED: Added executeDropOperation() method
-    - Calls backend nest() operation for drop-onto-node
+    - Drop onto node → calls backend nest() operation
+    - Drop at root → calls backend unnest() operation
     - Uses granular edits when available, falls back to full document replacement
-    - Displays success/error messages to user
+    - Verifies edit succeeded before updating UI (prevents desync)
+    - Displays appropriate success/error messages to user
+    - API LIMITATION: VS Code TreeDragAndDropController cannot detect drop position
+      (before/after nodes), only drop onto or at root. Precise sibling reordering
+      requires context menu operations (move_up/move_down)
 
   - [x] 4.4 Write tests for drag-and-drop
 

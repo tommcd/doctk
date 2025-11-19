@@ -475,11 +475,10 @@ export class DocumentOutlineProvider
       let result;
 
       if (!target) {
-        // Drop at root level - this is complex, so show a message for now
-        vscode.window.showInformationMessage(
-          'Dropping at root level not yet implemented. Use context menu operations instead.'
-        );
-        return;
+        // Drop at root level - unnest the node to make it a top-level heading
+        // Note: VS Code's TreeDragAndDropController doesn't provide drop position
+        // (before/after), so we can only unnest to top level, not reorder precisely
+        result = await this.pythonBridge.unnest(documentText, source.id);
       } else {
         // Drop onto a target node - this nests the source under the target
         result = await this.pythonBridge.nest(documentText, source.id, target.id);
@@ -517,9 +516,16 @@ export class DocumentOutlineProvider
         // Update tree view only if edit succeeded
         this.updateFromDocument(this.document);
 
-        vscode.window.showInformationMessage(
-          `Moved "${source.label}" under "${target.label}"`
-        );
+        // Show appropriate success message based on operation type
+        if (!target) {
+          vscode.window.showInformationMessage(
+            `Moved "${source.label}" to top level. Use move operations to adjust position.`
+          );
+        } else {
+          vscode.window.showInformationMessage(
+            `Moved "${source.label}" under "${target.label}"`
+          );
+        }
       } else {
         vscode.window.showErrorMessage(`Drop operation failed: ${result.error}`);
       }

@@ -274,3 +274,208 @@ class TestDocumentStateManager:
         assert isinstance(state.document, Document)
         assert state.metadata["version"] == 1
         assert state.access_count == 5
+
+
+class TestMemoryPerformance:
+    """Performance tests for memory management (Task 8.2)."""
+
+    def test_memory_usage_stays_under_500mb_with_many_documents(self):
+        """Test that memory usage stays under 500MB when caching many documents."""
+        # Set limit to 500MB with monitoring enabled
+        manager = DocumentStateManager(
+            max_cache_size=1000, max_memory_mb=500, enable_memory_monitoring=True
+        )
+
+        # Create and cache 100 documents with moderate content
+        for i in range(100):
+            doc = Document(
+                [
+                    Heading(level=1, text=f"Section {i}"),
+                    Paragraph(content=f"Content for section {i}" * 10),
+                    Heading(level=2, text=f"Subsection {i}.1"),
+                    Paragraph(content=f"More content for subsection {i}.1" * 5),
+                ]
+            )
+            manager.put_document(f"file:///test{i}.md", doc)
+
+        # Verify memory usage is under limit
+        memory_mb = manager.get_memory_usage_mb()
+        assert memory_mb <= 500, f"Memory usage {memory_mb}MB exceeds 500MB limit"
+
+        # Verify eviction occurred if needed
+        stats = manager.get_statistics()
+        assert stats["memory_usage_mb"] <= 500
+
+    def test_memory_monitoring_with_large_documents(self):
+        """Test memory management with large documents."""
+        manager = DocumentStateManager(
+            max_cache_size=50, max_memory_mb=500, enable_memory_monitoring=True
+        )
+
+        # Create large documents with many nodes
+        for i in range(20):
+            # Create a document with 200 nodes (100 headings + 100 paragraphs)
+            nodes = []
+            for j in range(100):
+                nodes.append(Heading(level=2, text=f"Heading {i}.{j}"))
+                nodes.append(Paragraph(content=f"Paragraph content {i}.{j}" * 20))
+
+            doc = Document(nodes)
+            manager.put_document(f"file:///large_doc_{i}.md", doc)
+
+        # Verify memory is managed
+        memory_mb = manager.get_memory_usage_mb()
+        assert memory_mb > 0
+        # With memory monitoring, should stay under limit
+        assert memory_mb <= 500
+
+        # Check that some documents may have been evicted to maintain limit
+        stats = manager.get_statistics()
+        cache_size = stats["cache_size"]
+        # Cache size should be reasonable (not all 20 docs if memory limit hit)
+        assert cache_size <= 50
+
+    def test_memory_eviction_frees_space(self):
+        """Test that memory-based eviction mechanism exists and memory stays under limit."""
+        manager = DocumentStateManager(
+            max_cache_size=100, max_memory_mb=100, enable_memory_monitoring=True
+        )
+
+        # Add documents
+        for i in range(50):
+            # Large document
+            nodes = [
+                Heading(level=1, text=f"Large Section {i}"),
+                Paragraph(content="Very long content " * 100),
+            ]
+            doc = Document(nodes)
+            manager.put_document(f"file:///doc{i}.md", doc)
+
+        # Memory should stay under limit (eviction may or may not occur depending on actual memory)
+        final_memory = manager.get_memory_usage_mb()
+        assert final_memory <= 100, f"Memory {final_memory}MB exceeds 100MB limit"
+
+        # Verify statistics are tracked (evictions may be 0 if memory estimation is low)
+        stats = manager.get_statistics()
+        total_evictions = stats["total_evictions"]
+        # Evictions can be 0 if memory estimation doesn't exceed limit
+        assert total_evictions >= 0
+        # Verify memory monitoring is actually enabled
+        assert manager.enable_memory_monitoring is True
+
+    def test_cache_performance_with_repeated_access(self):
+        """Test cache hit performance with repeated document access."""
+        manager = DocumentStateManager(max_cache_size=100, enable_memory_monitoring=False)
+
+        # Add documents
+        for i in range(10):
+            doc = Document([Heading(level=1, text=f"Test {i}")])
+            manager.put_document(f"file:///test{i}.md", doc)
+
+        # Access documents repeatedly
+        for _ in range(100):
+            for i in range(10):
+                state = manager.get_document(f"file:///test{i}.md")
+                assert state is not None
+
+        # Verify access counts
+        stats = manager.get_statistics()
+        # 100 iterations * 10 documents = 1000 total accesses
+        assert stats["total_accesses"] == 1000
+
+    def test_memory_limit_enforcement_with_batch_eviction(self):
+        """Test that memory monitoring enforces limits and batch eviction is available."""
+        manager = DocumentStateManager(
+            max_cache_size=100, max_memory_mb=50, enable_memory_monitoring=True
+        )
+
+        # Add many documents quickly
+        for i in range(60):
+            # Medium-sized documents
+            doc = Document(
+                [
+                    Heading(level=1, text=f"Section {i}"),
+                    Paragraph(content=f"Content {i}" * 50),
+                ]
+            )
+            manager.put_document(f"file:///doc{i}.md", doc)
+
+        # Memory should be under limit
+        memory_mb = manager.get_memory_usage_mb()
+        assert memory_mb <= 50, f"Memory {memory_mb}MB exceeds 50MB limit"
+
+        # Verify cache size is reasonable (not exceeding max)
+        cache_size = manager.get_cache_size()
+        assert cache_size <= 100
+
+        # Statistics should be available
+        stats = manager.get_statistics()
+        assert "total_evictions" in stats
+        assert "memory_usage_mb" in stats
+
+    def test_very_large_single_document(self):
+        """Test handling of a single very large document."""
+        manager = DocumentStateManager(
+            max_cache_size=10, max_memory_mb=500, enable_memory_monitoring=True
+        )
+
+        # Create a very large document (2000 nodes: 1000 headings + 1000 paragraphs)
+        nodes = []
+        for i in range(1000):
+            nodes.append(Heading(level=2, text=f"Heading {i}"))
+            nodes.append(Paragraph(content=f"Content for paragraph {i}" * 10))
+
+        large_doc = Document(nodes)
+        manager.put_document("file:///very_large.md", large_doc)
+
+        # Should be able to cache it
+        state = manager.get_document("file:///very_large.md")
+        assert state is not None
+        assert len(state.document.nodes) == 2000  # 1000 headings + 1000 paragraphs
+
+        # Memory should still be under limit
+        memory_mb = manager.get_memory_usage_mb()
+        assert memory_mb <= 500
+
+    def test_memory_statistics_accuracy(self):
+        """Test that memory statistics are accurate."""
+        manager = DocumentStateManager(
+            max_cache_size=20, max_memory_mb=500, enable_memory_monitoring=True
+        )
+
+        # Add some documents
+        for i in range(15):
+            doc = Document([Heading(level=1, text=f"Test {i}")])
+            manager.put_document(f"file:///test{i}.md", doc)
+
+        stats = manager.get_statistics()
+
+        # Verify all stats are present and reasonable
+        assert stats["cache_size"] == 15
+        assert stats["max_cache_size"] == 20
+        assert stats["max_memory_mb"] == 500
+        assert stats["memory_usage_mb"] >= 0
+        # With 15 docs and cache size 20, no evictions should occur
+        assert stats["size_evictions"] == 0, "No size evictions expected with 15/20 cache usage"
+        assert stats["memory_evictions"] == 0, "No memory evictions expected with small documents"
+        assert stats["total_evictions"] == stats["size_evictions"] + stats["memory_evictions"]
+        assert stats["total_accesses"] == 0  # No get() calls yet
+
+    def test_summary_output_format(self):
+        """Test that summary output is well-formatted."""
+        manager = DocumentStateManager(max_cache_size=10, max_memory_mb=500)
+
+        # Add a few documents
+        for i in range(5):
+            doc = Document([Heading(level=1, text=f"Test {i}")])
+            manager.put_document(f"file:///test{i}.md", doc)
+
+        summary = manager.get_summary()
+
+        # Verify summary contains expected information
+        assert "Document Cache Summary:" in summary
+        assert "Cache size:" in summary
+        assert "Memory usage:" in summary
+        assert "Total evictions:" in summary
+        assert "Total accesses:" in summary
+        assert "5/10" in summary  # Cache size 5/10

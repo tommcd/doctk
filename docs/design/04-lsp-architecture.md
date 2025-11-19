@@ -226,12 +226,23 @@ python_command: str = "python3"
 ```python
 def _load_operations_from_doctk(self):
     """Dynamically discover operations from doctk module."""
-    import doctk.operations as ops
-    for name, obj in inspect.getmembers(ops, inspect.isfunction):
-        if not name.startswith('_'):
-            # Extract metadata from function
-            metadata = self._extract_metadata(name, obj)
-            self._operations[name] = metadata
+    import doctk.operations as ops_module
+
+    # Use callable instead of isfunction to catch all operation types
+    for name, obj in inspect.getmembers(ops_module, callable):
+        # Skip private members and imports
+        if name.startswith('_'):
+            continue
+
+        # Skip classes and imports from other modules
+        if inspect.isclass(obj):
+            continue
+        if hasattr(obj, "__module__") and obj.__module__ != "doctk.operations":
+            continue
+
+        # Extract metadata and register operation
+        metadata = self._extract_metadata(name, obj)
+        self.operations[name] = metadata
 ```
 
 ### Why Caching?

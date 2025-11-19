@@ -5,6 +5,23 @@ These tests verify complete LSP workflows including:
 - Code completion and hover documentation
 - Signature help and document symbols
 - Performance requirements
+
+NOTE ON TEST SCOPE:
+These tests exercise complete LSP feature workflows by calling server methods
+directly (e.g., server.validate_syntax(), server.completion_provider.provide_completions()).
+They do NOT test the LSP protocol layer itself (JSON-RPC message handling, async
+handlers, etc.). This design provides:
+
+- Fast execution (no protocol overhead)
+- Clear failure messages (direct method calls)
+- Complete feature coverage (all LSP capabilities tested)
+
+For protocol-level testing (LSP message dispatch, handler registration, etc.),
+see tests/unit/test_lsp_client_integration.py which verifies server lifecycle
+and handler availability.
+
+These tests are called "E2E" in the spec because they test complete user workflows
+end-to-end from input to output, even though they don't go through the protocol layer.
 """
 
 import time
@@ -135,19 +152,21 @@ class TestLSPSyntaxValidation:
         """Test that invalid syntax produces error diagnostics."""
         server = DoctkLanguageServer()
 
-        # Invalid: missing pipe
+        # Invalid: missing pipe (should trigger parse error)
         text = "doc select heading"
         diagnostics = server.validate_syntax(text)
 
-        # Should have diagnostics (parser errors)
+        # Should produce at least one diagnostic for parse error
         assert isinstance(diagnostics, list)
-        # Note: Parser might be lenient, so we just verify it returns a list
+        assert len(diagnostics) > 0, (
+            f"Invalid syntax 'doc select heading' should produce diagnostics, got: {diagnostics}"
+        )
 
     def test_multiple_errors_reported_with_positions(self):
         """Test that multiple syntax errors are reported with accurate positions."""
         server = DoctkLanguageServer()
 
-        # Multiple lines with errors
+        # Multiple lines with errors - unknown_operation should trigger diagnostic
         text = """invalid syntax here
 doc | unknown_operation
 another error
@@ -155,8 +174,11 @@ another error
 
         diagnostics = server.validate_syntax(text)
 
-        # Should return a list (may be empty if parser is lenient)
+        # Should return diagnostics for unknown operation
         assert isinstance(diagnostics, list)
+        assert len(diagnostics) > 0, (
+            "Text with 'unknown_operation' should produce at least one diagnostic"
+        )
 
     def test_error_cleared_when_fixed(self):
         """Test that errors are cleared when syntax is fixed."""
@@ -431,13 +453,16 @@ class TestLSPErrorRecovery:
         """Test that parsing errors return partial diagnostics."""
         server = DoctkLanguageServer()
 
-        # Invalid syntax that should trigger parser error
+        # Invalid syntax that should trigger parser error (invalid pipeline sources)
         text = "invalid | syntax | here"
 
         diagnostics = server.validate_syntax(text)
 
-        # Should return diagnostics (even if empty due to lenient parser)
+        # Should return diagnostics for parse errors
         assert isinstance(diagnostics, list)
+        assert len(diagnostics) > 0, (
+            "Invalid pipeline syntax should produce diagnostics for parse errors"
+        )
 
     def test_server_stability_after_error(self):
         """Test that server remains stable after errors."""

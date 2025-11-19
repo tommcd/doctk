@@ -385,6 +385,28 @@ class OperationRegistry:
         """
         return [op for op in self.operations.values() if op.category == category]
 
+    def search_operations(self, query: str) -> list[OperationMetadata]:
+        """
+        Search operations by name or description.
+
+        Args:
+            query: Search query string
+
+        Returns:
+            List of operations matching the query (case-insensitive)
+
+        Example:
+            >>> registry = OperationRegistry()
+            >>> results = registry.search_operations("head")
+            >>> # Returns operations with "head" in name or description
+        """
+        query_lower = query.lower()
+        results = []
+        for op in self.operations.values():
+            if query_lower in op.name.lower() or query_lower in op.description.lower():
+                results.append(op)
+        return results
+
     def get_operation_names(self) -> list[str]:
         """
         Get names of all registered operations.

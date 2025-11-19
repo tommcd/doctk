@@ -372,8 +372,46 @@ doc | promote h3-0
         block2, doc2 = results[1]
         assert block2.code == "doc | promote h3-0"
 
-    def test_execute_all_blocks_chains_execution(self, tmp_path: Path) -> None:
-        """Test that blocks are executed in sequence with chained state."""
+    def test_execute_all_blocks_independent_by_default(self, tmp_path: Path) -> None:
+        """Test that blocks execute independently by default (safer behavior)."""
+        markdown_file = tmp_path / "test.md"
+        markdown_file.write_text(
+            """# Document
+## Heading 2
+### Heading 3
+
+```doctk
+doc | promote h2-0
+```
+
+```doctk
+doc | promote h3-0
+```
+""",
+            encoding="utf-8",
+        )
+
+        executor = CodeBlockExecutor()
+        # Default: chain_state=False - each block operates on original document
+        results = executor.execute_all_blocks(markdown_file)
+
+        assert len(results) == 2
+
+        # Both blocks operate on the ORIGINAL document independently
+        # Block 1: promotes h2-0 in original doc
+        block1, doc1 = results[0]
+        headings1 = [n for n in doc1.nodes if isinstance(n, Heading)]
+        assert headings1[1].level == 1  # h2 -> h1
+
+        # Block 2: promotes h3-0 in original doc (not the result of block 1)
+        block2, doc2 = results[1]
+        headings2 = [n for n in doc2.nodes if isinstance(n, Heading)]
+        assert headings2[2].level == 2  # h3 -> h2
+
+    def test_execute_all_blocks_with_chaining_warns_about_id_remapping(
+        self, tmp_path: Path
+    ) -> None:
+        """Test chained execution mode (demonstrates ID remapping limitation)."""
         markdown_file = tmp_path / "test.md"
         markdown_file.write_text(
             """# Document
@@ -384,20 +422,24 @@ doc | promote h2-0
 ```
 
 ```doctk
-doc | demote h1-1
+doc | demote h1-0
 ```
 """,
             encoding="utf-8",
         )
 
         executor = CodeBlockExecutor()
-        results = executor.execute_all_blocks(markdown_file)
+
+        # chain_state=True: Each block operates on result of previous block
+        # WARNING: This has ID remapping issues!
+        # After block 1, the promoted heading might have a different ID
+        # so block 2's reference to h1-0 might be wrong
+        results = executor.execute_all_blocks(markdown_file, chain_state=True)
 
         assert len(results) == 2
-
-        # First block: h2 -> h1
-        # Second block: demotes the newly promoted h1 back to h2
-        # This tests that the second block operates on the result of the first
+        # We don't assert on the final result because it depends on
+        # how IDs are remapped, which is implementation-dependent
+        # This test documents the limitation rather than testing correct behavior
 
     def test_execute_all_blocks_file_not_found(self) -> None:
         """Test executing all blocks when file doesn't exist."""

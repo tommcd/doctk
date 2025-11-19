@@ -203,13 +203,17 @@ class CodeBlockExecutor:
         return self.execute_code_block(code_block, document)
 
     def execute_all_blocks(
-        self, markdown_path: str | Path
+        self, markdown_path: str | Path, *, chain_state: bool = False
     ) -> list[tuple[CodeBlock, Document[Any]]]:
         """
         Execute all doctk code blocks in a Markdown file.
 
         Args:
             markdown_path: Path to the Markdown file
+            chain_state: If True, each block operates on the result of the previous block.
+                        If False (default), each block operates on the original document
+                        independently. **WARNING**: Chained execution has limitations due
+                        to node ID remapping - see Notes below.
 
         Returns:
             List of tuples (CodeBlock, transformed Document) for each block
@@ -217,6 +221,45 @@ class CodeBlockExecutor:
         Raises:
             ExecutionError: If execution fails
             FileNotFoundError: If file not found
+
+        Notes:
+            **Node ID Remapping Limitation (chain_state=True)**:
+
+            When operations are executed, node IDs are regenerated based on the new
+            document structure. This means that if Block 1 promotes h2-0 to h1, the
+            node IDs in the resulting document will be different from the original.
+
+            If Block 2's code still references h2-0, it will operate on the wrong node
+            or fail because the IDs have changed.
+
+            **Recommendations**:
+            - Use chain_state=False (default) for independent, predictable execution
+            - If you need chained operations, use a single code block with multiple
+              operations instead of multiple blocks
+            - Or use DSL variable assignments within a single block
+
+            **Example of the issue**:
+            ```markdown
+            ## Original Heading     <- This is h2-0
+
+            ```doctk
+            doc | promote h2-0     <- After this, heading becomes h1-1 (not h2-0!)
+            ```
+
+            ```doctk
+            doc | demote h2-0      <- This will fail or operate on wrong node!
+            ```
+            ```
+
+        Example:
+            ```python
+            # Safe: Each block operates on original document
+            executor = CodeBlockExecutor()
+            results = executor.execute_all_blocks("doc.md", chain_state=False)
+
+            # Risky: Blocks operate on chained state (ID remapping issues)
+            results = executor.execute_all_blocks("doc.md", chain_state=True)
+            ```
         """
         markdown_path = Path(markdown_path)
 
@@ -237,16 +280,21 @@ class CodeBlockExecutor:
 
         # Load document
         try:
-            document = Document.from_string(markdown_text)
+            original_document = Document.from_string(markdown_text)
         except Exception as e:
             raise ExecutionError(f"Error loading document from Markdown: {e}") from e
 
         # Execute each block
         results: list[tuple[CodeBlock, Document[Any]]] = []
+        current_document = original_document
+
         for code_block in code_blocks:
-            result = self.execute_code_block(code_block, document)
+            result = self.execute_code_block(code_block, current_document)
             results.append((code_block, result))
-            # Update document for next block (chain execution)
-            document = result
+
+            # Update document for next block only if chaining is enabled
+            if chain_state:
+                current_document = result
+            # Otherwise, next block operates on original document
 
         return results

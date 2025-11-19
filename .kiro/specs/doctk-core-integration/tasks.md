@@ -397,12 +397,15 @@ This implementation plan breaks down the core integration layer and execution ca
 
 - [ ] 14. End-to-end integration and testing
 
-  - [ ] 14.1 Write end-to-end tests for script execution
+  - [x] 14.1 Write end-to-end tests for script execution
 
-    - Test REPL workflow
-    - Test script file execution
-    - Test code block execution in Markdown
+    - Test REPL workflow (8 tests - all passing)
+    - Test script file execution (5 tests - 4 passing, 1 with known issue)
+    - Test code block execution in Markdown (8 tests - 7 passing, 1 with known issue)
     - _Requirements: 12, 13, 14_
+    - COMPLETED: 19 of 21 E2E tests passing
+    - NOTE: 2 tests have known issues with multi-operation sequential execution
+    - Tests are in tests/e2e/test_script_execution.py
 
   - [ ] 14.2 Write end-to-end tests for pluggable architecture
 

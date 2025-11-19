@@ -163,7 +163,7 @@ Follow these steps to create a new interface implementation (e.g., for JupyterLa
 #### Step 1: Implement DocumentInterface
 
 ```python
-from doctk.lsp.protocols import DocumentInterface, OperationResult
+from doctk.lsp.protocols import DocumentInterface, OperationResult, TreeNode
 from doctk.lsp.operations import StructureOperations, DocumentTreeBuilder
 from doctk.core import Document
 
@@ -203,22 +203,33 @@ class JupyterLabInterface(DocumentInterface):
             'demote': self.operations.demote,
             'move_up': self.operations.move_up,
             'move_down': self.operations.move_down,
-            # ... other operations
+            'nest': self.operations.nest,
+            'unnest': self.operations.unnest,
         }
 
         op_fn = operation_map.get(operation)
         if not op_fn:
             return OperationResult(success=False, error=f"Unknown operation: {operation}")
 
+        # Store original node for ID remapping
+        original_node = None
+        if self.current_document:
+            builder_pre = DocumentTreeBuilder(self.current_document)
+            original_node = builder_pre.find_node(self.selected_node_id)
+
         result = op_fn(self.current_document, self.selected_node_id)
 
-        if result.success:
-            # Update current document
+        if result.success and result.document is not None:
+            # Update current document (check for None - operations may return only granular edits)
             self.current_document = Document.from_string(result.document)
             # Rebuild and refresh tree display
             builder = DocumentTreeBuilder(self.current_document)
             self.current_tree = builder.build_tree_with_ids()
             self.display_tree(self.current_tree)
+
+            # Remap selected node ID (node IDs change after promote/demote/move)
+            if original_node is not None:
+                self.selected_node_id = self._remap_node_id(original_node, builder)
 
         return result
 
@@ -227,32 +238,48 @@ class JupyterLabInterface(DocumentInterface):
         # JupyterLab-specific error display
         from IPython.display import display, HTML
         display(HTML(f'<div style="color: red;">Error: {message}</div>'))
+
+    def load_document(self, file_path: str) -> None:
+        """Load a document and display its tree."""
+        self.current_document = Document.from_file(file_path)
+        builder = DocumentTreeBuilder(self.current_document)
+        self.current_tree = builder.build_tree_with_ids()
+        self.display_tree(self.current_tree)
+
+    def on_node_selected(self, node_id: str) -> None:
+        """Callback when user selects a node in the tree."""
+        self.selected_node_id = node_id
+
+    def on_promote_clicked(self) -> None:
+        """Callback when user clicks promote button."""
+        result = self.apply_operation('promote')
+        if not result.success:
+            self.show_error(result.error)
+
+    def _build_tree_widget(self, node: TreeNode):
+        """Build ipywidgets Tree widget from TreeNode (helper method)."""
+        from ipywidgets import Tree
+        # Recursive tree building logic
+        # This is a placeholder - actual implementation depends on ipywidgets API
+        return Tree()
+
+    def _remap_node_id(self, original_node, builder: DocumentTreeBuilder) -> str | None:
+        """
+        Find the new ID for a node after the tree has been rebuilt.
+
+        After operations like promote/demote, node IDs change because they
+        encode structural information (e.g., h2-0 becomes h1-0 after promote).
+        This finds the same node in the new tree by matching content.
+        """
+        from doctk.core import Heading
+        if isinstance(original_node, Heading):
+            for node_id, node in builder.node_map.items():
+                if isinstance(node, Heading) and node.text == original_node.text:
+                    return node_id
+        return None
 ```
 
-#### Step 2: Load and Display Document
-
-```python
-def load_document(self, file_path: str) -> None:
-    """Load a document and display its tree."""
-    self.current_document = Document.from_file(file_path)
-    builder = DocumentTreeBuilder(self.current_document)
-    self.current_tree = builder.build_tree_with_ids()
-    self.display_tree(self.current_tree)
-```
-
-#### Step 3: Handle User Actions
-
-```python
-def on_node_selected(self, node_id: str) -> None:
-    """Callback when user selects a node in the tree."""
-    self.selected_node_id = node_id
-
-def on_promote_clicked(self) -> None:
-    """Callback when user clicks promote button."""
-    result = self.apply_operation('promote')
-    if not result.success:
-        self.show_error(result.error)
-```
+**Note**: The complete class above includes all methods. Steps 2 and 3 have been consolidated into the main class definition.
 
 ### VS Code Implementation
 
@@ -321,7 +348,7 @@ See `.kiro/specs/vscode-outliner-extension` for detailed VS Code implementation.
 Here's a minimal command-line interface implementation:
 
 ```python
-from doctk.lsp.protocols import DocumentInterface, OperationResult
+from doctk.lsp.protocols import DocumentInterface, OperationResult, TreeNode
 from doctk.lsp.operations import StructureOperations, DocumentTreeBuilder
 from doctk.core import Document
 

@@ -21,7 +21,7 @@ class MockInterface(DocumentInterface):
         self.displayed_tree: TreeNode | None = None
         self.error_message: str | None = None
 
-    def display_tree(self, tree: Any) -> None:
+    def display_tree(self, tree: TreeNode | Any) -> None:
         """Record displayed tree."""
         self.displayed_tree = tree
 
@@ -50,16 +50,54 @@ class MockInterface(DocumentInterface):
         if not op_fn:
             return OperationResult(success=False, error=f"Unknown operation: {operation}")
 
+        # Store the original node to track it through the operation
+        original_node = None
+        if self.document:
+            builder = DocumentTreeBuilder(self.document)
+            original_node = builder.find_node(self.selected_node_id)
+
         result = op_fn(self.document, self.selected_node_id)
 
         if result.success:
-            # Update document
-            self.document = Document.from_string(result.document)
-            # Rebuild tree
-            builder = DocumentTreeBuilder(self.document)
-            self.tree = builder.build_tree_with_ids()
+            # Handle optional document field (may be None if only granular edits provided)
+            if result.document is not None:
+                # Update document
+                self.document = Document.from_string(result.document)
+                # Rebuild tree
+                builder = DocumentTreeBuilder(self.document)
+                self.tree = builder.build_tree_with_ids()
+
+                # Remap selected_node_id to the new tree structure
+                # After promote/demote/move operations, the node ID may have changed
+                if original_node is not None:
+                    self.selected_node_id = self._find_node_in_tree(original_node, builder)
 
         return result
+
+    def _find_node_in_tree(self, original_node: Any, builder: DocumentTreeBuilder) -> str | None:
+        """
+        Find the ID of a node in the rebuilt tree that matches the original node.
+
+        After operations like promote/demote, node IDs change because they encode
+        the heading level (e.g., h2-0 becomes h1-0 after promote). This method
+        finds the corresponding node in the new tree by matching content.
+
+        Args:
+            original_node: The original node to find
+            builder: DocumentTreeBuilder for the new tree
+
+        Returns:
+            The new node ID, or None if not found
+        """
+        from doctk.core import Heading
+
+        # Match headings by text content (level may have changed)
+        if isinstance(original_node, Heading):
+            for node_id, node in builder.node_map.items():
+                if isinstance(node, Heading) and node.text == original_node.text:
+                    return node_id
+
+        return None
 
     def show_error(self, message: str) -> None:
         """Record error message."""

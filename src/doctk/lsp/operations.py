@@ -1060,7 +1060,9 @@ class StructureOperations:
         # Get the section range (start and end indices in document.nodes)
         section_range = tree_builder.get_section_range(node_id)
         if section_range is None:
-            return OperationResult(success=False, error=f"Could not determine section range for {node_id}")
+            return OperationResult(
+                success=False, error=f"Could not determine section range for {node_id}"
+            )
 
         start_idx, end_idx = section_range
 

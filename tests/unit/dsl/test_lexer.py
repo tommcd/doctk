@@ -33,7 +33,7 @@ def test_tokenize_keywords():
 
 def test_tokenize_strings():
     """Test tokenizing string literals."""
-    lexer = Lexer('"hello world" \'single quoted\'')
+    lexer = Lexer("\"hello world\" 'single quoted'")
     tokens = lexer.tokenize()
 
     assert tokens[0].type == TokenType.STRING
@@ -107,7 +107,7 @@ def test_tokenize_pipeline():
 
 def test_tokenize_assignment():
     """Test tokenizing variable assignment."""
-    lexer = Lexer('let headings = doc | select heading')
+    lexer = Lexer("let headings = doc | select heading")
     tokens = lexer.tokenize()
 
     assert tokens[0].type == TokenType.LET

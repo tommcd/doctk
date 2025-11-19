@@ -171,6 +171,7 @@ class TestREPLOperations:
 
         # Get the original heading level
         from doctk.lsp.operations import DocumentTreeBuilder
+
         original_builder = DocumentTreeBuilder(repl_instance.document)
         original_node = original_builder.find_node("h2-0")
         assert original_node is not None
@@ -326,7 +327,9 @@ class TestREPLErrorHandling:
         repl_instance.load_document(temp_markdown_file)
 
         with patch("doctk.dsl.repl.console") as mock_console:
-            with patch.object(repl_instance.operations, "promote", side_effect=Exception("Test error")):
+            with patch.object(
+                repl_instance.operations, "promote", side_effect=Exception("Test error")
+            ):
                 repl_instance.execute_command("promote h2-0")
 
                 # Verify error message was printed

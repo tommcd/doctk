@@ -43,7 +43,9 @@ def test_cli_execute_command_success(sample_document):
 
         # Verify the document was transformed and saved
         result_doc = Document.from_file(doc_path)
-        section_1_nodes = [n for n in result_doc.nodes if isinstance(n, Heading) and n.text == "Section 1"]
+        section_1_nodes = [
+            n for n in result_doc.nodes if isinstance(n, Heading) and n.text == "Section 1"
+        ]
         assert len(section_1_nodes) == 1
         assert section_1_nodes[0].level == 1
 

@@ -112,9 +112,7 @@ class Executor:
 
         return doc
 
-    def _execute_operation(
-        self, doc: Document[Any], operation: FunctionCall
-    ) -> Document[Any]:
+    def _execute_operation(self, doc: Document[Any], operation: FunctionCall) -> Document[Any]:
         """
         Execute a single operation on a document.
 
@@ -231,7 +229,7 @@ class Executor:
 class ScriptExecutor:
     """Executor for .tk script files."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize script executor."""
         # No instance variables needed - Executor creates its own StructureOperations
 

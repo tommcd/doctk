@@ -115,6 +115,17 @@ class TestRetryLogic:
         assert config.get_delay(4) == 16.0  # 1.0 * 2^4 = 16.0
         assert config.get_delay(5) == 30.0  # 1.0 * 2^5 = 32.0, but capped at max_delay
 
+    def test_execute_with_retry_invalid_max_attempts(self):
+        """Test that invalid max_attempts raises RuntimeError."""
+        handler = ErrorHandler(RetryConfig(max_attempts=0))
+        func = MagicMock(return_value=42)
+
+        with pytest.raises(RuntimeError, match="max_attempts must be a positive number"):
+            handler.execute_with_retry(func, "test_operation")
+
+        # Function should not be called if max_attempts is invalid
+        assert func.call_count == 0
+
     def test_execute_with_retry_succeeds_first_attempt(self):
         """Test that successful operations don't retry."""
         handler = ErrorHandler()
@@ -299,6 +310,7 @@ class TestStatistics:
         try:
             handler.execute_with_retry(func, "test_operation")
         except ValidationError:
+            # Exception is expected; suppress to verify error statistics are tracked
             pass
 
         stats = handler.get_stats()

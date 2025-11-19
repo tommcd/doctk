@@ -96,7 +96,13 @@ class ErrorHandler:
             return ErrorCategory.PARSING
 
         # Validation errors (check early to avoid "io" in "validation" matching SYSTEM)
+        # Consolidated type-based and message-based checks for consistency
         if "validation" in error_type_lower or "valueerror" in error_type_lower or "typeerror" in error_type_lower:
+            return ErrorCategory.VALIDATION
+
+        if any(
+            keyword in error_msg for keyword in ["invalid", "required", "missing", "expected"]
+        ):
             return ErrorCategory.VALIDATION
 
         # Network errors
@@ -117,11 +123,6 @@ class ErrorHandler:
             for keyword in ["file not found", "permission denied", "access denied"]
         ):
             return ErrorCategory.SYSTEM
-
-        if any(
-            keyword in error_msg for keyword in ["invalid", "required", "missing", "expected"]
-        ):
-            return ErrorCategory.VALIDATION
 
         # Operation errors (only check message, not type - RuntimeError is too generic)
         if any(keyword in error_msg for keyword in ["operation failed", "execution failed"]):
@@ -159,9 +160,15 @@ class ErrorHandler:
 
         Raises:
             Last exception if all retries fail
+            RuntimeError: If max_attempts is not a positive number
         """
         if retryable_categories is None:
             retryable_categories = {ErrorCategory.NETWORK, ErrorCategory.SYSTEM}
+
+        # Validate retry configuration
+        if self.retry_config.max_attempts <= 0:
+            msg = f"Operation '{operation_name}' failed: max_attempts must be a positive number"
+            raise RuntimeError(msg)
 
         last_exception: Exception | None = None
         last_category: ErrorCategory | None = None
@@ -227,9 +234,12 @@ class ErrorHandler:
                 )
                 time.sleep(delay)
 
-        # Should never reach here, but just in case
+        # If we've exhausted all retries, raise the last exception
+        # (max_attempts > 0 is guaranteed by validation above, so last_exception is always set)
         if last_exception:
             raise last_exception
+
+        # This should be unreachable due to validation, but keep for type safety
         msg = f"Operation '{operation_name}' failed unexpectedly"
         raise RuntimeError(msg)
 

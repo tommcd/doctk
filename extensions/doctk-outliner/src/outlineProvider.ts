@@ -23,6 +23,9 @@
 import * as vscode from 'vscode';
 import { OutlineNode, DocumentTree, BackendTreeNode } from './types';
 import { PythonBridge } from './pythonBridge';
+import { getLogger } from './logger';
+
+const logger = getLogger();
 
 /**
  * Provides a tree view of document structure with drag-and-drop support.
@@ -103,6 +106,8 @@ export class DocumentOutlineProvider
    * @returns TreeItem for display in the tree view
    */
   getTreeItem(element: OutlineNode): vscode.TreeItem {
+    logger.debug(`getTreeItem called for node: ${element.id} (${element.label})`);
+
     // Determine collapsible state based on document size
     // For large documents, start nodes collapsed to enable lazy loading
     // For normal documents, start nodes expanded for convenience
@@ -157,14 +162,19 @@ export class DocumentOutlineProvider
    * @returns Array of child nodes
    */
   getChildren(element?: OutlineNode): vscode.ProviderResult<OutlineNode[]> {
+    logger.debug(`getChildren called for element: ${element ? element.id + ' (' + element.label + ')' : 'root'}`);
+
     if (!this.documentTree) {
+      logger.debug('No document tree available, returning empty array');
       return [];
     }
 
     if (element) {
+      logger.debug(`Returning ${element.children.length} children for ${element.id}`);
       return element.children;
     } else {
       // Return root-level children
+      logger.debug(`Returning ${this.documentTree.root.children.length} root-level children`);
       return this.documentTree.root.children;
     }
   }
@@ -183,7 +193,9 @@ export class DocumentOutlineProvider
    * Refresh the tree view.
    */
   refresh(): void {
+    logger.debug('refresh() called - firing onDidChangeTreeData event');
     this._onDidChangeTreeData.fire();
+    logger.debug('onDidChangeTreeData event fired');
   }
 
   /**
@@ -192,34 +204,51 @@ export class DocumentOutlineProvider
    * @param document - The text document to parse
    */
   updateFromDocument(document: vscode.TextDocument): void {
+    logger.debug(`updateFromDocument called for: ${document.uri.fsPath}`);
+
     // Debounce updates to prevent excessive refreshes
     if (this.debounceTimer) {
+      logger.debug('Clearing existing debounce timer');
       clearTimeout(this.debounceTimer);
     }
 
+    logger.debug(`Setting debounce timer (${this.getDebounceDelay()}ms)`);
     this.debounceTimer = setTimeout(async () => {
+      logger.debug('Debounce timer fired, updating document tree');
       this.document = document;
 
       // Try to use backend tree with centralized IDs if bridge is available
       if (this.pythonBridge && this.pythonBridge.isRunning()) {
+        logger.debug('Python bridge is available, requesting document tree from backend');
         try {
           const documentText = document.getText();
+          logger.debug(`Document text length: ${documentText.length} characters`);
           const treeResponse = await this.pythonBridge.getDocumentTree(documentText);
+          logger.debug('Received tree response from backend:', treeResponse);
           this.documentTree = this.deserializeBackendTree(treeResponse.root, document, treeResponse.version);
+          logger.debug(`Document tree built: ${this.documentTree.nodeMap.size} nodes`);
           // Compute and cache the large document flag once after tree is built
           this.computeIsLargeDocument();
+          logger.debug(`Large document: ${this.isLargeDoc}`);
+          logger.debug('Calling refresh() to update tree view');
           this.refresh();
           return;
         } catch (error) {
-          console.warn('Failed to get tree from backend, falling back to local parsing:', error);
+          logger.warn('Failed to get tree from backend, falling back to local parsing:', error);
           // Fall through to local parsing
         }
+      } else {
+        logger.debug('Python bridge not available or not running, using local parsing');
       }
 
       // Fallback to local parsing if backend is unavailable
+      logger.debug('Parsing document locally');
       this.documentTree = this.parseDocument(document);
+      logger.debug(`Document tree built locally: ${this.documentTree.nodeMap.size} nodes`);
       // Compute and cache the large document flag once after tree is built
       this.computeIsLargeDocument();
+      logger.debug(`Large document: ${this.isLargeDoc}`);
+      logger.debug('Calling refresh() to update tree view');
       this.refresh();
     }, this.getDebounceDelay());
   }
@@ -247,7 +276,7 @@ export class DocumentOutlineProvider
       // Create range from line/column positions
       // Warn if backend returns out-of-bounds line numbers
       if (bNode.line >= document.lineCount) {
-        console.warn(
+        logger.warn(
           `Backend returned out-of-bounds line number: ${bNode.line} for node "${bNode.label}". ` +
           `Document has ${document.lineCount} lines. Clamping to last line.`
         );
@@ -429,6 +458,7 @@ export class DocumentOutlineProvider
    * Clear the tree view.
    */
   clear(): void {
+    logger.debug('clear() called - clearing document tree');
     this.documentTree = null;
     this.document = null;
     this.isLargeDoc = false;
@@ -609,7 +639,7 @@ export class DocumentOutlineProvider
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       vscode.window.showErrorMessage(`Error during drop: ${errorMsg}`);
-      console.error('Drop error:', error);
+      logger.error('Drop error:', error);
     }
   }
 

@@ -4,6 +4,9 @@
 
 import { spawn, ChildProcess } from 'child_process';
 import { OperationResult, ValidationResult, DocumentTreeResponse } from './types';
+import { getLogger } from './logger';
+
+const logger = getLogger();
 
 interface JsonRpcRequest {
   jsonrpc: '2.0';
@@ -140,10 +143,10 @@ export class PythonBridge {
    * @returns Promise that resolves with the result
    */
   async call<T = any>(method: string, params: Record<string, any> = {}): Promise<T> {
-    console.log(`PythonBridge.call: method=${method}`);
+    logger.debug(`PythonBridge.call: method=${method}`);
 
     if (!this.process) {
-      console.error('PythonBridge.call: Bridge not started');
+      logger.error('PythonBridge.call: Bridge not started');
       throw new Error('Bridge not started');
     }
 
@@ -160,12 +163,12 @@ export class PythonBridge {
     if (logParams.document && typeof logParams.document === 'string') {
       logParams.document = `<${logParams.document.length} chars>`;
     }
-    console.log(`PythonBridge.call: sending request #${id}:`, JSON.stringify({ ...request, params: logParams }, null, 2));
+    logger.debug(`PythonBridge.call: sending request #${id}:`, { ...request, params: logParams });
 
     return new Promise((resolve, reject) => {
       // Set up timeout
       const timeoutId = setTimeout(() => {
-        console.error(`PythonBridge.call: Request #${id} timed out after ${this.options.timeout}ms`);
+        logger.error(`PythonBridge.call: Request #${id} timed out after ${this.options.timeout}ms`);
         this.pendingRequests.delete(id);
         reject(new Error(`Request timed out after ${this.options.timeout}ms`));
       }, this.options.timeout);
@@ -173,12 +176,12 @@ export class PythonBridge {
       // Store pending request
       this.pendingRequests.set(id, {
         resolve: (value: any) => {
-          console.log(`PythonBridge.call: Request #${id} resolved successfully`);
+          logger.debug(`PythonBridge.call: Request #${id} resolved successfully`);
           clearTimeout(timeoutId);
           resolve(value);
         },
         reject: (error: Error) => {
-          console.error(`PythonBridge.call: Request #${id} rejected:`, error);
+          logger.error(`PythonBridge.call: Request #${id} rejected:`, error);
           clearTimeout(timeoutId);
           reject(error);
         },
@@ -186,7 +189,7 @@ export class PythonBridge {
 
       // Send request
       const requestLine = JSON.stringify(request) + '\n';
-      console.log(`PythonBridge.call: Writing request to stdin`);
+      logger.debug(`PythonBridge.call: Writing request to stdin`);
       this.process!.stdin!.write(requestLine);
     });
   }
@@ -271,10 +274,10 @@ export class PythonBridge {
    * @returns Document tree structure with centralized IDs
    */
   async getDocumentTree(document: string): Promise<DocumentTreeResponse> {
-    console.log('getDocumentTree called');
-    console.log(`Document text length: ${document.length} characters`);
+    logger.debug('getDocumentTree called');
+    logger.debug(`Document text length: ${document.length} characters`);
     const result = await this.call<DocumentTreeResponse>('get_document_tree', { document });
-    console.log('getDocumentTree response received:', JSON.stringify(result, null, 2));
+    logger.debug('getDocumentTree response received:', result);
     return result;
   }
 
@@ -293,18 +296,18 @@ export class PythonBridge {
 
     // Handle stderr data (errors)
     this.process.stderr!.on('data', (data: Buffer) => {
-      console.error('Python bridge error:', data.toString());
+      logger.error('Python bridge error:', data.toString());
     });
 
     // Handle process exit
     this.process.on('exit', (code: number | null, signal: string | null) => {
-      console.log(`Python bridge exited with code ${code}, signal ${signal}`);
+      logger.info(`Python bridge exited with code ${code}, signal ${signal}`);
       this.handleProcessExit(code, signal);
     });
 
     // Handle process error
     this.process.on('error', (error: Error) => {
-      console.error('Python bridge process error:', error);
+      logger.error('Python bridge process error:', error);
       this.handleProcessError(error);
     });
   }
@@ -331,7 +334,7 @@ export class PythonBridge {
           const response: JsonRpcResponse = JSON.parse(line);
           this.handleResponse(response);
         } catch (error) {
-          console.error('Failed to parse response:', error, line);
+          logger.error('Failed to parse response:', error, line);
         }
       }
     }
@@ -341,21 +344,21 @@ export class PythonBridge {
    * Handle a JSON-RPC response.
    */
   private handleResponse(response: JsonRpcResponse): void {
-    console.log(`handleResponse: Received response for request #${response.id}`);
+    logger.debug(`handleResponse: Received response for request #${response.id}`);
 
     const pending = this.pendingRequests.get(response.id);
     if (!pending) {
-      console.warn('Received response for unknown request:', response.id);
+      logger.warn('Received response for unknown request:', response.id);
       return;
     }
 
     this.pendingRequests.delete(response.id);
 
     if (response.error) {
-      console.error(`handleResponse: Request #${response.id} returned error:`, response.error);
+      logger.error(`handleResponse: Request #${response.id} returned error:`, response.error);
       pending.reject(new Error(response.error.message));
     } else {
-      console.log(`handleResponse: Request #${response.id} succeeded`);
+      logger.debug(`handleResponse: Request #${response.id} succeeded`);
       pending.resolve(response.result);
     }
   }
@@ -372,14 +375,14 @@ export class PythonBridge {
 
     // Attempt restart if not stopping
     if (!this.isStopping && this.restartCount < this.options.maxRestarts) {
-      console.log(`Attempting to restart Python bridge (attempt ${this.restartCount + 1})`);
+      logger.info(`Attempting to restart Python bridge (attempt ${this.restartCount + 1})`);
       this.restartCount++;
 
       try {
         await this.restart();
         this.restartCount = 0; // Reset counter on successful restart
       } catch (error) {
-        console.error('Failed to restart Python bridge:', error);
+        logger.error('Failed to restart Python bridge:', error);
       }
     }
   }

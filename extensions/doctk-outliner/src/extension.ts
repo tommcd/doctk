@@ -8,12 +8,14 @@ import { PythonBridge } from './pythonBridge';
 import { DocumentSyncManager } from './documentSyncManager';
 import { DoctkLanguageClient } from './languageClient';
 import { OutlineNode } from './types';
+import { getLogger } from './logger';
 
 let outlineProvider: DocumentOutlineProvider;
 let pythonBridge: PythonBridge;
 let syncManager: DocumentSyncManager;
 let languageClient: DoctkLanguageClient;
 let treeView: vscode.TreeView<any>;
+const logger = getLogger();
 
 /**
  * Activate the extension.
@@ -21,15 +23,15 @@ let treeView: vscode.TreeView<any>;
  * @param context - Extension context
  */
 export async function activate(context: vscode.ExtensionContext) {
-  console.log('doctk outliner extension is now active');
+  logger.info('doctk outliner extension is now active');
 
   // Initialize Language Server Client first
   languageClient = new DoctkLanguageClient(context);
   try {
     await languageClient.start();
-    console.log('doctk language server started successfully');
+    logger.info('doctk language server started successfully');
   } catch (error) {
-    console.error('Failed to start language server:', error);
+    logger.error('Failed to start language server:', error);
     // Non-fatal - continue with extension activation
   }
 
@@ -42,9 +44,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
   try {
     await pythonBridge.start();
-    console.log('Python bridge started successfully');
+    logger.info('Python bridge started successfully');
   } catch (error) {
-    console.error('Failed to start Python bridge:', error);
+    logger.error('Failed to start Python bridge:', error);
     vscode.window.showErrorMessage('Failed to start doctk backend. Some features may not work.');
   }
 
@@ -56,14 +58,14 @@ export async function activate(context: vscode.ExtensionContext) {
   syncManager = new DocumentSyncManager(outlineProvider);
 
   // Register tree data provider with drag-and-drop support
-  console.log('Creating tree view with ID: doctkOutline');
+  logger.debug('Creating tree view with ID: doctkOutline');
   treeView = vscode.window.createTreeView('doctkOutline', {
     treeDataProvider: outlineProvider,
     showCollapseAll: true,
     canSelectMany: false,
     dragAndDropController: outlineProvider,
   });
-  console.log('Tree view created successfully:', treeView);
+  logger.debug('Tree view created successfully');
 
   // Register sync manager for disposal
   context.subscriptions.push({
@@ -205,18 +207,18 @@ export async function activate(context: vscode.ExtensionContext) {
   // Listen for active editor changes
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
-      console.log('Active editor changed');
+      logger.debug('Active editor changed');
       if (editor) {
-        console.log(`New editor: ${editor.document.uri.fsPath}, language: ${editor.document.languageId}`);
+        logger.debug(`New editor: ${editor.document.uri.fsPath}, language: ${editor.document.languageId}`);
         if (editor.document.languageId === 'markdown') {
-          console.log('New editor is markdown, updating outline');
+          logger.debug('New editor is markdown, updating outline');
           syncManager.onDocumentChange(editor.document);
         } else {
-          console.log('New editor is not markdown, clearing outline');
+          logger.debug('New editor is not markdown, clearing outline');
           outlineProvider.clear();
         }
       } else {
-        console.log('No active editor, clearing outline');
+        logger.debug('No active editor, clearing outline');
         outlineProvider.clear();
       }
     })
@@ -234,25 +236,41 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   // Initialize with current editor if it's markdown
-  console.log('Checking for active editor to initialize outline...');
+  logger.debug('Checking for active editor to initialize outline...');
   const editor = vscode.window.activeTextEditor;
   if (editor) {
-    console.log(`Active editor found: ${editor.document.uri.fsPath}`);
-    console.log(`Language ID: ${editor.document.languageId}`);
+    logger.debug(`Active editor found: ${editor.document.uri.fsPath}`);
+    logger.debug(`Language ID: ${editor.document.languageId}`);
     if (editor.document.languageId === 'markdown') {
-      console.log('Initializing outline with current markdown document');
+      logger.debug('Initializing outline with current markdown document');
       syncManager.onDocumentChange(editor.document);
     } else {
-      console.log('Active editor is not a markdown file, skipping initialization');
+      logger.debug('Active editor is not a markdown file, skipping initialization');
     }
   } else {
-    console.log('No active editor found, outline will initialize when a markdown file is opened');
+    logger.debug('No active editor found, outline will initialize when a markdown file is opened');
   }
 
   // Register tree view
-  console.log('Registering tree view for disposal');
+  logger.debug('Registering tree view for disposal');
   context.subscriptions.push(treeView);
-  console.log('Extension activation complete');
+
+  // Listen for configuration changes to update log level
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('doctk.logging.level')) {
+        logger.updateLogLevel();
+        logger.info('Log level updated');
+      }
+    })
+  );
+
+  // Register logger for disposal
+  context.subscriptions.push({
+    dispose: () => logger.dispose(),
+  });
+
+  logger.info('Extension activation complete');
 }
 
 /**
@@ -339,7 +357,7 @@ async function executeOperation(operation: string, node: OutlineNode): Promise<v
  * Deactivate the extension.
  */
 export async function deactivate() {
-  console.log('doctk outliner extension is now deactivated');
+  logger.info('doctk outliner extension is now deactivated');
 
   // Stop language server
   if (languageClient) {

@@ -225,6 +225,18 @@
           "type": "boolean",
           "default": true,
           "description": "Enable lazy loading for large documents (start nodes collapsed)"
+        },
+        "doctk.logging.level": {
+          "type": "string",
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error",
+            "none"
+          ],
+          "default": "info",
+          "description": "Logging verbosity level for the doctk extension. Use 'debug' for troubleshooting, 'info' for normal operation."
         }
       }
     }

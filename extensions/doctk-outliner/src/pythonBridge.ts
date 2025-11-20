@@ -140,7 +140,10 @@ export class PythonBridge {
    * @returns Promise that resolves with the result
    */
   async call<T = any>(method: string, params: Record<string, any> = {}): Promise<T> {
+    console.log(`PythonBridge.call: method=${method}`);
+
     if (!this.process) {
+      console.error('PythonBridge.call: Bridge not started');
       throw new Error('Bridge not started');
     }
 
@@ -152,9 +155,17 @@ export class PythonBridge {
       params,
     };
 
+    // Log request (but limit document text for readability)
+    const logParams = { ...params };
+    if (logParams.document && typeof logParams.document === 'string') {
+      logParams.document = `<${logParams.document.length} chars>`;
+    }
+    console.log(`PythonBridge.call: sending request #${id}:`, JSON.stringify({ ...request, params: logParams }, null, 2));
+
     return new Promise((resolve, reject) => {
       // Set up timeout
       const timeoutId = setTimeout(() => {
+        console.error(`PythonBridge.call: Request #${id} timed out after ${this.options.timeout}ms`);
         this.pendingRequests.delete(id);
         reject(new Error(`Request timed out after ${this.options.timeout}ms`));
       }, this.options.timeout);
@@ -162,10 +173,12 @@ export class PythonBridge {
       // Store pending request
       this.pendingRequests.set(id, {
         resolve: (value: any) => {
+          console.log(`PythonBridge.call: Request #${id} resolved successfully`);
           clearTimeout(timeoutId);
           resolve(value);
         },
         reject: (error: Error) => {
+          console.error(`PythonBridge.call: Request #${id} rejected:`, error);
           clearTimeout(timeoutId);
           reject(error);
         },
@@ -173,6 +186,7 @@ export class PythonBridge {
 
       // Send request
       const requestLine = JSON.stringify(request) + '\n';
+      console.log(`PythonBridge.call: Writing request to stdin`);
       this.process!.stdin!.write(requestLine);
     });
   }
@@ -257,7 +271,11 @@ export class PythonBridge {
    * @returns Document tree structure with centralized IDs
    */
   async getDocumentTree(document: string): Promise<DocumentTreeResponse> {
-    return this.call<DocumentTreeResponse>('get_document_tree', { document });
+    console.log('getDocumentTree called');
+    console.log(`Document text length: ${document.length} characters`);
+    const result = await this.call<DocumentTreeResponse>('get_document_tree', { document });
+    console.log('getDocumentTree response received:', JSON.stringify(result, null, 2));
+    return result;
   }
 
   /**
@@ -323,6 +341,8 @@ export class PythonBridge {
    * Handle a JSON-RPC response.
    */
   private handleResponse(response: JsonRpcResponse): void {
+    console.log(`handleResponse: Received response for request #${response.id}`);
+
     const pending = this.pendingRequests.get(response.id);
     if (!pending) {
       console.warn('Received response for unknown request:', response.id);
@@ -332,8 +352,10 @@ export class PythonBridge {
     this.pendingRequests.delete(response.id);
 
     if (response.error) {
+      console.error(`handleResponse: Request #${response.id} returned error:`, response.error);
       pending.reject(new Error(response.error.message));
     } else {
+      console.log(`handleResponse: Request #${response.id} succeeded`);
       pending.resolve(response.result);
     }
   }

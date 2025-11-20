@@ -56,12 +56,14 @@ export async function activate(context: vscode.ExtensionContext) {
   syncManager = new DocumentSyncManager(outlineProvider);
 
   // Register tree data provider with drag-and-drop support
+  console.log('Creating tree view with ID: doctkOutline');
   treeView = vscode.window.createTreeView('doctkOutline', {
     treeDataProvider: outlineProvider,
     showCollapseAll: true,
     canSelectMany: false,
     dragAndDropController: outlineProvider,
   });
+  console.log('Tree view created successfully:', treeView);
 
   // Register sync manager for disposal
   context.subscriptions.push({
@@ -203,9 +205,18 @@ export async function activate(context: vscode.ExtensionContext) {
   // Listen for active editor changes
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
-      if (editor && editor.document.languageId === 'markdown') {
-        syncManager.onDocumentChange(editor.document);
+      console.log('Active editor changed');
+      if (editor) {
+        console.log(`New editor: ${editor.document.uri.fsPath}, language: ${editor.document.languageId}`);
+        if (editor.document.languageId === 'markdown') {
+          console.log('New editor is markdown, updating outline');
+          syncManager.onDocumentChange(editor.document);
+        } else {
+          console.log('New editor is not markdown, clearing outline');
+          outlineProvider.clear();
+        }
       } else {
+        console.log('No active editor, clearing outline');
         outlineProvider.clear();
       }
     })
@@ -223,13 +234,25 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   // Initialize with current editor if it's markdown
+  console.log('Checking for active editor to initialize outline...');
   const editor = vscode.window.activeTextEditor;
-  if (editor && editor.document.languageId === 'markdown') {
-    syncManager.onDocumentChange(editor.document);
+  if (editor) {
+    console.log(`Active editor found: ${editor.document.uri.fsPath}`);
+    console.log(`Language ID: ${editor.document.languageId}`);
+    if (editor.document.languageId === 'markdown') {
+      console.log('Initializing outline with current markdown document');
+      syncManager.onDocumentChange(editor.document);
+    } else {
+      console.log('Active editor is not a markdown file, skipping initialization');
+    }
+  } else {
+    console.log('No active editor found, outline will initialize when a markdown file is opened');
   }
 
   // Register tree view
+  console.log('Registering tree view for disposal');
   context.subscriptions.push(treeView);
+  console.log('Extension activation complete');
 }
 
 /**

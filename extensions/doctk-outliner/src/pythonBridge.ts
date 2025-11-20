@@ -304,6 +304,11 @@ export class PythonBridge {
 
     for (const line of lines) {
       if (line.trim()) {
+        // Skip the BRIDGE_READY signal (not JSON-RPC)
+        if (line.trim() === 'BRIDGE_READY') {
+          continue;
+        }
+
         try {
           const response: JsonRpcResponse = JSON.parse(line);
           this.handleResponse(response);

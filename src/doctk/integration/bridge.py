@@ -270,7 +270,8 @@ class ExtensionBridge:
         document_text = params["document"]
 
         doc = Document.from_string(document_text)
-        tree_builder = DocumentTreeBuilder(doc)
+        # Pass the original source text to ensure accurate line positioning
+        tree_builder = DocumentTreeBuilder(doc, source_text=document_text)
         tree = tree_builder.build_tree_with_ids()
 
         return {

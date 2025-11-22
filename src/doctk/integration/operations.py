@@ -9,14 +9,19 @@ from doctk.integration.protocols import ModifiedRange, OperationResult, TreeNode
 class DocumentTreeBuilder:
     """Builds a tree representation of a document with node IDs."""
 
-    def __init__(self, document: Document[Node]):
+    def __init__(self, document: Document[Node], source_text: str | None = None):
         """
         Initialize the tree builder.
 
         Args:
             document: The document to build a tree from
+            source_text: Optional original source text. If provided, this will be used
+                        for line positioning instead of reconstructing from the document.
+                        This is important because document reconstruction may add extra
+                        blank lines that don't exist in the original source.
         """
         self.document = document
+        self.source_text = source_text
         self.node_map: dict[str, Node] = {}
         self.parent_map: dict[str, str] = {}
         self._line_position_cache: dict[int, int] = {}  # Cache: node_index -> line_number
@@ -43,7 +48,10 @@ class DocumentTreeBuilder:
         Includes fallback handling for nodes that cannot be matched.
         """
         # Get document text and split into lines
-        doc_text = self.document.to_string()
+        # Use source_text if provided, otherwise reconstruct from document
+        # Using source_text is critical for accurate line positioning because
+        # document reconstruction may add extra blank lines
+        doc_text = self.source_text if self.source_text is not None else self.document.to_string()
         lines = doc_text.split("\n")
 
         current_line = 0

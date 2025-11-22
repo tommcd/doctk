@@ -721,3 +721,120 @@ Section content.
 
         chapter2 = root["children"][1]
         assert lines[chapter2["line"]].startswith("# Chapter 2")
+
+    def test_get_document_tree_line_positions_with_code_blocks(self):
+        """Test that line positions are accurate when document contains code blocks.
+
+        This is a regression test for a bug where the DocumentTreeBuilder
+        was using reconstructed document text (via to_string()) which added
+        extra blank lines, causing incorrect line number offsets for headings
+        that appeared after code blocks.
+        """
+        # This document has code blocks which previously caused line number offsets
+        doc_text = """# CLI Tool Documentation
+
+## Prerequisites
+
+- Node.js 18 or higher
+- npm or yarn
+
+## Installation
+
+Download the binary from releases page.
+
+Or install via npm:
+```bash
+npm install -g tool
+```
+
+## Usage
+
+Run the command:
+```bash
+tool --help
+```
+
+Example output:
+```
+Usage: tool [options]
+
+Options:
+  --verbose    Enable verbose output
+  --quiet      Suppress output
+  --config     Specify config file
+```
+
+## Options
+
+The following options are available:
+
+- `--verbose` - Enable verbose output
+- `--quiet` - Suppress output
+- `--config` - Specify config file
+
+## Examples
+
+Basic usage:
+```bash
+tool --verbose input.txt
+```
+
+With config:
+```bash
+tool --config myconfig.json
+```
+"""
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "get_document_tree",
+            "params": {"document": doc_text},
+        }
+
+        response = self.bridge.handle_request(request)
+        root = response["result"]["root"]
+        lines = doc_text.split("\n")
+
+        # Verify that line numbers correctly point to the actual heading lines
+        # The bug would cause these assertions to fail because the backend
+        # was reporting incorrect line numbers after code blocks
+
+        cli_heading = root["children"][0]
+        assert cli_heading["id"] == "h1-0"
+        assert cli_heading["label"] == "CLI Tool Documentation"
+        assert lines[cli_heading["line"]].strip() == "# CLI Tool Documentation"
+
+        prereq_heading = cli_heading["children"][0]
+        assert prereq_heading["id"] == "h2-0"
+        assert prereq_heading["label"] == "Prerequisites"
+        assert lines[prereq_heading["line"]].strip() == "## Prerequisites"
+
+        install_heading = cli_heading["children"][1]
+        assert install_heading["id"] == "h2-1"
+        assert install_heading["label"] == "Installation"
+        assert lines[install_heading["line"]].strip() == "## Installation"
+
+        # This is where the bug manifested - headings after code blocks had wrong line numbers
+        usage_heading = cli_heading["children"][2]
+        assert usage_heading["id"] == "h2-2"
+        assert usage_heading["label"] == "Usage"
+        assert lines[usage_heading["line"]].strip() == "## Usage", (
+            f"Expected line {usage_heading['line']} to be '## Usage', "
+            f"but got '{lines[usage_heading['line']].strip()}'"
+        )
+
+        options_heading = cli_heading["children"][3]
+        assert options_heading["id"] == "h2-3"
+        assert options_heading["label"] == "Options"
+        assert lines[options_heading["line"]].strip() == "## Options", (
+            f"Expected line {options_heading['line']} to be '## Options', "
+            f"but got '{lines[options_heading['line']].strip()}'"
+        )
+
+        examples_heading = cli_heading["children"][4]
+        assert examples_heading["id"] == "h2-4"
+        assert examples_heading["label"] == "Examples"
+        assert lines[examples_heading["line"]].strip() == "## Examples", (
+            f"Expected line {examples_heading['line']} to be '## Examples', "
+            f"but got '{lines[examples_heading['line']].strip()}'"
+        )

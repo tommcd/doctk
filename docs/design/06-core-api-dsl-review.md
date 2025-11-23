@@ -29,3 +29,9 @@ The doctk core exposes a functional document model (`Document`, `Node`) with com
 - **Performance & observability**: Cache resolved fragments, incrementally invalidate on edit, and extend performance monitoring to graph traversals with thresholds for resolution and materialization.
 - **Ecosystem alignment**: Provide adapters for common transclusion syntaxes (Markdown include, Org noweb, DITA conref) to avoid reinventing formats and ease adoption.
 
+## Review follow-ups and actions
+- **Kiro alignment:** Create a `.kiro/specs/core-api-refresh/` spec that captures the gaps above (stable IDs, in-process API, view model) and links tasks to acceptance checks. Use the existing steering docs for validation steps.
+- **API bridging:** Add a task to prototype the ID↔predicate bridge so the declarative morphism API and imperative `StructureOperations` share a single semantics surface.
+- **DSL compilation path:** Track the refactor for DSL/REPL to compile to the internal operations layer, eliminating duplicate implementations and improving testability.
+- **Source spans + immutability:** Document the need for source-positioned AST nodes and immutable metadata (deep copies or persistent maps) as explicit ADRs to avoid regressions.
+

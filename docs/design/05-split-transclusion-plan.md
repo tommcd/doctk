@@ -140,6 +140,11 @@
 - **Tasks:** Update the phase tasks to explicitly: (1) refactor DSL/REPL to call the internal operations layer, (2) add metadata deep-copying and adjust `union` naming/behavior, and (3) add parser changes for source spans with tests replacing heuristic matching.
 - **Acceptance tests:** Add cases that prove ID stability across edits, DSL↔Python parity (same registry metadata), immutability of metadata, correct union semantics, and accurate source spans for diagnostics and round-tripping.
 
+- **Reviewer feedback tracking:**
+  - Mirror these deltas in a dedicated Kiro spec folder (e.g., `.kiro/specs/graph-fragments/`) with explicit tasks/checklists that reference the above bullets so reviewers can see them checked off.
+  - Capture the ID↔predicate bridge, DSL compilation path, and metadata immutability as ADRs to avoid ambiguity during implementation reviews.
+  - Add a regression plan: once the internal operations layer lands, run the existing JSON-RPC/LSP suites against the new layer to confirm parity before removing legacy heuristics.
+
 ## Open Questions for the Team
 - Preferred `NodeId` strategy: UUIDv7 vs. content-hash + lexical hint? Any compliance requirements?
 - Should transclusion allow version pinning (e.g., per commit hash) and how to expose that in UX?

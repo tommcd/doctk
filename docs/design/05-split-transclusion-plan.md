@@ -115,6 +115,7 @@ These laws should inform unit tests for hydration/materialization and for the ad
   - Valid modes: `"embed"` (inline) or `"link"` (reference-only)
 - `link(from_id: str, to_id: str, role: str = "seealso")`
 - `hydrate(root_ids: list[str] | None = None, policy: dict = {"cycle": "error"}) -> MaterializedView`
+  - `policy` options for cycle detection: `{"cycle": "error" | "skip" | "inline-once"}`
 - `merge(strategy: str = "prefer-source", on_conflict: str = "annotate", overlay: Document | None = None) -> Document`
 - `validate_graph(strict: bool = True) -> Diagnostics`
 - All operations emit provenance payloads and stable IDs; JSON-RPC wrappers serialize both logical and materialized views. Type

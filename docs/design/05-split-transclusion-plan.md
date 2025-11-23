@@ -109,20 +109,17 @@ These laws should inform unit tests for hydration/materialization and for the ad
 - **Caching:** keyed by graph hash + policy; invalidated on node edits or edge changes.
 
 ## API/DSL Specification (initial)
-- `split(by: str = "heading", depth: int = 2) -> List[Fragment]`
-- `shard(strategy: str = "balanced", max_nodes: int = 200) -> List[Fragment]`
-- `transclude(id: str, mode: str = "embed", version: str | None = None)`
+- `split(by: Literal["heading"] = "heading", depth: int = 2) -> list[Fragment]`
+- `shard(strategy: Literal["balanced", "size", "semantic"] = "balanced", max_nodes: int = 200) -> list[Fragment]`
+- `transclude(id: str, mode: Literal["embed", "link"] = "embed", version: str | None = None)`
   - Valid modes: `"embed"` (inline) or `"link"` (reference-only)
-- `link(from_id: str, to_id: str, role: str = "seealso")`
-  - Valid roles: `"seealso"`, `"refines"`, `"depends"`
-- `hydrate(root_ids: list[str] | None = None, policy: dict = {"cycle": "error"}) -> MaterializedView`
-  - `policy` options for cycle detection: `{"cycle": "error" | "skip" | "inline-once"}`
-- `merge(strategy: str = "prefer-source", on_conflict: str = "annotate", overlay: Document | None = None) -> Document`
-  - `strategy` options: `"prefer-source"`, `"prefer-target"`
-  - `on_conflict` options: `"annotate"`, `"fail"`, `"prefer-target"`
+- `link(from_id: str, to_id: str, role: Literal["seealso", "refines", "depends"] = "seealso")`
+- `hydrate(root_ids: list[str] | None = None, policy: dict[Literal["cycle"], Literal["error", "skip", "inline-once"]] = {"cycle": "error"}) -> MaterializedView`
+- `merge(strategy: Literal["prefer-source", "prefer-target"] = "prefer-source", on_conflict: Literal["annotate", "fail", "prefer-source", "prefer-target"] = "annotate", overlay: Document | None = None) -> Document`
 - `validate_graph(strict: bool = True) -> Diagnostics`
 - All operations emit provenance payloads and stable IDs; JSON-RPC wrappers serialize both logical and materialized views. Type
-  metadata should enumerate accepted string literals (e.g., `role` and `mode`) for LSP/CLI validation.
+  metadata should enumerate accepted string literals (e.g., `role`, `mode`, `strategy`, and `on_conflict`) for LSP/CLI validat
+  ion.
 
 ## Implementation Steps (detailed)
 1. **Stable ID rollout**

@@ -120,18 +120,18 @@ code --install-extension path/to/doctk-outliner-0.1.0.vsix
 **Option 3: Install via VS Code UI** (after building or downloading)
 
 1. Open VS Code
-2. Open the Extensions view (`Ctrl+Shift+X` or `Cmd+Shift+X`)
-3. Click the "..." menu button at the top
-4. Select "Install from VSIX..."
-5. Navigate to and select the `.vsix` file
-6. Reload VS Code when prompted
+1. Open the Extensions view (`Ctrl+Shift+X` or `Cmd+Shift+X`)
+1. Click the "..." menu button at the top
+1. Select "Install from VSIX..."
+1. Navigate to and select the `.vsix` file
+1. Reload VS Code when prompted
 
 ### Verify Extension Installation
 
 1. Open a Markdown file (`.md`) in VS Code
-2. The "Document Outline" view should appear in the Explorer sidebar
-3. If not visible: **View → Open View → Document Outline**
-4. Try right-clicking on a heading to see available operations
+1. The "Document Outline" view should appear in the Explorer sidebar
+1. If not visible: **View → Open View → Document Outline**
+1. Try right-clicking on a heading to see available operations
 
 ### Troubleshooting
 
@@ -148,7 +148,7 @@ code --install-extension path/to/doctk-outliner-0.1.0.vsix
 - Check the file language mode is "Markdown"
 - Try running the command: **doctk: Refresh Outline** from the Command Palette
 
-For more details, see the [extension README](../../extensions/doctk-outliner/README.md).
+For more details, see the [extension README](https://github.com/tommcd/doctk/blob/master/extensions/doctk-outliner/README.md).
 
 ## Next Steps
 

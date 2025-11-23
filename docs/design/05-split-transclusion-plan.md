@@ -85,7 +85,7 @@ These laws should inform unit tests for hydration/materialization and for the ad
 | Tool        | Approach                              | Lessons | Adopt | Avoid |
 |-------------|---------------------------------------|---------|-------|-------|
 | mdBook      | `{{#include}}` file-based includes    | Simple syntax is familiar | ✅ Syntax base | ❌ Lack of content addressing |
-| Org-mode    | `#+INCLUDE:` with live updates     | Bidirectional edits valuable | ✅ Live update concept | ⚠️ Requires cycle detection |
+| Org-mode    | `#+INCLUDE:` with live updates        | Bidirectional edits valuable | ✅ Live update concept | ⚠️ Requires cycle detection |
 | Pandoc      | Filters (no native transclusion)      | AST-level transforms safer than text substitution | ✅ AST-level approach | ❌ Text-only substitution |
 | Git submodules | Content-addressed nesting          | Stable references | ✅ Content addressing | ❌ UX complexity |
 
@@ -109,14 +109,20 @@ These laws should inform unit tests for hydration/materialization and for the ad
 - **Caching:** keyed by graph hash + policy; invalidated on node edits or edge changes.
 
 ## API/DSL Specification (initial)
-- `split(by="heading", depth=2) -> List[Fragment]`
-- `shard(strategy="balanced", max_nodes=200) -> List[Fragment]`
-- `transclude(id, mode="embed|link", version=None)`
-- `link(from_id, to_id, role="seealso"|"refines"|"depends")`
-- `hydrate(root_ids=None, policy={"cycle": "error|skip|inline-once"}) -> MaterializedView`
-- `merge(strategy="prefer-source", on_conflict="annotate|fail|prefer-target", overlay=None) -> Document`
-- `validate_graph(strict=True) -> Diagnostics`
-- All operations emit provenance payloads and stable IDs; JSON-RPC wrappers serialize both logical and materialized views.
+- `split(by: str = "heading", depth: int = 2) -> List[Fragment]`
+- `shard(strategy: str = "balanced", max_nodes: int = 200) -> List[Fragment]`
+- `transclude(id: str, mode: str = "embed", version: str | None = None)`
+  - Valid modes: `"embed"` (inline) or `"link"` (reference-only)
+- `link(from_id: str, to_id: str, role: str = "seealso")`
+  - Valid roles: `"seealso"`, `"refines"`, `"depends"`
+- `hydrate(root_ids: list[str] | None = None, policy: dict = {"cycle": "error"}) -> MaterializedView`
+  - `policy` options for cycle detection: `{"cycle": "error" | "skip" | "inline-once"}`
+- `merge(strategy: str = "prefer-source", on_conflict: str = "annotate", overlay: Document | None = None) -> Document`
+  - `strategy` options: `"prefer-source"`, `"prefer-target"`
+  - `on_conflict` options: `"annotate"`, `"fail"`, `"prefer-target"`
+- `validate_graph(strict: bool = True) -> Diagnostics`
+- All operations emit provenance payloads and stable IDs; JSON-RPC wrappers serialize both logical and materialized views. Type
+  metadata should enumerate accepted string literals (e.g., `role` and `mode`) for LSP/CLI validation.
 
 ## Implementation Steps (detailed)
 1. **Stable ID rollout**
@@ -266,6 +272,11 @@ These laws should inform unit tests for hydration/materialization and for the ad
   - Fetch latest `origin/master`, rebase this branch, and resolve overlaps in `docs/design/05-split-transclusion-plan.md` and `docs/design/06-core-api-dsl-review.md`, keeping upstream edits then reapplying the clarifications captured here.
   - Run the active CI matrix locally (e.g., `tox -e lint,py38` or current equivalents) and any doc link checkers to ensure no regressions post-merge.
   - Update Kiro spec tasks/checklists if the rebase changes ordering, dependencies, or acceptance criteria; ensure ADRs stay aligned with the reconciled text.
+
+### Review feedback resolution (PR #49 — Gemini)
+- **Clarify rebase recipe:** When conflicts are reported, prefer a clean rebase before editing files: `git fetch origin`, `git rebase origin/master`, resolve, `git rebase --continue`, rerun `tox`/doc checks, and only then push. This keeps history linear for reviewers.
+- **Implementation readiness checklist:** Before starting Phase 1, ensure the NodeId ADR draft, canonical hash serializer, and fragment store interface skeletons are checked into the spec repo. Treat these as gating artifacts that reviewers can tick off in `.kiro/specs/graph-fragments/tasks.md`.
+- **Scope guardrails:** Avoid expanding the MVP beyond the listed phases unless an ADR records the trade-offs; defer reactive/lens work if it risks delaying stable IDs + fragment graph delivery. Document any deferrals in the spec tasks to maintain reviewer visibility.
 
 ## Open Questions for the Team
 - Preferred `NodeId` strategy: UUIDv7 vs. content-hash + lexical hint? Any compliance requirements?

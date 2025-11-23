@@ -66,6 +66,11 @@ The doctk core exposes a functional document model (`Document`, `Node`) with com
 - **DSL compilation path:** Track the refactor for DSL/REPL to compile to the internal operations layer, eliminating duplicate implementations and improving testability.
 - **Source spans + immutability:** Document the need for source-positioned AST nodes and immutable metadata (deep copies or persistent maps) as explicit ADRs to avoid regressions.
 
+### Review feedback resolution (PR #49 — Gemini)
+- **Prioritize gating artifacts:** Land the NodeId ADR, source-span plan, and DSL-to-internal compilation sketch before expanding DSL surface; treat these as blockers in the spec tasks so reviewers can sign off early.
+- **Bridge validation:** Add explicit acceptance checks for the ID↔predicate bridge (imperative ↔ declarative parity) and run them in both legacy and stable-ID modes to ensure a smooth migration path.
+- **Concise ownership notes:** In the new spec folder, list the owner/reviewer for each task so accountability is visible to reviewers without re-reading the whole plan.
+
 ## Merge/conflict note
 - GitHub reports conflicts with `master` on these design docs. This sandbox cannot fetch `origin` (HTTP 403), so rebasing is deferred until network access is available.
 - When access is restored: fetch/rebase onto `origin/master`, resolve overlaps in this review and `docs/design/05-split-transclusion-plan.md`, rerun the active CI/doc checks, and update the corresponding Kiro specs/ADRs to reflect reconciled text.

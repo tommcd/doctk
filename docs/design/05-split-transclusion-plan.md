@@ -111,7 +111,7 @@ These laws should inform unit tests for hydration/materialization and for the ad
 ## API/DSL Specification (initial)
 - `split(by: str = "heading", depth: int = 2) -> List[Fragment]`
 - `shard(strategy: str = "balanced", max_nodes: int = 200) -> List[Fragment]`
-- `transclude(id: str, mode: str = "embed", version: str | None = None)`  
+- `transclude(id: str, mode: str = "embed", version: str | None = None)`
   - Valid modes: `"embed"` (inline) or `"link"` (reference-only)
 - `link(from_id: str, to_id: str, role: str = "seealso")`
 - `hydrate(root_ids: list[str] | None = None, policy: dict = {"cycle": "error"}) -> MaterializedView`

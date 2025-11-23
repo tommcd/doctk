@@ -14,7 +14,7 @@
 
 These steering documents are always available in your context and provide essential project information. Reference them first for quick answers about conventions, commands, and structure.
 
-**For spec-based development work**, see [`claude-code-kiro-spec-prompt.md`](claude-code-kiro-spec-prompt.md) for detailed guidance on implementing Kiro specs.
+**For spec-based development work**, see [`AGENTS.md`](AGENTS.md) for detailed guidance on implementing Kiro specs.
 
 ## Table of Contents
 
@@ -973,7 +973,7 @@ cat .kiro/specs/<spec-name>/tasks.md
 | Read requirements | `.kiro/specs/<spec-name>/requirements.md` |
 | Read design | `.kiro/specs/<spec-name>/design.md` |
 | Track progress | `.kiro/specs/<spec-name>/tasks.md` |
-| Spec implementation guide | `claude-code-kiro-spec-prompt.md` |
+| Spec implementation guide | `AGENTS.md` |
 
 ### Detailed Spec Implementation Guide
 
@@ -986,7 +986,7 @@ For comprehensive instructions on working with Kiro specs, including:
 - Progress tracking conventions
 - Tips for successful spec implementation
 
-**See**: [`claude-code-kiro-spec-prompt.md`](claude-code-kiro-spec-prompt.md) in the repository root.
+**See**: [`AGENTS.md`](AGENTS.md) in the repository root.
 
 ______________________________________________________________________
 

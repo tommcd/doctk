@@ -1,125 +1,30 @@
 # Contributing to doctk
 
-Thank you for your interest in contributing to doctk! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to doctk! This guide will help you get started quickly.
 
-## Development Setup
+## Quick Start
 
 ### Prerequisites
 
 - Python 3.12 or higher
 - [uv](https://docs.astral.sh/uv/) package manager
 - Git
-- Bash shell (for setup scripts)
 
-### Automated Setup (Recommended)
-
-The fastest way to get started is using the automated setup script:
+### Setup in 3 Steps
 
 ```bash
-# Fork and clone the repository
+# 1. Fork and clone
 git clone https://github.com/YOUR_USERNAME/doctk.git
 cd doctk
 
-# Run the automated setup
+# 2. Run automated setup
 ./scripts/setup-environment.sh
-```
 
-This script will:
-
-1. Install uv if not present
-1. Verify Python 3.12+ is available
-1. Install external tools (shellcheck, shfmt, lychee, markdownlint, taplo, hadolint)
-1. Install Python dependencies with `uv sync --all-groups`
-1. Install tox globally
-1. Set up pre-commit hooks
-
-After setup completes, verify everything is working:
-
-```bash
+# 3. Verify everything works
 ./scripts/check-environment.sh
 ```
 
-### Manual Setup
-
-If you prefer manual setup or need to troubleshoot:
-
-1. Fork and clone the repository:
-
-```bash
-git clone https://github.com/YOUR_USERNAME/doctk.git
-cd doctk
-```
-
-2. Install uv:
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-3. Install dependencies:
-
-```bash
-uv sync --all-groups
-```
-
-4. Install external tools:
-
-```bash
-python3 scripts/setup-external-tools.py
-```
-
-5. Install pre-commit hooks:
-
-```bash
-uv run pre-commit install
-```
-
-6. Try the demo:
-
-```bash
-uv run doctk demo
-```
-
-## Project Structure
-
-```
-doctk/
-├── src/doctk/              # Main source code
-│   ├── core.py             # Document/Node abstractions
-│   ├── operations.py       # Composable operations
-│   ├── outliner.py         # Structure visualization
-│   ├── cli.py              # Command-line interface
-│   ├── parsers/            # Format readers
-│   ├── writers/            # Format writers
-│   ├── integration/        # Core integration layer (platform-agnostic)
-│   │   ├── operations.py   # Document structure operations
-│   │   ├── bridge.py       # JSON-RPC bridge
-│   │   ├── protocols.py    # Type definitions
-│   │   ├── memory.py       # Memory management
-│   │   └── performance.py  # Performance monitoring
-│   ├── dsl/                # DSL (Domain-Specific Language)
-│   │   ├── lexer.py        # Tokenization
-│   │   ├── parser.py       # AST generation
-│   │   ├── executor.py     # DSL execution
-│   │   ├── repl.py         # Interactive REPL
-│   │   └── codeblock.py    # Markdown code blocks
-│   └── lsp/                # Language Server Protocol
-│       ├── server.py       # LSP server
-│       ├── completion.py   # Code completion
-│       └── hover.py        # Hover documentation
-├── extensions/             # Editor extensions
-│   └── doctk-outliner/     # VS Code extension (TypeScript)
-├── tests/                  # Test suite
-│   ├── unit/               # Unit tests
-│   ├── e2e/                # End-to-end tests
-│   ├── quality/            # Quality/meta tests
-│   └── docs/               # Documentation tests
-├── docs/                   # Documentation
-│   ├── api/                # API reference docs
-│   ├── design/             # Design documents & ADRs
-│   └── development/        # Development guides
-└── examples/               # Example documents
-```
+**For detailed setup instructions**, see [Development Setup Guide](docs/development/setup.md).
 
 ## Development Workflow
 
@@ -131,312 +36,125 @@ git checkout -b feature/your-feature-name
 
 ### 2. Make Changes
 
-- Write code following the existing style
+- Write code following project conventions (see [Project Structure](.kiro/steering/structure.md))
 - Add tests for new functionality
 - Update documentation as needed
 
-### 3. Run Tests
+### 3. Test Your Changes
 
 ```bash
-# Run all tests
-uv run pytest -v
+# Run tests
+uv run pytest
 
-# Run specific test categories
-uv run pytest tests/unit/      # Unit tests
-uv run pytest tests/e2e/       # End-to-end tests
-uv run pytest tests/quality/   # Quality checks
-uv run pytest tests/docs/      # Documentation tests
-
-# Run with coverage
-uv run pytest --cov=doctk --cov-report=html
-
-# Run specific test
-uv run pytest tests/test_basic.py::test_document_creation
-```
-
-### 4. Run Quality Checks
-
-doctk uses tox to orchestrate quality checks:
-
-```bash
-# Run all quality checks
+# Run quality checks
 tox
-
-# Run specific environments
-tox -e ruff          # Python linting
-tox -e shellcheck    # Shell script linting
-tox -e shfmt         # Shell script formatting
-tox -e taplo         # TOML formatting
-tox -e docs          # Documentation checks (markdownlint, lychee)
-tox -e pytest        # All tests
-
-# Auto-fix issues
-tox -e ruff-fix      # Fix Python formatting
-tox -e shfmt-fix     # Fix shell script formatting
-tox -e taplo-fix     # Fix TOML formatting
-tox -e docs-fix      # Fix documentation formatting
 ```
 
-### 5. Pre-commit Hooks
+**For comprehensive testing guide**, see [Testing Guide](docs/development/testing.md).
 
-Pre-commit hooks run automatically on `git commit` to catch issues early:
-
-```bash
-# Hooks run automatically on commit
-git commit -m "feat: add new feature"
-
-# Run manually on all files
-uv run pre-commit run --all-files
-
-# Run specific hook
-uv run pre-commit run ruff --all-files
-
-# Update hook versions
-uv run pre-commit autoupdate
-```
-
-The hooks check:
-
-- Trailing whitespace and end-of-file newlines
-- YAML syntax
-- Shell scripts (shellcheck, shfmt)
-- Python code (ruff)
-- Markdown formatting (mdformat)
-- TOML formatting (taplo)
-- Tool plugin definitions
-
-### 6. Type Check (future)
-
-```bash
-# Type check with ty
-uvx ty check
-```
-
-### 7. Commit Changes
+### 4. Commit and Push
 
 Follow conventional commit format:
 
-```
-type(scope): description
-
-[optional body]
-
-[optional footer]
-```
-
-Types:
-
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes (formatting)
-- `refactor`: Code refactoring
-- `test`: Test changes
-- `chore`: Build/tooling changes
-
-Example:
-
 ```bash
-git commit -m "feat(operations): add lift/lower sibling operations"
-```
-
-### 8. Push and Create PR
-
-```bash
+git commit -m "feat(scope): description"
 git push origin feature/your-feature-name
 ```
 
-Then create a Pull Request on GitHub.
+**Commit types:** `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
-## Key Modules
+### 5. Create Pull Request
 
-### Core API (`src/doctk/core.py`)
+Open a PR on GitHub. All CI checks must pass before merging.
 
-The foundation: `Document` and `Node` abstractions, immutable transformations.
+## Key Resources
 
-**When to modify:** Adding new node types, core document operations.
+### Development Guides
 
-### Integration Layer (`src/doctk/integration/`)
+- **[Development Setup](docs/development/setup.md)** - Complete setup instructions
+- **[Testing Guide](docs/development/testing.md)** - Running and writing tests
+- **[Quality Standards](docs/development/quality.md)** - Code quality and checks
+- **[Tooling Guide](docs/development/tooling.md)** - External tools management
 
-Platform-agnostic bridge between core API and UIs. Includes:
-- **operations.py**: Document structure operations (promote, demote, nest, etc.)
-- **bridge.py**: JSON-RPC bridge for TypeScript-Python communication
-- **protocols.py**: Type definitions and interfaces
-- **memory.py**: LRU cache for document states
-- **performance.py**: Performance monitoring
+### Project Structure
 
-**When to modify:** Adding new operations, improving performance, memory management.
+- **[Project Structure](.kiro/steering/structure.md)** - Codebase organization
+- **[Tech Stack](.kiro/steering/tech.md)** - Technologies and commands
+- **[Product Overview](.kiro/steering/product.md)** - Philosophy and vision
 
-**See:** [Core Integration API](docs/api/core-integration.md)
+### API Documentation
 
-### DSL Layer (`src/doctk/dsl/`)
+- **[Core Integration API](docs/api/core-integration.md)** - Document operations
+- **[DSL API](docs/api/dsl.md)** - Domain-Specific Language
+- **[LSP API](docs/api/lsp.md)** - Language Server Protocol
 
-Domain-Specific Language for document manipulation. Includes:
-- **lexer.py**: Tokenization of DSL syntax
-- **parser.py**: AST generation
-- **executor.py**: DSL execution engine
-- **repl.py**: Interactive REPL
-- **codeblock.py**: Markdown code block execution
+## Quick Reference
 
-**When to modify:** Extending DSL syntax, adding new operations to DSL.
+### Common Commands
 
-**See:** [DSL API Reference](docs/api/dsl.md)
+```bash
+# Testing
+uv run pytest                    # Run all tests
+uv run pytest tests/unit/        # Unit tests only
+uv run pytest --cov=doctk        # With coverage
 
-### LSP Layer (`src/doctk/lsp/`)
+# Quality Checks
+tox                              # Run all checks
+tox -e ruff                      # Python linting
+tox -e ruff-fix                  # Auto-fix formatting
+tox -e docs-build                # Build documentation
 
-Language Server Protocol implementation for editor support. Includes:
-- **server.py**: LSP server
-- **completion.py**: Code completion provider
-- **hover.py**: Hover documentation provider
-- **registry.py**: Operation registry
+# Documentation
+tox -e docs-serve                # Serve docs locally
+```
 
-**When to modify:** Adding LSP features, improving IDE integration.
+**For complete command reference**, see [Tech Stack](.kiro/steering/tech.md).
+
+### Pre-commit Hooks
+
+Hooks run automatically on commit to catch issues early:
+
+```bash
+git commit -m "feat: add feature"  # Hooks run automatically
+uv run pre-commit run --all-files  # Run manually
+```
 
 ## Code Quality Standards
 
-doctk maintains high code quality through automated tooling and manual review.
+All code must pass:
 
-### Style Guidelines
+- ✅ Python linting (ruff)
+- ✅ Shell script linting (shellcheck)
+- ✅ Documentation checks (markdownlint, lychee)
+- ✅ All tests passing
+- ✅ Type annotations on public APIs
 
-- Follow PEP 8 (enforced by ruff)
-- Use type annotations for all functions
-- Maximum line length: 100 characters
-- Use descriptive variable names
-- Write docstrings for all public APIs
-
-### Automated Quality Checks
-
-All code must pass these checks before merging:
-
-1. **Python Linting** (ruff): No linting errors
-1. **Python Formatting** (ruff): Consistent code style
-1. **Shell Scripts** (shellcheck, shfmt): Google Shell Style Guide compliance
-1. **TOML Files** (taplo): Consistent formatting
-1. **Markdown** (markdownlint, mdformat): Consistent documentation style
-1. **Links** (lychee): No broken links in documentation
-1. **Tests**: All tests passing with adequate coverage
-1. **Type Checking** (future): No type errors
-
-Run all checks locally before pushing:
-
-```bash
-tox
-```
-
-### Documentation Standards
-
-- Docstrings for all public functions/classes
-- Include type hints
-- Add usage examples for complex functions
-
-Example:
-
-```python
-def select(predicate: Callable[[Node], bool]) -> Operation:
-    """
-    Select nodes matching predicate.
-
-    Args:
-        predicate: Function that returns True for nodes to select
-
-    Returns:
-        Operation that filters document to matching nodes
-
-    Example:
-        >>> doc | select(is_heading)
-        Document(3 nodes)
-    """
-    ...
-```
-
-### Testing
-
-- Write tests for new features
-- Aim for >80% code coverage
-- Use descriptive test names
-- Test edge cases
-
-Example:
-
-```python
-def test_promote_heading_at_minimum_level():
-    """Test that promoting h1 stays at h1 (identity)."""
-    node = Heading(level=1, text="Title")
-    result = node.promote()
-    assert result.level == 1
-```
-
-## Areas for Contribution
-
-### High Priority
-
-- [ ] Enhanced node types (Section, Table, Inline)
-- [ ] Structure operations (lift, lower, nest, unnest)
-- [ ] Path-based selection
-- [ ] Additional format support (RST, HTML)
-
-### Medium Priority
-
-- [ ] Documentation improvements
-- [ ] Example gallery
-- [ ] Performance optimizations
-- [ ] Error messages
-
-### Good First Issues
-
-Look for issues labeled `good-first-issue` on GitHub.
-
-## Tox Environments
-
-doctk uses tox to manage test and quality check environments. Here are the available environments:
-
-### Quality Checks
-
-- `tox -e check-environment` - Verify development environment setup
-- `tox -e ruff` - Run Python linting
-- `tox -e ruff-fix` - Auto-fix Python formatting issues
-- `tox -e shellcheck` - Lint shell scripts
-- `tox -e shfmt` - Check shell script formatting
-- `tox -e shfmt-fix` - Auto-fix shell script formatting
-- `tox -e taplo` - Check TOML formatting
-- `tox -e taplo-fix` - Auto-fix TOML formatting
-- `tox -e docs` - Run documentation checks (markdownlint, lychee)
-- `tox -e docs-fix` - Auto-fix documentation formatting
-
-### Testing
-
-- `tox -e unit` - Run unit tests
-- `tox -e e2e` - Run end-to-end tests
-- `tox -e quality` - Run quality/meta tests
-- `tox -e pytest` - Run all tests
-- `tox -e pytest-all` - Run all tests with coverage
-
-### Documentation
-
-- `tox -e docs-build` - Build MkDocs documentation site
-- `tox -e docs-serve` - Serve documentation locally at http://127.0.0.1:8000
-
-### Combined
-
-- `tox` - Run all environments (full quality check)
-
-View all available environments:
-
-```bash
-python3 scripts/show-tox-commands.py
-```
+**For detailed quality standards**, see [Quality Guide](docs/development/quality.md).
 
 ## Design Philosophy
 
 When contributing, keep these principles in mind:
 
-1. **Composability** - Build complex from simple
-1. **Purity** - Immutable transformations
-1. **Type Safety** - Use type annotations
-1. **Readability** - Clear, self-documenting code
-1. **Testing** - Comprehensive test coverage
+- **Composable** - Build complex from simple primitives
+- **Pure** - Immutable transformations, no mutations
+- **Type-safe** - Well-typed operations
+- **Readable** - Self-documenting code
+- **Tested** - Comprehensive test coverage
 
-See [docs/design/01-initial-design.md](docs/design/01-initial-design.md) for detailed design rationale.
+**For design rationale**, see [Initial Design](docs/design/01-initial-design.md).
+
+## Areas for Contribution
+
+### High Priority
+
+- Enhanced node types (Section, Table, Inline)
+- Structure operations (lift, lower, nest, unnest)
+- Path-based selection
+- Additional format support (RST, HTML)
+
+### Good First Issues
+
+Look for issues labeled `good-first-issue` on GitHub.
 
 ## Getting Help
 
@@ -444,14 +162,12 @@ See [docs/design/01-initial-design.md](docs/design/01-initial-design.md) for det
 - **Bugs**: Open an [Issue](https://github.com/tommcd/doctk/issues)
 - **Ideas**: Start a [Discussion](https://github.com/tommcd/doctk/discussions)
 
-## Code of Conduct
-
-Be respectful, inclusive, and constructive. We aim to maintain a welcoming community.
-
 ## License
 
 By contributing, you agree that your contributions will be licensed under the MIT License.
 
 ______________________________________________________________________
 
-Thank you for contributing to doctk! 🚀
+**Thank you for contributing to doctk!** 🚀
+
+For detailed guides, see the [docs/development/](docs/development/) directory.

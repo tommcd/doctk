@@ -18,27 +18,27 @@ Before starting work on any spec, check `.kiro/specs/IMPLEMENTATION_ORDER.md` to
 
 ### Step 2: Create Spec-Specific Prompts
 
-For each spec you want to work on, create a copy of `claude-code-implement-next-prompt.md` with the spec name filled in:
+For each spec you want to work on, create a copy of `agent-implement-next-prompt.md` with the spec name filled in:
 
 **For Core Integration:**
 
 ```bash
 # Replace {{SPEC_NAME}} with doctk-core-integration
-sed 's/{{SPEC_NAME}}/doctk-core-integration/g' claude-code-implement-next-prompt.md > /tmp/prompt-core.md
+sed 's/{{SPEC_NAME}}/doctk-core-integration/g' agent-implement-next-prompt.md > /tmp/prompt-core.md
 ```
 
 **For VS Code Extension:**
 
 ```bash
 # Replace {{SPEC_NAME}} with vscode-outliner-extension
-sed 's/{{SPEC_NAME}}/vscode-outliner-extension/g' claude-code-implement-next-prompt.md > /tmp/prompt-vscode.md
+sed 's/{{SPEC_NAME}}/vscode-outliner-extension/g' agent-implement-next-prompt.md > /tmp/prompt-vscode.md
 ```
 
 **For Language Server:**
 
 ```bash
 # Replace {{SPEC_NAME}} with doctk-language-server
-sed 's/{{SPEC_NAME}}/doctk-language-server/g' claude-code-implement-next-prompt.md > /tmp/prompt-lsp.md
+sed 's/{{SPEC_NAME}}/doctk-language-server/g' agent-implement-next-prompt.md > /tmp/prompt-lsp.md
 ```
 
 ### Step 3: Launch Parallel Instances
@@ -146,6 +146,7 @@ The only shared files are:
 **Purpose**: Platform-agnostic integration layer used by ALL consumers (CLI, VS Code, LSP, future interfaces)
 
 **Key modules**:
+
 - `operations.py` - StructureOperations, DocumentTreeBuilder
 - `bridge.py` - ExtensionBridge (JSON-RPC for TypeScript)
 - `memory.py` - DocumentStateManager, LRUCache
@@ -160,6 +161,7 @@ The only shared files are:
 **Purpose**: LSP-specific functionality for IDE integration
 
 **Key modules**:
+
 - `server.py` - DoctkLanguageServer
 - `completion.py` - CompletionProvider
 - `hover.py` - HoverProvider
@@ -200,7 +202,7 @@ The only shared files are:
 
 ## Summary
 
-- Use `claude-code-implement-next-prompt.md` as a template
+- Use `agent-implement-next-prompt.md` as a template
 - Replace `{{SPEC_NAME}}` with your target spec
 - Each instance works on one spec
 - Track completion in each spec's `tasks.md`

@@ -1,7 +1,21 @@
 # doctk Initial Design
 
 **Date**: 2025-11-07
-**Status**: Design Phase → POC Implementation
+**Status**: ⚠️ **SUPERSEDED** - See `.kiro/specs/` for current specifications
+**Historical Value**: Original vision and design principles
+
+> **Note**: This document captures the original design vision from the project's inception.
+> The actual implementation is now documented in structured Kiro specs under `.kiro/specs/`.
+> This document is preserved for historical context and to understand the project's
+> philosophical foundations (category theory, functional programming, Zen of Python).
+>
+> **For current specifications, see:**
+>
+> - `.kiro/specs/doctk-core-integration/` - Core integration layer
+> - `.kiro/specs/vscode-outliner-extension/` - VS Code extension
+> - `.kiro/specs/doctk-language-server/` - Language server
+> - `docs/design/02-pluggable-architecture.md` - Current architecture
+> - `docs/design/03-core-integration-decisions.md` - Current ADRs
 
 ## Vision
 

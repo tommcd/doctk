@@ -1,6 +1,6 @@
 # Implement Next Task Across All Specs
 
-I need you to analyze all Kiro specs in `.kiro/specs/`, assess the current state, and suggest the next best task(s) to work on.
+Analyze all Kiro specs in `.kiro/specs/`, assess the current state, and suggest the next best task(s) to work on.
 
 ## Your Mission
 
@@ -14,7 +14,7 @@ I need you to analyze all Kiro specs in `.kiro/specs/`, assess the current state
 
 ### Phase 1: Understand the Landscape
 
-1. **Read the implementation guide**: Start with `claude-code-kiro-spec-prompt.md` to understand how specs work
+1. **Read the implementation guide**: Start with `AGENTS.md` to understand how specs work
 
 1. **Read the dependency structure**: Check `.kiro/specs/IMPLEMENTATION_ORDER.md` to understand:
 
@@ -160,7 +160,7 @@ The doctk project is a Python document manipulation toolkit:
 
 ## Getting Started
 
-1. Read the spec guide (`claude-code-kiro-spec-prompt.md`)
+1. Read the spec guide (`AGENTS.md`)
 1. Read the dependency structure (`.kiro/specs/IMPLEMENTATION_ORDER.md`)
 1. Survey all specs and their current state
 1. Run quality checks to identify issues

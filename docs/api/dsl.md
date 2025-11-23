@@ -46,7 +46,7 @@ updated | move_up h2-1
 | `nest` | `nest <node_id> <under_id>` | Nest section under another |
 | `unnest` | `unnest <node_id>` | Un-nest section to parent level |
 
----
+______________________________________________________________________
 
 ## Module Structure
 
@@ -60,7 +60,7 @@ src/doctk/dsl/
 └── codeblock.py      # Markdown code block execution
 ```
 
----
+______________________________________________________________________
 
 ## Core Classes
 
@@ -77,6 +77,7 @@ Lexer(source: str)
 ```
 
 **Parameters:**
+
 - `source`: DSL source code to tokenize
 
 #### Methods
@@ -90,6 +91,7 @@ Tokenize the source code.
 **Raises:** `LexerError` if invalid syntax is encountered
 
 **Example:**
+
 ```python
 from doctk.dsl.lexer import Lexer
 
@@ -139,7 +141,7 @@ class TokenType(Enum):
     EOF = auto()           # End of file
 ```
 
----
+______________________________________________________________________
 
 ### Parser
 
@@ -154,6 +156,7 @@ Parser(tokens: list[Token])
 ```
 
 **Parameters:**
+
 - `tokens`: List of tokens from Lexer
 
 #### Methods
@@ -167,6 +170,7 @@ Parse tokens into AST.
 **Raises:** `ParseError` if syntax is invalid
 
 **Example:**
+
 ```python
 from doctk.dsl.lexer import Lexer
 from doctk.dsl.parser import Parser
@@ -204,7 +208,7 @@ class Assignment:
     pipeline: Pipeline
 ```
 
----
+______________________________________________________________________
 
 ### Executor
 
@@ -219,6 +223,7 @@ Executor(document: Document[Any])
 ```
 
 **Parameters:**
+
 - `document`: Initial document to operate on
 
 #### Methods
@@ -228,6 +233,7 @@ Executor(document: Document[Any])
 Execute AST statements.
 
 **Parameters:**
+
 - `ast`: List of AST nodes from Parser
 
 **Returns:** Resulting document after executing all statements
@@ -235,6 +241,7 @@ Execute AST statements.
 **Raises:** `ExecutionError` if execution fails
 
 **Example:**
+
 ```python
 from doctk import Document
 from doctk.dsl.lexer import Lexer
@@ -258,7 +265,7 @@ result_doc = executor.execute(ast)
 result_doc.to_file("output.md")
 ```
 
----
+______________________________________________________________________
 
 ### REPL
 
@@ -279,6 +286,7 @@ DoctkREPL()
 Start the REPL (blocks until user exits).
 
 **Example:**
+
 ```python
 from doctk.dsl.repl import DoctkREPL
 
@@ -299,6 +307,7 @@ repl.run()  # Interactive session
 | *operation* | Execute operation | `promote h2-0` |
 
 **Session Example:**
+
 ```
 doctk> load example.md
 Loaded document with 45 nodes
@@ -319,7 +328,7 @@ doctk> exit
 Goodbye!
 ```
 
----
+______________________________________________________________________
 
 ### ScriptExecutor
 
@@ -336,6 +345,7 @@ Execute a script file on a document.
 **Note:** This is an **instance method** - you must create a `ScriptExecutor` first.
 
 **Parameters:**
+
 - `script_path`: Path to `.tk` script file
 - `document_path`: Path to document to transform
 
@@ -344,6 +354,7 @@ Execute a script file on a document.
 **Raises:** `ExecutionError` if execution fails
 
 **Example:**
+
 ```python
 from pathlib import Path
 from doctk import Document
@@ -363,6 +374,7 @@ result.to_file("output.md")
 ```
 
 **Script File Example** (`script.tk`):
+
 ```doctk
 # Promote all h2 headings
 doc | promote h2-0 | promote h2-1 | promote h2-2
@@ -376,11 +388,13 @@ doc | nest h2-3 h1-0
 Execute script and save result (convenience method).
 
 **Parameters:**
+
 - `script_path`: Path to script file
 - `doc_path`: Path to input document
 - `output_path`: Path to save result
 
 **Example:**
+
 ```python
 ScriptExecutor.execute_file_and_save(
     script_path="transform.tk",
@@ -389,7 +403,7 @@ ScriptExecutor.execute_file_and_save(
 )
 ```
 
----
+______________________________________________________________________
 
 ### CodeBlockExecutor
 
@@ -410,12 +424,14 @@ CodeBlockExecutor(document: Document[Any])
 Find all doctk code blocks in Markdown.
 
 **Parameters:**
+
 - `markdown_text`: Markdown source text
 
 **Returns:** List of CodeBlock objects
 
 **Example:**
-```python
+
+````python
 from doctk.dsl.codeblock import CodeBlockExecutor
 
 markdown = '''
@@ -425,19 +441,21 @@ Some text.
 
 ```doctk
 doc | promote h2-0
-```
+````
 
 More text.
 
 ```doctk
 doc | nest h2-1 h1-0
 ```
+
 '''
 
 executor = CodeBlockExecutor(doc)
 blocks = executor.find_code_blocks(markdown)
 print(f"Found {len(blocks)} doctk code blocks")
-```
+
+````
 
 ##### `execute_block(code_block: CodeBlock) -> Document[Any]`
 
@@ -467,7 +485,7 @@ doc = Document.from_file("input.md")
 executor = CodeBlockExecutor(doc)
 result = executor.execute_all_blocks(markdown)
 result.to_file("output.md")
-```
+````
 
 ##### `execute_file(markdown_path, block_index=0) -> Document`
 
@@ -476,12 +494,14 @@ Execute a specific code block from a Markdown file.
 **Note:** This is an **instance method** - you must create a `CodeBlockExecutor` with a document first.
 
 **Parameters:**
+
 - `markdown_path`: Path to Markdown file with code blocks
 - `block_index`: Index of code block to execute (0-based, default: 0)
 
 **Returns:** Resulting document
 
 **Example:**
+
 ```python
 from pathlib import Path
 from doctk import Document
@@ -504,7 +524,7 @@ markdown_text = Path("instructions.md").read_text()
 result = executor.execute_all_blocks(markdown_text)
 ```
 
----
+______________________________________________________________________
 
 ## Data Types
 
@@ -515,6 +535,7 @@ result = executor.execute_all_blocks(markdown_text)
 A token produced by the lexer.
 
 **Fields:**
+
 - `type: TokenType` - Token type
 - `value: str` - Token value
 - `line: int` - Line number (1-indexed)
@@ -527,10 +548,11 @@ A token produced by the lexer.
 A doctk code block found in Markdown.
 
 **Fields:**
+
 - `code: str` - DSL code content
 - `line_number: int` - Starting line in Markdown
 
----
+______________________________________________________________________
 
 ## Error Handling
 
@@ -539,11 +561,13 @@ A doctk code block found in Markdown.
 Raised when tokenization fails due to invalid characters or syntax.
 
 **Attributes:**
+
 - `message: str` - Error description
 - `line: int | None` - Line number
 - `column: int | None` - Column number
 
 **Example:**
+
 ```python
 from doctk.dsl.lexer import Lexer, LexerError
 
@@ -559,10 +583,12 @@ except LexerError as e:
 Raised when parsing fails due to invalid syntax.
 
 **Attributes:**
+
 - `message: str` - Error description
 - `token: Token` - Token where error occurred
 
 **Example:**
+
 ```python
 from doctk.dsl.parser import Parser, ParseError
 
@@ -578,11 +604,13 @@ except ParseError as e:
 Raised when DSL execution fails.
 
 **Attributes:**
+
 - `message: str` - Error description
 - `line: int | None` - Line number in script
 - `column: int | None` - Column number in script
 
 **Example:**
+
 ```python
 from doctk.dsl.executor import Executor, ExecutionError
 
@@ -593,7 +621,7 @@ except ExecutionError as e:
     print(f"Execution error at line {e.line}: {e.message}")
 ```
 
----
+______________________________________________________________________
 
 ## CLI Integration
 
@@ -617,7 +645,7 @@ uv run doctk execute-block instructions.md document.md --block 0
 uv run doctk repl
 ```
 
----
+______________________________________________________________________
 
 ## Usage Examples
 
@@ -704,23 +732,26 @@ result = executor.execute_all_blocks(markdown_text)
 result.to_file("transformed.md")
 ```
 
----
+______________________________________________________________________
 
 ## Performance Characteristics
 
 ### Lexer
+
 - **Time Complexity**: O(n) where n = source length
 - **Space Complexity**: O(t) where t = number of tokens
 
 ### Parser
+
 - **Time Complexity**: O(t) where t = number of tokens
 - **Space Complexity**: O(a) where a = AST size
 
 ### Executor
+
 - **Time Complexity**: O(a × d) where a = AST size, d = document size
 - **Space Complexity**: O(d) for document copies (immutability)
 
----
+______________________________________________________________________
 
 ## Language Grammar
 
@@ -742,10 +773,10 @@ string         = '"' { character } '"' ;
 ### Precedence Rules
 
 1. `let` bindings (lowest)
-2. `|` pipeline operator
-3. Function calls (highest)
+1. `|` pipeline operator
+1. Function calls (highest)
 
----
+______________________________________________________________________
 
 ## Extension Points
 
@@ -754,10 +785,11 @@ string         = '"' { character } '"' ;
 To add a new DSL operation:
 
 1. **Add to StructureOperations** in `integration/operations.py`
-2. **Add to Executor dispatch table** in `dsl/executor.py`
-3. **Update this documentation**
+1. **Add to Executor dispatch table** in `dsl/executor.py`
+1. **Update this documentation**
 
 **Example:**
+
 ```python
 # In Executor.__init__
 self._operation_dispatch = {
@@ -773,7 +805,7 @@ def _exec_my_operation(self, node_id: str) -> Document[Any]:
     return Document.from_string(result.document)
 ```
 
----
+______________________________________________________________________
 
 ## Testing
 
@@ -793,11 +825,11 @@ uv run pytest tests/unit/test_dsl*.py     # All DSL tests
 uv run pytest tests/e2e/test_script*.py   # E2E script tests
 ```
 
----
+______________________________________________________________________
 
 ## See Also
 
 - [Core Integration API](./core-integration.md)
 - [LSP API Reference](./lsp.md)
-- [Pluggable Architecture](../design/02-pluggable-architecture.md)
+- Pluggable Architecture (see `docs/design/02-pluggable-architecture.md` in repository)
 - [CLI Documentation](../getting-started/quick-start.md)

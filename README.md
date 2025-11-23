@@ -113,6 +113,7 @@ Execute with: `doctk execute script.tk guide.md`
 doctk includes a VS Code extension with visual document outlining and manipulation:
 
 **Features:**
+
 - 📋 **Tree view** of document structure
 - 🖱️ **Drag-and-drop** to reorganize sections
 - ⌨️ **Keyboard shortcuts** (promote, demote, move, delete, rename)
@@ -123,6 +124,7 @@ doctk includes a VS Code extension with visual document outlining and manipulati
 ### Installing the Extension
 
 **Prerequisites:**
+
 - Python 3.12+ installed
 - doctk package installed (see [Installation](#installation) above)
 - VS Code 1.80.0 or higher
@@ -148,16 +150,16 @@ code --install-extension path/to/doctk-outliner-0.1.0.vsix
 **Option 3: Install via VS Code UI** (after building or downloading)
 
 1. Open VS Code
-2. Open Extensions view (`Ctrl+Shift+X` / `Cmd+Shift+X`)
-3. Click "..." menu → "Install from VSIX..."
-4. Navigate to and select the `.vsix` file
+1. Open Extensions view (`Ctrl+Shift+X` / `Cmd+Shift+X`)
+1. Click "..." menu → "Install from VSIX..."
+1. Navigate to and select the `.vsix` file
 
 ### Using the Extension
 
 1. Open any Markdown (`.md`) file in VS Code
-2. The "Document Outline" view appears automatically in the Explorer sidebar
-3. If not visible: **View → Open View → Document Outline**
-4. Use drag-and-drop, context menu, or keyboard shortcuts to manipulate sections
+1. The "Document Outline" view appears automatically in the Explorer sidebar
+1. If not visible: **View → Open View → Document Outline**
+1. Use drag-and-drop, context menu, or keyboard shortcuts to manipulate sections
 
 For detailed usage instructions, see the [extension README](extensions/doctk-outliner/README.md).
 
@@ -219,6 +221,7 @@ doc1.diff(doc2)       # Unique to doc1
 ✅ **Implemented**:
 
 **Core Engine:**
+
 - Core abstractions (Document, Node hierarchy, operations)
 - Markdown parser and writer with markdown-it-py
 - Document outliner with tree visualization
@@ -226,6 +229,7 @@ doc1.diff(doc2)       # Unique to doc1
 - Type-safe operations with full type annotations
 
 **Operations:**
+
 - Selection and filtering (select, where)
 - Level operations (promote, demote, lift, lower)
 - Structure operations (nest, unnest, move_up, move_down)
@@ -233,6 +237,7 @@ doc1.diff(doc2)       # Unique to doc1
 - Composable transformations
 
 **DSL and Execution:**
+
 - Domain-Specific Language (DSL) for document manipulation
 - Interactive REPL with state management
 - Script file execution (`.tk` files)
@@ -240,6 +245,7 @@ doc1.diff(doc2)       # Unique to doc1
 - Error recovery and reporting with line/column positions
 
 **VS Code Extension:**
+
 - Tree view with hierarchical document outline
 - Drag-and-drop section reorganization
 - Context menu operations
@@ -249,6 +255,7 @@ doc1.diff(doc2)       # Unique to doc1
 - Packaged as `.vsix` (ready for installation)
 
 **Language Server (LSP):**
+
 - Auto-completion for operations
 - Hover documentation with examples
 - Syntax validation with diagnostics
@@ -258,6 +265,7 @@ doc1.diff(doc2)       # Unique to doc1
 - Performance optimized (< 200ms response times)
 
 **Integration & Architecture:**
+
 - JSON-RPC bridge for TypeScript ↔ Python communication
 - Pluggable architecture for multiple interfaces
 - Granular document edits (preserves cursor position)
@@ -269,6 +277,7 @@ doc1.diff(doc2)       # Unique to doc1
 📋 **Before Public v0.1.0 Release**:
 
 See the release preparation checklist (`.kiro/specs/release-preparation/tasks.md`) for detailed tasks:
+
 - Logo design and branding
 - Distribution strategy (PyPI vs local-only)
 - VS Code marketplace preparation (if publishing)
@@ -337,28 +346,33 @@ Pre-commit hooks run automatically on commit to catch issues early.
 Full documentation is available at [https://tommcd.github.io/doctk/](https://tommcd.github.io/doctk/):
 
 **Getting Started:**
+
 - [Installation](https://tommcd.github.io/doctk/getting-started/installation/)
 - [Quick Start Guide](https://tommcd.github.io/doctk/getting-started/quick-start/)
 
 **API Reference:**
+
 - [Core Integration API](https://tommcd.github.io/doctk/api/core-integration/) - StructureOperations, ExtensionBridge
 - [DSL API](https://tommcd.github.io/doctk/api/dsl/) - Parser, Lexer, Executor, REPL
 - [Language Server API](https://tommcd.github.io/doctk/api/lsp/) - LSP features and AI support
 
 **Development Guides:**
+
 - [Development Setup](https://tommcd.github.io/doctk/development/setup/)
 - [Testing Guide](https://tommcd.github.io/doctk/development/testing/)
 - [Tool Management](https://tommcd.github.io/doctk/development/tooling/)
 - [Code Quality Standards](https://tommcd.github.io/doctk/development/quality/)
 
 **Integration Guides:**
+
 - [Adding New Interfaces](https://tommcd.github.io/doctk/guides/adding-new-interface/) - Extend doctk to new platforms
 - [Extending the DSL](https://tommcd.github.io/doctk/guides/extending-dsl/) - Add custom operations
 
 **Additional Resources:**
+
 - [Design Rationale](docs/design/01-initial-design.md) - Design principles and decisions
-- [POC Summary](docs/POC-SUMMARY.md) - Proof-of-concept validation
-- [Complete Specification](docs/SPECIFICATION.md) - Full technical specification
+- [POC Summary](docs/archive/POC-SUMMARY.md) - Historical: Proof-of-concept validation
+- [Complete Specification](docs/archive/SPECIFICATION.md) - Historical: Original specification (see `.kiro/specs/` for current)
 
 ## Contributing
 

@@ -1,6 +1,6 @@
-# Claude Code: Kiro Spec Implementation Guide
+# AI Agent Guide: Kiro Spec Implementation
 
-You are Claude Code, and you're being asked to implement tasks from a Kiro spec. This guide explains how to read, understand, and execute spec-based development work.
+This guide explains how to read, understand, and execute spec-based development work using Kiro specs. This guide is designed for any AI coding assistant (Claude, Codex, Copilot, etc.).
 
 ## Understanding the .kiro Directory
 

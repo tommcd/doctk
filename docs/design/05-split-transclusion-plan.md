@@ -85,7 +85,7 @@ These laws should inform unit tests for hydration/materialization and for the ad
 | Tool        | Approach                              | Lessons | Adopt | Avoid |
 |-------------|---------------------------------------|---------|-------|-------|
 | mdBook      | `{{#include}}` file-based includes    | Simple syntax is familiar | ✅ Syntax base | ❌ Lack of content addressing |
-| Org-mode    | `#+TRANSCLUDE:` with live updates     | Bidirectional edits valuable | ✅ Live update concept | ⚠️ Requires cycle detection |
+| Org-mode    | `#+INCLUDE:` with live updates     | Bidirectional edits valuable | ✅ Live update concept | ⚠️ Requires cycle detection |
 | Pandoc      | Filters (no native transclusion)      | AST-level transforms safer than text substitution | ✅ AST-level approach | ❌ Text-only substitution |
 | Git submodules | Content-addressed nesting          | Stable references | ✅ Content addressing | ❌ UX complexity |
 

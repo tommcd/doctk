@@ -6,10 +6,7 @@ repo_name: tommcd/doctk
 
 # Exclude existing documentation files that aren't part of the MkDocs structure
 exclude_docs: |
-  POC-SUMMARY.md
-  REPRODUCTION-GUIDE.md
-  SESSION-SUMMARY.md
-  SPECIFICATION.md
+  archive/
   design/
 
 theme:

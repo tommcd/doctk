@@ -26,7 +26,7 @@
 - No need to update it when tasks complete
 - Clear separation of concerns: dependencies vs. completion tracking
 
-### 2. claude-code-implement-next-prompt.md - Added Spec Parameter
+### 2. agent-implement-next-prompt.md - Added Spec Parameter
 
 **What Changed:**
 
@@ -47,13 +47,13 @@
 
 ```bash
 # For Core Integration
-sed 's/{{SPEC_NAME}}/doctk-core-integration/g' claude-code-implement-next-prompt.md > /tmp/prompt-core.md
+sed 's/{{SPEC_NAME}}/doctk-core-integration/g' agent-implement-next-prompt.md > /tmp/prompt-core.md
 
 # For VS Code Extension
-sed 's/{{SPEC_NAME}}/vscode-outliner-extension/g' claude-code-implement-next-prompt.md > /tmp/prompt-vscode.md
+sed 's/{{SPEC_NAME}}/vscode-outliner-extension/g' agent-implement-next-prompt.md > /tmp/prompt-vscode.md
 
 # For Language Server
-sed 's/{{SPEC_NAME}}/doctk-language-server/g' claude-code-implement-next-prompt.md > /tmp/prompt-lsp.md
+sed 's/{{SPEC_NAME}}/doctk-language-server/g' agent-implement-next-prompt.md > /tmp/prompt-lsp.md
 ```
 
 ### 3. New File: PARALLEL_WORK_GUIDE.md
@@ -99,7 +99,7 @@ sed 's/{{SPEC_NAME}}/doctk-language-server/g' claude-code-implement-next-prompt.
 ## Files Modified
 
 - `.kiro/specs/IMPLEMENTATION_ORDER.md` - Simplified to focus on dependencies
-- `claude-code-implement-next-prompt.md` - Added spec parameter
+- `agent-implement-next-prompt.md` - Added spec parameter
 
 ## Files Created
 

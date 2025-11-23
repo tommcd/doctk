@@ -1304,7 +1304,7 @@ uv run doctk outline examples/sample.md --headings-only
 
 ```bash
 # Create POC summary
-# See docs/POC-SUMMARY.md (~200 lines)
+# See docs/archive/POC-SUMMARY.md (~200 lines)
 # Covers:
 # - What we built
 # - Key achievements
@@ -1313,7 +1313,7 @@ uv run doctk outline examples/sample.md --headings-only
 # - Next steps
 ```
 
-*Note: See [docs/POC-SUMMARY.md](POC-SUMMARY.md) for complete document.*
+*Note: See [docs/archive/POC-SUMMARY.md](../archive/POC-SUMMARY.md) for complete document.*
 
 ### Step 4.3: Create Specification
 
@@ -1321,7 +1321,7 @@ uv run doctk outline examples/sample.md --headings-only
 
 ```bash
 # Create specification document
-# See docs/SPECIFICATION.md (~1,500 lines)
+# See docs/archive/SPECIFICATION.md (~1,500 lines)
 # Covers:
 # - Complete architecture (4 layers)
 # - Full operation catalog (50+ operations)
@@ -1336,7 +1336,7 @@ uv run doctk outline examples/sample.md --headings-only
 # - 10-phase implementation roadmap
 ```
 
-*Note: See [docs/SPECIFICATION.md](SPECIFICATION.md) for complete document.*
+*Note: See [docs/archive/SPECIFICATION.md](../archive/SPECIFICATION.md) for complete document.*
 
 ### Step 4.4: Create README
 
@@ -1416,11 +1416,11 @@ git show --stat
 
 ```bash
 # Add POC summary
-git add docs/POC-SUMMARY.md
+git add docs/archive/POC-SUMMARY.md
 git commit -m "Add POC summary documentation"
 
 # Add specification
-git add docs/SPECIFICATION.md
+git add docs/archive/SPECIFICATION.md
 git commit -m "Add comprehensive specification document for v1.0
 
 This specification document defines:
@@ -1683,10 +1683,10 @@ gh repo edit YOUR_USERNAME/doctk \
 
 ```bash
 # Create session summary
-# See docs/SESSION-SUMMARY.md (~400 lines)
+# See docs/archive/SESSION-SUMMARY.md (~400 lines)
 # This document you're reading now!
 
-git add docs/SESSION-SUMMARY.md
+git add docs/archive/SESSION-SUMMARY.md
 git commit -m "Add development session summary
 
 Comprehensive summary of today's development session:
@@ -1763,10 +1763,10 @@ uv run pytest -v
 ls -l docs/
 # Should see:
 # - design/01-initial-design.md
-# - POC-SUMMARY.md
-# - SPECIFICATION.md
-# - SESSION-SUMMARY.md
-# - REPRODUCTION-GUIDE.md (this file!)
+# - archive/POC-SUMMARY.md
+# - archive/SPECIFICATION.md
+# - archive/SESSION-SUMMARY.md
+# - guides/reproduction-guide.md (this file!)
 
 # Verify README
 cat README.md | head -20
@@ -1829,7 +1829,7 @@ ______________________________________________________________________
 
 ### For Development (v0.2)
 
-See [docs/SPECIFICATION.md](SPECIFICATION.md) Phase 1: Core Enhancement
+See [docs/archive/SPECIFICATION.md](../archive/SPECIFICATION.md) Phase 1: Core Enhancement (Historical)
 
 1. Enhanced node types (Section, Table, Inline)
 1. Location tracking for error reporting
@@ -1894,10 +1894,10 @@ ______________________________________________________________________
 
 ### Internal
 
-- [Design Document](design/01-initial-design.md)
-- [POC Summary](POC-SUMMARY.md)
-- [Specification](SPECIFICATION.md)
-- [Session Summary](SESSION-SUMMARY.md)
+- [Design Document](../design/01-initial-design.md)
+- [POC Summary](../archive/POC-SUMMARY.md)
+- [Specification](../archive/SPECIFICATION.md)
+- [Session Summary](../archive/SESSION-SUMMARY.md)
 - [Contributing Guide](../CONTRIBUTING.md)
 
 ### External

@@ -100,14 +100,14 @@ doctk/
    - Architecture and technology stack
    - MVP roadmap
 
-1. **POC Summary** ([docs/POC-SUMMARY.md](POC-SUMMARY.md) - 212 lines)
+1. **POC Summary** ([POC-SUMMARY.md](POC-SUMMARY.md) - 212 lines)
 
    - Validation of POC
    - What works well
    - Usage examples
    - Next steps
 
-1. **Specification** ([docs/SPECIFICATION.md](SPECIFICATION.md) - 1,468 lines)
+1. **Specification** ([SPECIFICATION.md](SPECIFICATION.md) - 1,468 lines)
 
    - Complete architecture (4 layers)
    - Full operation catalog (50+ operations)
@@ -353,7 +353,7 @@ ______________________________________________________________________
 
 ### Internal Documentation
 
-- [Design](design/01-initial-design.md) - Philosophy and rationale
+- [Design](../design/01-initial-design.md) - Philosophy and rationale
 - [POC Summary](POC-SUMMARY.md) - Validation results
 - [Specification](SPECIFICATION.md) - Complete roadmap
 - [Contributing](../CONTRIBUTING.md) - Development guide

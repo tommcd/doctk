@@ -260,6 +260,13 @@ These laws should inform unit tests for hydration/materialization and for the ad
   - Capture the ID↔predicate bridge, DSL compilation path, and metadata immutability as ADRs to avoid ambiguity during implementation reviews.
   - Add a regression plan: once the internal operations layer lands, run the existing JSON-RPC/LSP suites against the new layer to confirm parity before removing legacy heuristics.
 
+## Upstream merge/conflict handling
+- GitHub shows conflicts because upstream `master` is evolving the same design docs. This sandbox cannot reach `origin` (HTTP 403 on fetch), so the rebase/merge must happen once network access is available.
+- Resolution steps when access is restored:
+  - Fetch latest `origin/master`, rebase this branch, and resolve overlaps in `docs/design/05-split-transclusion-plan.md` and `docs/design/06-core-api-dsl-review.md`, keeping upstream edits then reapplying the clarifications captured here.
+  - Run the active CI matrix locally (e.g., `tox -e lint,py38` or current equivalents) and any doc link checkers to ensure no regressions post-merge.
+  - Update Kiro spec tasks/checklists if the rebase changes ordering, dependencies, or acceptance criteria; ensure ADRs stay aligned with the reconciled text.
+
 ## Open Questions for the Team
 - Preferred `NodeId` strategy: UUIDv7 vs. content-hash + lexical hint? Any compliance requirements?
 - Should transclusion allow version pinning (e.g., per commit hash) and how to expose that in UX?

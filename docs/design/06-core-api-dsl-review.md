@@ -66,6 +66,10 @@ The doctk core exposes a functional document model (`Document`, `Node`) with com
 - **DSL compilation path:** Track the refactor for DSL/REPL to compile to the internal operations layer, eliminating duplicate implementations and improving testability.
 - **Source spans + immutability:** Document the need for source-positioned AST nodes and immutable metadata (deep copies or persistent maps) as explicit ADRs to avoid regressions.
 
+## Merge/conflict note
+- GitHub reports conflicts with `master` on these design docs. This sandbox cannot fetch `origin` (HTTP 403), so rebasing is deferred until network access is available.
+- When access is restored: fetch/rebase onto `origin/master`, resolve overlaps in this review and `docs/design/05-split-transclusion-plan.md`, rerun the active CI/doc checks, and update the corresponding Kiro specs/ADRs to reflect reconciled text.
+
 ### Review feedback resolution (PR #48)
 - **Review 3497849774:** Call out explicit task owners/reviewers in the upcoming specs and add dependency ordering (IDs → internal ops → DSL → tooling) so reviewers can track readiness before features are enabled in the REPL/LSP.
 - **Review 3497851442:** Add migration/rollback notes to the review section: positional IDs remain available behind a compatibility flag until parity tests pass, and regression suites must run in both modes. These requirements should be captured as ADRs and blocking acceptance criteria in the relevant specs.

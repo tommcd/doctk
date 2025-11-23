@@ -22,6 +22,7 @@ Inspired by category theory, set theory, and the Zen of Python, `doctk` provides
 ## Features
 
 ### Core Engine
+
 - 📚 **Core abstractions** - Document, Node hierarchy, operations
 - 🔧 **Markdown support** - Full parser and writer with markdown-it-py
 - 🌲 **Document outliner** - Tree visualization with rich console output
@@ -29,6 +30,7 @@ Inspired by category theory, set theory, and the Zen of Python, `doctk` provides
 - 🔒 **Type-safe** - Full type annotations throughout
 
 ### Operations
+
 - 🔍 **Selection & filtering** - select, where predicates
 - ↕️ **Level operations** - promote, demote, lift, lower
 - 🔄 **Structure operations** - nest, unnest, move_up, move_down
@@ -36,6 +38,7 @@ Inspired by category theory, set theory, and the Zen of Python, `doctk` provides
 - 🧩 **Composable** - Chain operations functionally
 
 ### DSL and Execution
+
 - 💬 **Domain-Specific Language** - Intuitive document manipulation DSL
 - 🖥️ **Interactive REPL** - Live document editing with state management
 - 📄 **Script execution** - Run `.tk` files with doctk commands
@@ -43,6 +46,7 @@ Inspired by category theory, set theory, and the Zen of Python, `doctk` provides
 - ⚠️ **Error recovery** - Line/column position tracking
 
 ### VS Code Extension
+
 - 🌲 **Tree view** - Hierarchical document outline sidebar
 - 🖱️ **Drag-and-drop** - Visual section reorganization
 - ⌨️ **Keyboard shortcuts** - Fast operations (promote, demote, move, delete, rename)
@@ -52,6 +56,7 @@ Inspired by category theory, set theory, and the Zen of Python, `doctk` provides
 - 📦 **Ready to install** - Packaged as `.vsix`
 
 ### Language Server (LSP)
+
 - ✨ **Auto-completion** - Operation suggestions as you type
 - 📖 **Hover docs** - Rich documentation with examples
 - 🔍 **Syntax validation** - Real-time diagnostics
@@ -61,6 +66,7 @@ Inspired by category theory, set theory, and the Zen of Python, `doctk` provides
 - ⚡ **Fast** - < 200ms response times
 
 ### Integration & Architecture
+
 - 🔌 **JSON-RPC bridge** - TypeScript ↔ Python communication
 - 🏗️ **Pluggable** - Extensible architecture for new interfaces
 - ✏️ **Granular edits** - Cursor position preservation
@@ -69,7 +75,7 @@ Inspired by category theory, set theory, and the Zen of Python, `doctk` provides
 - 🛡️ **Error resilience** - Automatic recovery and retry
 - 🧪 **E2E tested** - Comprehensive integration tests
 
----
+______________________________________________________________________
 
 ## Quick Examples
 
@@ -120,18 +126,56 @@ Execute with: `doctk execute script.tk guide.md`
 
 **Note**: The script modifies the input file in place.
 
----
+______________________________________________________________________
 
-## Getting Started
+## Documentation Structure
 
-Ready to dive in? Check out these resources:
+### Getting Started
 
 - **[Installation Guide](getting-started/installation.md)** - Get doctk installed
 - **[Quick Start](getting-started/quick-start.md)** - Hands-on tutorial
-- **[API Reference](api/core-integration.md)** - Complete API documentation
-- **[Integration Guides](guides/adding-new-interface.md)** - Extend doctk to new platforms
 
----
+### Development
+
+- **[Setup Guide](development/setup.md)** - Development environment setup
+- **[Testing Guide](development/testing.md)** - Running and writing tests
+- **[Tooling Guide](development/tooling.md)** - External tools and automation
+- **[Quality Standards](development/quality.md)** - Code quality and conventions
+
+### API Reference
+
+- **[Core Integration](api/core-integration.md)** - Document operations and structure
+- **[DSL Reference](api/dsl.md)** - Domain-Specific Language syntax
+- **[LSP Reference](api/lsp.md)** - Language Server Protocol features
+
+### Guides
+
+- **[Adding New Interfaces](guides/adding-new-interface.md)** - Extend doctk to new platforms
+- **[Extending the DSL](guides/extending-dsl.md)** - Add custom DSL operations
+
+### Design & Architecture
+
+Design documents are available in the repository but not included in the published docs site:
+
+- **`docs/design/02-pluggable-architecture.md`** - Current architecture overview
+- **`docs/design/03-core-integration-decisions.md`** - Architecture Decision Records (ADRs)
+- **`docs/design/04-lsp-architecture.md`** - Language Server design
+- **`docs/design/01-initial-design.md`** - ⚠️ Historical: Original vision (superseded by specs)
+
+### Specifications
+
+For current feature specifications and implementation tracking, see:
+
+- **`.kiro/specs/`** - Structured Kiro specs (requirements, design, tasks)
+- **`.kiro/steering/`** - Project conventions and AI assistant guidance
+
+### Historical Archive
+
+Historical documents are available in the repository at `docs/archive/`:
+
+- POC summary, session notes, original specification, reproduction guide
+
+______________________________________________________________________
 
 ## Roadmap
 
@@ -143,7 +187,7 @@ Ready to dive in? Check out these resources:
 - Advanced tools (differ, validator, stats)
 - Interactive TUI
 
----
+______________________________________________________________________
 
 ## License
 

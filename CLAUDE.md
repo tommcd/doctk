@@ -108,9 +108,9 @@ doctk/
 │   ├── getting-started/       # Installation & quick start
 │   ├── development/           # Dev setup, testing, tooling, quality
 │   ├── design/                # Design rationale & principles
-│   ├── SPECIFICATION.md       # Complete specification & roadmap
-│   ├── POC-SUMMARY.md         # Proof-of-concept validation
-│   └── REPRODUCTION-GUIDE.md  # Complex reproduction procedures
+│   ├── archive/               # Historical documents (POC, specs, session notes)
+│   ├── guides/                # How-to guides and tutorials
+│   │   └── reproduction-guide.md  # Step-by-step tutorial
 │
 ├── scripts/                   # Automation & setup scripts
 │   ├── setup-environment.sh   # Complete dev environment setup
@@ -1053,14 +1053,14 @@ Run `python3 scripts/show-tox-commands.py` for full list.
 
 | Topic | Location |
 |-------|----------|
-| Complete specification | `docs/SPECIFICATION.md` |
-| POC summary | `docs/POC-SUMMARY.md` |
+| Complete specification | `docs/archive/SPECIFICATION.md` (Historical) |
+| POC summary | `docs/archive/POC-SUMMARY.md` (Historical) |
 | Design rationale | `docs/design/01-initial-design.md` |
 | Development setup | `docs/development/setup.md` |
 | Testing guide | `docs/development/testing.md` |
 | Tool management | `docs/development/tooling.md` |
 | Quality standards | `docs/development/quality.md` |
-| Reproduction guide | `docs/REPRODUCTION-GUIDE.md` |
+| Reproduction guide | `docs/guides/reproduction-guide.md` |
 
 ### Core Abstractions Reference
 
@@ -1095,8 +1095,8 @@ ______________________________________________________________________
 ### Before Starting Work
 
 1. ✅ Run `./scripts/check-environment.sh` to verify setup
-1. ✅ Read `docs/SPECIFICATION.md` for context on planned features
-1. ✅ Check `docs/POC-SUMMARY.md` for lessons learned
+1. ✅ Read `.kiro/specs/` for current feature specifications
+1. ✅ Check `docs/archive/POC-SUMMARY.md` for historical lessons learned
 1. ✅ Review existing tests to understand patterns
 
 ### While Working
@@ -1136,4 +1136,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Note to AI Assistants**: This project values code quality, testing, and documentation. Always run quality checks before suggesting changes are complete. When implementing new features, prioritize composability and immutability. Consult `docs/SPECIFICATION.md` for planned architecture before proposing major changes.
+**Note to AI Assistants**: This project values code quality, testing, and documentation. Always run quality checks before suggesting changes are complete. When implementing new features, prioritize composability and immutability. Consult `.kiro/specs/` for current specifications before proposing major changes.

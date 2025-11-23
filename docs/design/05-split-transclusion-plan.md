@@ -134,8 +134,7 @@ def validate_graph(strict: bool = True) -> Diagnostics: ...
 ```
 
 - All operations emit provenance payloads and stable IDs; JSON-RPC wrappers serialize both logical and materialized views. Type metadata enumerates accepted string literals (e.g., `role`, `mode`, `cycle`, and `on_conflict`) for LSP/CLI validation, and `hydrate` defaults to `{ "cycle": "error" }` when `policy` is omitted.
-- Enumerated parameters use `typing.Literal`/`TypedDict` to make valid options explicit for implementers, validators, and LSP si
-  gnature help, matching the “enumerate accepted string literals” review guidance.
+- Enumerated parameters use `typing.Literal`/`TypedDict` to make valid options explicit for implementers, validators, and LSP signature help, matching the “enumerate accepted string literals” review guidance.
 
 ## Implementation Steps (detailed)
 1. **Stable ID rollout**

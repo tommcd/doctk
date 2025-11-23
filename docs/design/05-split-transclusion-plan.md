@@ -114,6 +114,7 @@ These laws should inform unit tests for hydration/materialization and for the ad
 - `transclude(id: str, mode: str = "embed", version: str | None = None)`
   - Valid modes: `"embed"` (inline) or `"link"` (reference-only)
 - `link(from_id: str, to_id: str, role: str = "seealso")`
+  - Valid roles: `"seealso"`, `"refines"`, `"depends"`
 - `hydrate(root_ids: list[str] | None = None, policy: dict = {"cycle": "error"}) -> MaterializedView`
   - `policy` options for cycle detection: `{"cycle": "error" | "skip" | "inline-once"}`
 - `merge(strategy: str = "prefer-source", on_conflict: str = "annotate", overlay: Document | None = None) -> Document`

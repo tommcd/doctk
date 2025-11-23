@@ -37,7 +37,7 @@
    - Cache resolved fragments and invalidate incrementally on edits.
 
 3. **DSL + API Surface**
-   - Add DSL operations: `split(by="heading", depth=n)`, `shard(strategy, max_nodes)`, `transclude(id=...)`, `link(from, to, role)`, `hydrate()`, `merge(strategy, on_conflict)`.
+   - Add DSL operations: `split(by="heading", depth=n)`, `shard(strategy, max_nodes)`, `transclude(id=...)`, `link(from, to, role)`, `hydrate()`, `merge(overlay=..., on_conflict=...)`.
    - Provide Python API mirrors with type-safe signatures and metadata consumed by LSP/JSON-RPC catalogs.
    - Extend operation metadata schema to include graph semantics (edge types, conflict policies, view/materialization hints).
 

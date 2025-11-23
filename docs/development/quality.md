@@ -242,6 +242,57 @@ markdownlint-cli2 "**/*.md"
 - **MD032**: Lists should be surrounded by blank lines
   - Fix: Add blank lines before/after lists
 
+### MkDocs Site Build
+
+**CRITICAL**: Always build the documentation site in strict mode before committing changes to `docs/`.
+
+MkDocs strict mode catches broken links, missing files, and other documentation issues that would cause the GitHub Pages deployment to fail.
+
+#### Running
+
+```bash
+# Build docs in strict mode (catches all issues)
+tox -e docs-build
+
+# Serve docs locally for preview
+tox -e docs-serve
+# Then open http://127.0.0.1:8000 in your browser
+```
+
+#### Why This Matters
+
+- **Broken links fail the build**: Any reference to a non-existent file will cause a build failure
+- **Excluded files**: Files in `exclude_docs` (like `archive/`, `design/`) cannot be linked from published docs
+- **Missing nav entries**: Files not in the nav configuration won't be published
+- **GitHub Pages deployment**: The CI/CD pipeline runs `mkdocs build --strict` and will fail if there are issues
+
+#### Common Issues
+
+- **Link to excluded file**: `Doc file 'index.md' contains a link to 'design/file.md' which is excluded`
+  - Fix: Either remove the link or change it to reference the repository path
+- **Broken relative link**: `contains a link '../file.md', but the target 'file.md' is not found`
+  - Fix: Correct the relative path or move the file into the docs structure
+- **Unrecognized link**: `contains an unrecognized relative link 'folder/'`
+  - Fix: Link to a specific file like `folder/README.md` instead of the directory
+
+#### Workflow
+
+**Before committing any changes to `docs/`:**
+
+```bash
+# 1. Make your documentation changes
+vim docs/index.md
+
+# 2. Build in strict mode to check for issues
+tox -e docs-build
+
+# 3. If build succeeds, commit
+git add docs/
+git commit -m "docs: update documentation"
+
+# 4. If build fails, fix the issues and repeat
+```
+
 ### Mdformat
 
 Mdformat auto-formats Markdown files.
@@ -486,6 +537,7 @@ If tool versions don't match:
 
 1. Run tests: `uv run pytest`
 1. Run quality checks: `tox`
+1. **If you modified `docs/`**: Build docs in strict mode: `tox -e docs-build`
 1. Fix any issues
 1. Commit changes
 

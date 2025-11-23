@@ -7,9 +7,9 @@ inclusion: always
 
 ## Environment
 
-- The canonical project root is `/home/emcdtho/git/gitlab-internal/docplan`.
 - All Python-related commands MUST run in **WSL**, not in Windows PowerShell.
 - Assume the working directory is the project root unless stated otherwise.
+- Commands should use relative paths or the `path` parameter when needed.
 
 ## Tooling rules
 

@@ -14,7 +14,7 @@
 
 These steering documents are always available in your context and provide essential project information. Reference them first for quick answers about conventions, commands, and structure.
 
-**For spec-based development work**, see [`claude-code-kiro-spec-prompt.md`](claude-code-kiro-spec-prompt.md) for detailed guidance on implementing Kiro specs.
+**For spec-based development work**, see [`AGENTS.md`](AGENTS.md) for detailed guidance on implementing Kiro specs.
 
 ## Table of Contents
 
@@ -77,77 +77,27 @@ ______________________________________________________________________
 
 ## Repository Structure
 
-```
-doctk/
-├── src/doctk/                 # Main source code
-│   ├── __init__.py            # Package exports
-│   ├── core.py                # Core abstractions (Document, Node classes)
-│   ├── operations.py          # Composable transformations
-│   ├── outliner.py            # Document structure visualization
-│   ├── cli.py                 # Command-line interface
-│   ├── parsers/               # Format parsers
-│   │   └── markdown.py        # Markdown parser (markdown-it-py)
-│   ├── writers/               # Format writers
-│   │   └── markdown.py        # Markdown writer
-│   └── tools/                 # Tool management system
-│       ├── plugin.py          # Markdown-driven plugin framework
-│       ├── registry.py        # Tool registry
-│       └── manager.py         # Tool lifecycle management
-│
-├── tests/                     # Test suite (814 lines)
-│   ├── unit/                  # Unit tests (fast, isolated)
-│   ├── e2e/                   # End-to-end CLI integration tests
-│   ├── quality/               # Quality/meta tests
-│   │   ├── shell/             # Shell script quality checks
-│   │   └── meta/              # Configuration consistency tests
-│   ├── docs/                  # Documentation quality tests
-│   └── test_basic.py          # Core functionality tests
-│
-├── docs/                      # Documentation source
-│   ├── index.md               # Documentation homepage
-│   ├── getting-started/       # Installation & quick start
-│   ├── development/           # Dev setup, testing, tooling, quality
-│   ├── design/                # Design rationale & principles
-│   ├── SPECIFICATION.md       # Complete specification & roadmap
-│   ├── POC-SUMMARY.md         # Proof-of-concept validation
-│   └── REPRODUCTION-GUIDE.md  # Complex reproduction procedures
-│
-├── scripts/                   # Automation & setup scripts
-│   ├── setup-environment.sh   # Complete dev environment setup
-│   ├── check-environment.sh   # Verify environment readiness
-│   ├── clean-environment.sh   # Clean generated files/caches
-│   ├── setup-external-tools.py
-│   ├── check-tools.py
-│   ├── validate-plugins.py
-│   └── tools/                 # Tool plugin definitions (Markdown)
-│       ├── shellcheck.md, shfmt.md, lychee.md, etc.
-│
-├── examples/                  # Sample documents
-│   └── sample.md
-│
-├── .github/
-│   └── workflows/tests.yml    # GitHub Actions CI/CD
-│
-├── .kiro/                     # Kiro configuration
-│   ├── specs/                 # Feature specifications (requirements, design, tasks)
-│   └── steering/              # AI assistant guidance (always-available context)
-│
-├── .pre-commit-config.yaml    # Pre-commit hooks
-├── .markdownlint.yaml         # Markdown linting rules
-├── .lychee.toml               # Link checking config
-├── pyproject.toml             # Python project config
-├── tox.ini                    # Test orchestration (20+ environments)
-├── mkdocs.yml                 # Documentation site config
-├── README.md
-├── CONTRIBUTING.md
-└── LICENSE (MIT)
-```
+**For complete project structure**, see [Project Structure](.kiro/steering/structure.md).
 
-### Key Source Files by Size
+**Key directories:**
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `tools/plugin.py` | 492 | Markdown-driven plugin framework |
+- `src/doctk/` - Main source code (core, operations, parsers, writers, integration, DSL, LSP)
+- `tests/` - Test suite (unit, e2e, quality, docs)
+- `docs/` - Documentation (getting-started, development, api, design, archive)
+- `scripts/` - Automation scripts and tool plugins
+- `.kiro/specs/` - Feature specifications (requirements, design, tasks)
+- `.kiro/steering/` - AI assistant guidance (auto-included context)
+
+### Key Source Files by Purpose
+
+| Module | Purpose |
+|--------|---------|
+| `core.py` | Document/Node abstractions (foundation) |
+| `operations.py` | Composable transformations |
+| `integration/` | Platform-agnostic bridge layer |
+| `dsl/` | Domain-Specific Language |
+| `lsp/` | Language Server Protocol |
+| `tools/` | External tool management |
 | `core.py` | 347 | Node types & Document class |
 | `tools/manager.py` | 294 | Tool lifecycle management |
 | `operations.py` | 243 | Composable transformations |
@@ -161,90 +111,25 @@ ______________________________________________________________________
 
 ## Development Workflow
 
-### Initial Setup
-
-**Automated (Recommended)**:
+### Quick Start
 
 ```bash
+# Setup
 ./scripts/setup-environment.sh
+./scripts/check-environment.sh
+
+# Development
+uv run pytest                    # Run tests
+tox                              # Run quality checks
+git commit -m "feat: description"  # Commit with conventional format
 ```
 
-This script:
+**For detailed guides**, see:
 
-1. Installs `uv` (fast Python package manager)
-1. Verifies Python 3.12+
-1. Installs external tools (shellcheck, shfmt, lychee, markdownlint, taplo, hadolint)
-1. Installs Python dependencies with `uv sync --all-groups` (dev and docs)
-1. Installs tox globally
-1. Sets up pre-commit hooks
-
-**Manual**:
-
-```bash
-# Install uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install dependencies (includes dev and docs groups)
-uv sync --all-groups
-
-# Install external tools
-python3 scripts/setup-external-tools.py
-
-# Install pre-commit hooks
-uv run pre-commit install
-```
-
-### Verification
-
-```bash
-./scripts/check-environment.sh  # Verify environment readiness
-uv run doctk demo               # Run interactive demo
-```
-
-### Making Changes
-
-1. **Create a branch**:
-
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-1. **Make changes** following code conventions (see below)
-
-1. **Add tests** for new functionality
-
-1. **Run tests locally**:
-
-   ```bash
-   uv run pytest                      # Unit + e2e tests (skip slow)
-   uv run pytest -m slow              # Run only slow tests
-   uv run pytest -m "slow or not slow"  # Include all tests
-   uv run pytest tests/quality/       # Quality/meta tests
-   ```
-
-1. **Run quality checks**:
-
-   ```bash
-   tox                    # All checks
-   tox -e ruff            # Python linting
-   tox -e ruff-fix        # Auto-fix formatting
-   tox -e docs            # Documentation checks
-   tox -e shellcheck      # Shell script linting
-   ```
-
-1. **Commit changes** using conventional commit format:
-
-   ```
-   type(scope): description
-
-   [optional body]
-   ```
-
-   Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
-
-   Example: `feat(operations): add lift/lower sibling operations`
-
-1. **Pre-commit hooks** run automatically on commit
+- **[Development Setup](docs/development/setup.md)** - Complete setup instructions
+- **[Testing Guide](docs/development/testing.md)** - Running and writing tests
+- **[Quality Standards](docs/development/quality.md)** - Code quality checks
+- **[Tooling Guide](docs/development/tooling.md)** - External tools management
 
 ### CI/CD
 
@@ -259,216 +144,38 @@ ______________________________________________________________________
 
 ## Code Conventions
 
-### Python Style
+**For complete quality standards**, see [Quality Guide](docs/development/quality.md).
 
-**Linter/Formatter**: Ruff (v0.14.0+)
+**Quick reference:**
 
-**Key Rules** (enforced):
+- **Python**: PEP 8, 100 char lines, type annotations required, ruff for linting/formatting
+- **Shell**: Google Shell Style Guide, 2-space indent, shellcheck + shfmt
+- **Markdown**: markdownlint + mdformat
+- **TOML**: taplo formatting
 
-- **PEP 8** compliance
-- **Line length**: 100 characters max
-- **Quote style**: Double quotes
-- **Indent style**: Spaces (4 spaces)
-- **Type annotations**: Required for all public functions
-- **Docstrings**: Required for all public APIs
-
-**Ruff Configuration** (`pyproject.toml`):
-
-```toml
-[tool.ruff.lint]
-select = ["E", "F", "I", "N", "UP", "B", "C4", "S"]
-ignore = [
-  "B008",  # Function calls in defaults (for typer)
-  "B007",  # Unused loop variables
-  "S101",  # Assert statements (in tests)
-  "S603",  # Subprocess calls (test suite)
-  "S607",  # Partial executable paths
-  "E501",  # Line too long (handled by formatter)
-]
-```
-
-### Code Style Examples
-
-**Dataclass with Type Hints**:
-
-```python
-from dataclasses import dataclass, field
-from typing import Any
-
-@dataclass
-class Heading(Node):
-    """Heading node (h1-h6)."""
-
-    level: int  # 1-6
-    text: str
-    children: list[Node] = field(default_factory=list)
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-    def promote(self) -> "Heading":
-        """Decrease heading level (h3 -> h2). Identity if already h1."""
-        return Heading(
-            level=max(1, self.level - 1),
-            text=self.text,
-            children=self.children,
-            metadata=self.metadata,
-        )
-```
-
-**Function with Docstring**:
-
-```python
-from collections.abc import Callable
-from doctk.core import Document, Node
-
-# Type alias for operations
-Operation = Callable[[Document], Document]
-
-def select(predicate: Callable[[Node], bool]) -> Operation:
-    """
-    Select nodes matching predicate.
-
-    Args:
-        predicate: Function that returns True for nodes to select
-
-    Returns:
-        Operation that filters document to matching nodes
-
-    Example:
-        >>> doc | select(is_heading)
-        Document(3 nodes)
-    """
-    def transform(doc: Document) -> Document:
-        return Document(nodes=[n for n in doc.nodes if predicate(n)])
-    return transform
-```
-
-### Shell Script Style
-
-**Formatter**: shfmt (Google Shell Style Guide)
-
-**Key Rules**:
-
-- **Indentation**: 2 spaces
-- **Case indent**: Yes (`-ci`)
-- **Binary ops on next line**: Yes (`-bn`)
-- **Executable**: All `.sh` files must be executable
-
-**Example**:
+**Run quality checks:**
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-function install_tool() {
-  local tool="$1"
-  local version="$2"
-
-  if command -v "$tool" &>/dev/null; then
-    echo "✓ $tool already installed"
-    return 0
-  fi
-
-  echo "Installing $tool v$version..."
-  # Installation logic
-}
+tox                    # All checks
+tox -e ruff-fix        # Auto-fix Python
+tox -e docs-build      # Build docs (strict mode)
 ```
-
-### Markdown Style
-
-**Linter**: markdownlint-cli2 (v0.18.1+)
-**Formatter**: mdformat (v0.7.22+) with frontmatter plugin
-
-**Key Rules** (`.markdownlint.yaml`):
-
-- Consistent heading style
-- No trailing spaces
-- Proper list formatting
-- Fenced code blocks with language specifiers
-
-### TOML Style
-
-**Formatter**: taplo (v0.9.3+)
-
-- Alphabetically sorted keys
-- Consistent spacing
 
 ______________________________________________________________________
 
 ## Testing Strategy
 
-### Test Categories
+**For comprehensive testing guide**, see [Testing Guide](docs/development/testing.md).
 
-doctk uses a multi-layered testing approach:
-
-| Category | Location | Purpose | Speed | Markers |
-|----------|----------|---------|-------|---------|
-| **Unit** | `tests/unit/` | Fast, isolated tests | Fast | `@pytest.mark.unit` |
-| **E2E** | `tests/e2e/` | CLI integration tests | Medium | `@pytest.mark.e2e` |
-| **Quality** | `tests/quality/` | Config consistency, shell style | Slow | `@pytest.mark.quality` |
-| **Docs** | `tests/docs/` | Markdown linting, link validation | Slow | `@pytest.mark.docs` |
-
-### Running Tests
+**Quick reference:**
 
 ```bash
-# Default: unit + e2e (skip slow)
-uv run pytest
-
-# Include slow tests
-uv run pytest -m slow              # Run only slow tests
-uv run pytest -m "slow or not slow"  # Run all tests (including slow)
-
-# Specific categories
-uv run pytest tests/unit/
-uv run pytest tests/e2e/
-uv run pytest tests/quality/
-uv run pytest tests/docs/
-
-# Specific test
-uv run pytest tests/test_basic.py::test_document_creation
-
-# With coverage
-uv run pytest --cov=doctk --cov-report=html
+uv run pytest                    # Run all tests (skip slow)
+uv run pytest -m "slow or not slow"  # Include slow tests
+uv run pytest --cov=doctk        # With coverage
 ```
 
-### Coverage Configuration
-
-**Target**: >80% (currently no hard requirement)
-
-**Reports**: Generated in `reports/coverage/`
-
-- `coverage.xml` - For codecov
-- `html/` - HTML report
-- `coverage.json` - JSON report
-
-**Exclusions**:
-
-- Test code (`*/tests/*`)
-- Abstract methods (`@abstractmethod`)
-- Debug code (`if __name__ == "__main__"`)
-- Type checking blocks (`if TYPE_CHECKING:`)
-
-### Test Naming Convention
-
-```python
-def test_<functionality>_<condition>():
-    """Test that <expected behavior>."""
-    # Arrange
-    ...
-    # Act
-    ...
-    # Assert
-    ...
-```
-
-Example:
-
-```python
-def test_promote_heading_at_minimum_level():
-    """Test that promoting h1 stays at h1 (identity)."""
-    node = Heading(level=1, text="Title")
-    result = node.promote()
-    assert result.level == 1
-```
+**Test categories:** unit, e2e, quality, docs (see testing guide for details)
 
 ______________________________________________________________________
 
@@ -973,7 +680,7 @@ cat .kiro/specs/<spec-name>/tasks.md
 | Read requirements | `.kiro/specs/<spec-name>/requirements.md` |
 | Read design | `.kiro/specs/<spec-name>/design.md` |
 | Track progress | `.kiro/specs/<spec-name>/tasks.md` |
-| Spec implementation guide | `claude-code-kiro-spec-prompt.md` |
+| Spec implementation guide | `AGENTS.md` |
 
 ### Detailed Spec Implementation Guide
 
@@ -986,7 +693,7 @@ For comprehensive instructions on working with Kiro specs, including:
 - Progress tracking conventions
 - Tips for successful spec implementation
 
-**See**: [`claude-code-kiro-spec-prompt.md`](claude-code-kiro-spec-prompt.md) in the repository root.
+**See**: [`AGENTS.md`](AGENTS.md) in the repository root.
 
 ______________________________________________________________________
 
@@ -1053,14 +760,14 @@ Run `python3 scripts/show-tox-commands.py` for full list.
 
 | Topic | Location |
 |-------|----------|
-| Complete specification | `docs/SPECIFICATION.md` |
-| POC summary | `docs/POC-SUMMARY.md` |
+| Complete specification | `docs/archive/SPECIFICATION.md` (Historical) |
+| POC summary | `docs/archive/POC-SUMMARY.md` (Historical) |
 | Design rationale | `docs/design/01-initial-design.md` |
 | Development setup | `docs/development/setup.md` |
 | Testing guide | `docs/development/testing.md` |
 | Tool management | `docs/development/tooling.md` |
 | Quality standards | `docs/development/quality.md` |
-| Reproduction guide | `docs/REPRODUCTION-GUIDE.md` |
+| Reproduction guide | `docs/guides/reproduction-guide.md` |
 
 ### Core Abstractions Reference
 
@@ -1095,9 +802,8 @@ ______________________________________________________________________
 ### Before Starting Work
 
 1. ✅ Run `./scripts/check-environment.sh` to verify setup
-1. ✅ Read `docs/SPECIFICATION.md` for context on planned features
-1. ✅ Check `docs/POC-SUMMARY.md` for lessons learned
-1. ✅ Review existing tests to understand patterns
+1. ✅ Read `.kiro/specs/` for current feature specifications
+1. ✅ Review [Development Setup](docs/development/setup.md) if needed
 
 ### While Working
 
@@ -1106,15 +812,16 @@ ______________________________________________________________________
 1. ✅ Write docstrings with examples
 1. ✅ Write tests as you develop (TDD preferred)
 1. ✅ Run `uv run pytest` frequently
-1. ✅ Keep functions small and focused
 
 ### Before Committing
 
 1. ✅ Run `tox` to verify all checks pass
+1. ✅ If you modified `docs/`: Run `tox -e docs-build`
 1. ✅ Ensure tests cover new code
-1. ✅ Update documentation if needed
 1. ✅ Use conventional commit messages
 1. ✅ Let pre-commit hooks run (don't skip)
+
+**For detailed workflow**, see [Quality Guide](docs/development/quality.md).
 
 ### Design Principles to Remember
 
@@ -1136,4 +843,4 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-**Note to AI Assistants**: This project values code quality, testing, and documentation. Always run quality checks before suggesting changes are complete. When implementing new features, prioritize composability and immutability. Consult `docs/SPECIFICATION.md` for planned architecture before proposing major changes.
+**Note to AI Assistants**: This project values code quality, testing, and documentation. Always run quality checks before suggesting changes are complete. When implementing new features, prioritize composability and immutability. Consult `.kiro/specs/` for current specifications before proposing major changes.

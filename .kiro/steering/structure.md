@@ -103,10 +103,9 @@ Use pytest markers to categorize tests:
 - **development/** - Development guides
 - **getting-started/** - User guides
 - **guides/** - How-to guides
-- **SPECIFICATION.md** - Complete specification and roadmap
-- **POC-SUMMARY.md** - Proof-of-concept validation
-- **SESSION-SUMMARY.md** - Development session notes
-- **REPRODUCTION-GUIDE.md** - Issue reproduction guide
+- **archive/** - Historical documents (POC summary, original spec, session notes)
+- **guides/** - How-to guides and tutorials
+  - **reproduction-guide.md** - Step-by-step tutorial for building from scratch
 
 ## Scripts (`scripts/`)
 

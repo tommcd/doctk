@@ -56,6 +56,47 @@
    - Shared performance monitor hooks accessible from CLI/LSP/extension; structured telemetry events.
    - Snapshot-based regression tests for DSL and graph outputs.
 
+## Formal Semantics (guidance for specs/tests)
+- **Presheaf view:** Treat a document with transclusions as a functor from a fragment graph to content. Gluing resolves all edges.
+  - *Identity:* resolving a graph with no transclusions returns the original fragments.
+  - *Composition:* resolving nested transclusions is equivalent to resolving after flattening the graph (associative gluing).
+- **Lens laws (for bidirectional edits):**
+  - *PutGet:* `get(put(doc, fragment)) == fragment`.
+  - *GetPut:* `put(doc, get(doc)) == doc`.
+  - *PutPut:* `put(put(doc, f1), f2) == put(doc, f2)`.
+These laws should inform unit tests for hydration/materialization and for the advanced lens-based slice.
+
+## Fragment Storage Specification (Phase 1 deliverable)
+- **Hash algorithm:** SHA-256 over a canonical serialization (UTF-8, LF newlines, sorted keys for metadata/provenance).
+- **Canonical form:** use the same deterministic serializer for hashing and persistence so `hash(doc1) == hash(doc2)` iff content is identical.
+- **Interfaces:**
+  - `store(fragment: Fragment) -> ContentHash`
+  - `retrieve(hash: ContentHash) -> Fragment | None`
+  - `link(alias: str, hash: ContentHash) -> None` (human-readable aliases alongside hashes)
+- **Backends:** filesystem-backed store for MVP; follow-on options for Git-backed store (v0.3) and object storage (enterprise) if needed.
+
+## Transclusion Syntax Examples (Markdown, Phase 2/3)
+- File-based include: `{{#include path/to/fragment.md}}`
+- Hash-based include: `{{#include sha256:a3f5b9c2...}}`
+- Versioned include: `{{#include api-reference@v1.2.0}}`
+- Nested transclusion should follow the same syntax and obey the cycle policy defaults.
+
+## Prior Art & Ecosystem Alignment
+| Tool        | Approach                              | Lessons | Adopt | Avoid |
+|-------------|---------------------------------------|---------|-------|-------|
+| mdBook      | `{{#include}}` file-based includes    | Simple syntax is familiar | ✅ Syntax base | ❌ Lack of content addressing |
+| Org-mode    | `#+INCLUDE:` with live updates     | Bidirectional edits valuable | ✅ Live update concept | ⚠️ Requires cycle detection |
+| Pandoc      | Filters (no native transclusion)      | AST-level transforms safer than text substitution | ✅ AST-level approach | ❌ Text-only substitution |
+| Git submodules | Content-addressed nesting          | Stable references | ✅ Content addressing | ❌ UX complexity |
+
+## Bidirectional Edit Propagation Workflow (Phase 3 advanced slice)
+1. Detect edits in materialized ranges (diff from last known view).
+2. Use provenance mapping to identify the source fragment ID/hash for the edited range.
+3. Apply `lens.put(source_fragment, modified_content)` to propagate changes.
+4. Recompute content hash and update the fragment store; update transclusion reference (`old_hash -> new_hash`).
+5. Notify dependents (other documents transcluding the fragment) of available updates.
+6. Handle edge cases: concurrent edits (manual or CRDT merge), edits spanning multiple transclusions (split and route per source), nested transclusions (compose lenses).
+
 ## Architecture & Data Model Changes
 - **Node Identity:** `NodeId` structure with stable component + display hint; stored on AST nodes and preserved through operations.
 - **Document/Fragment Types:**
@@ -118,6 +159,16 @@
 - **Tests:** unit (core ops, ID stability), integration (DSL, JSON-RPC, REPL), performance benchmarks, snapshot tests for materialized views.
 - **Documentation:** user guides for transclusion/sharding/merge flows, diagnostics handbook, performance tuning notes.
 
+### Review feedback resolution (PR #48)
+- **Review 3497849774 — spec gates and ownership:**
+  - Add an explicit dependency graph in `.kiro/specs/graph-fragments/tasks.md` so each slice (IDs → internal ops → graph views → tooling) lists prerequisites and a named owner/reviewer. 
+  - Require a go/no-go checkpoint after the stable-ID rollout and internal operations layer before enabling DSL/REPL compilation to the new APIs.
+  - Capture these checkpoints as checkboxes in `tasks.md` with links to the validating tests/benchmarks so reviewers can verify completion quickly.
+- **Review 3497851442 — migration, rollback, and regression coverage:**
+  - Include a migration plan that keeps positional IDs behind a compatibility flag until LSP/JSON-RPC parity tests pass against the new internal operations layer.
+  - Document a rollback lever (config flag + cached-ID rebuild command) and add regression suites that run both compatibility and stable-ID modes.
+  - Track these in the spec as required exit criteria for the core-foundations phase, with ADR references for the chosen ID strategy and cache invalidation semantics.
+
 ## Acceptance Criteria (per phase)
 - **Foundations:** Stable IDs retained across edits; in-process API avoids parse/serialize; tests passing.
 - **Graph model:** Transclusion resolution with cycle policies; materialized view preserves provenance; caches invalidate correctly.
@@ -140,10 +191,81 @@
 - **Tasks:** Update the phase tasks to explicitly: (1) refactor DSL/REPL to call the internal operations layer, (2) add metadata deep-copying and adjust `union` naming/behavior, and (3) add parser changes for source spans with tests replacing heuristic matching.
 - **Acceptance tests:** Add cases that prove ID stability across edits, DSL↔Python parity (same registry metadata), immutability of metadata, correct union semantics, and accurate source spans for diagnostics and round-tripping.
 
+- **API bridge example (clarifies dual paradigm unification):**
+  ```python
+  def by_id(node_id: str) -> Predicate:
+      def predicate(node: Node) -> bool:
+          return getattr(node, "id", None) == node_id
+      return predicate
+
+  # Declarative pipeline targeting a specific node
+  doc | select(by_id("h3-intro")) | promote()
+
+  # StructureOperations can delegate to the same pipeline
+  class StructureOperations:
+      @staticmethod
+      def promote(doc: Document, node_id: str) -> OperationResult:
+          updated = doc | select(by_id(node_id)) | operations.promote()
+          return OperationResult(success=True, document=updated)
+  ```
+
+- **Type safety and dispatch guidance:**
+  ```python
+  from typing import TypeGuard
+
+  def is_heading(node: Node) -> TypeGuard[Heading]:
+      return isinstance(node, Heading)
+
+  def promote(node: Node) -> Node:
+      if is_heading(node):
+          return node.promote()
+      raise TypeError(f"Cannot promote {type(node)}")
+  ```
+  Consider a visitor-based variant for new node types to reduce scattered `isinstance` checks.
+
+- **Immutability hygiene example:**
+  ```python
+  def promote(self) -> "Heading":
+      return Heading(
+          level=max(1, self.level - 1),
+          text=self.text,
+          children=self.children,
+          metadata=copy.deepcopy(self.metadata),
+      )
+  ```
+  Tests should assert that metadata mutations on transformed nodes do not affect the originals; persistent maps are an optional advanced alternative.
+
+- **Source position tracking (lessons from line-position bug):**
+  ```python
+  @dataclass
+  class Node:
+      source_span: SourceSpan | None = None  # (start_line, start_col, end_line, end_col)
+
+  class MarkdownParser:
+      def parse(self, source: str) -> Document:
+          for token in md.parse(source):
+              node = self._token_to_node(token)
+              if token.map:
+                  node.source_span = SourceSpan(
+                      start_line=token.map[0],
+                      end_line=token.map[1],
+                      start_col=...,  # derived from source
+                      end_col=...,    # derived from source
+                  )
+  ```
+  Storing spans removes heuristic line matching and improves diagnostics and round-trip mapping.
+
 - **Reviewer feedback tracking:**
   - Mirror these deltas in a dedicated Kiro spec folder (e.g., `.kiro/specs/graph-fragments/`) with explicit tasks/checklists that reference the above bullets so reviewers can see them checked off.
   - Capture the ID↔predicate bridge, DSL compilation path, and metadata immutability as ADRs to avoid ambiguity during implementation reviews.
   - Add a regression plan: once the internal operations layer lands, run the existing JSON-RPC/LSP suites against the new layer to confirm parity before removing legacy heuristics.
+
+## Upstream merge/conflict handling
+- GitHub shows conflicts because upstream `master` is evolving the same design docs. This sandbox cannot reach `origin` (HTTP 403 on fetch), so the rebase/merge must happen once network access is available.
+- Resolution steps when access is restored:
+  - Fetch latest `origin/master`, rebase this branch, and resolve overlaps in `docs/design/05-split-transclusion-plan.md` and `docs/design/06-core-api-dsl-review.md`, keeping upstream edits then reapplying the clarifications captured here.
+  - Run the active CI matrix locally (e.g., `tox -e lint,py38` or current equivalents) and any doc link checkers to ensure no regressions post-merge.
+  - Update Kiro spec tasks/checklists if the rebase changes ordering, dependencies, or acceptance criteria; ensure ADRs stay aligned with the reconciled text.
 
 ## Open Questions for the Team
 - Preferred `NodeId` strategy: UUIDv7 vs. content-hash + lexical hint? Any compliance requirements?

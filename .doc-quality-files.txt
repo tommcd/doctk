@@ -2,9 +2,9 @@
 # Lines starting with # are comments and will be ignored
 # List one file path per line (relative to project root)
 
-# Core documentation
-docs/SPECIFICATION.md
-docs/POC-SUMMARY.md
+# Core documentation (now in archive)
+docs/archive/SPECIFICATION.md
+docs/archive/POC-SUMMARY.md
 docs/design/01-initial-design.md
 
 # Contributing and development

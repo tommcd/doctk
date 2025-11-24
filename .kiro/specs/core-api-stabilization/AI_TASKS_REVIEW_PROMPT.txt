@@ -1,0 +1,91 @@
+# AI Tasks Review Prompt
+
+You are reviewing the implementation tasks for the Core API Stabilization spec.
+
+## Files to Read
+
+1. `.kiro/specs/core-api-stabilization/requirements.md` (the requirements)
+2. `.kiro/specs/core-api-stabilization/design.md` (the approved design)
+3. `.kiro/specs/core-api-stabilization/tasks.md` (the tasks to review)
+4. `.kiro/specs/core-api-stabilization/TASKS_REVIEW_PROMPT.md` (detailed review checklist)
+
+## Your Task
+
+Follow the review checklist in TASKS_REVIEW_PROMPT.md and provide:
+
+- **Overall assessment** (approve/changes needed/reject)
+- **Detailed findings** with severity levels (Critical/Major/Minor)
+- **Requirements coverage matrix** (which requirements are covered by which tasks)
+- **Design component coverage** (which design components have corresponding tasks)
+- **Phase analysis** (duration, dependencies, completeness for each phase)
+- **Open questions** for clarification
+- **Final recommendation** with priority fixes
+
+## Focus On
+
+1. **Completeness**: Does every design component have corresponding tasks?
+2. **Correctness**: Do tasks accurately implement the design?
+3. **Actionability**: Can a developer start work immediately with the task descriptions?
+4. **Testability**: Are acceptance criteria specific and verifiable?
+5. **Dependencies**: Are task dependencies clear and non-circular?
+6. **Timeline**: Is the 12-week timeline realistic?
+
+## Key Design Components to Check
+
+Ensure tasks cover these components added in design reviews:
+
+- **NodeId**: 16-char canonical format, round-trip, to_short_string(), caching
+- **\_generate_hint()**: Deterministic slugification, 32-char truncation, fallback
+- **\_canonicalize_node()**: All node types, Unicode NFC, whitespace normalization
+- **Text edit semantics**: with_text() generates new ID, promote() preserves ID
+- **Compatibility mode**: find_node() with try/except for positional IDs
+- **Source spans**: Block-level column recovery, ViewSourceMapping
+- **Diagnostics**: context_lines field, QuickFix, TextEdit, LSP integration
+- **Type safety**: Generic Document[TNode], TypeGuards, typed select()
+- **Operation registry**: \_\_all\_\_ list, decorator registration, completeness test
+
+## Performance Targets to Verify
+
+Check that tasks include benchmarks for:
+
+- NodeId generation <1ms per node
+- Deep-copy overhead <15%
+- Internal ops 2x faster than JSON-RPC
+- Large document handling (10K nodes) <100ms
+- Memory usage within bounds
+
+## Testing Coverage to Verify
+
+Check that tasks include tests for:
+
+- NodeId round-tripping (from_string/\_\_str\_\_)
+- Canonicalization normalization (Unicode, whitespace, tabs)
+- Hint generation with examples
+- Compatibility mode positional ID fallback
+- Block-level source span accuracy
+- Diagnostic context generation
+- Text edit ID changes vs structural ID preservation
+
+## Common Issues to Flag
+
+- Missing tasks for design components
+- Tasks without test acceptance criteria
+- Vague or non-actionable task descriptions
+- Unrealistic time estimates
+- Circular dependencies
+- Missing integration points
+- Incomplete requirements coverage
+
+## Output Format
+
+Use the format specified in TASKS_REVIEW_PROMPT.md:
+
+1. Summary (assessment, confidence, strengths, concerns)
+2. Detailed Findings (severity, location, issue, impact, recommendation)
+3. Requirements Coverage Matrix
+4. Design Component Coverage
+5. Phase Analysis
+6. Open Questions
+7. Final Recommendation (with priority fixes)
+
+Be thorough but constructive. The goal is to ensure the tasks are implementation-ready.

@@ -1,0 +1,20 @@
+Please review the doctk Core API Stabilization design document.
+
+Files to read:
+1. .kiro/specs/core-api-stabilization/requirements.md (the requirements)
+2. .kiro/specs/core-api-stabilization/design.md (the design to review)
+3. .kiro/specs/core-api-stabilization/REVIEW_PROMPT.md (detailed review checklist)
+
+Follow the review checklist in REVIEW_PROMPT.md and provide:
+- Overall assessment (approve/changes needed/reject)
+- Detailed findings with severity levels
+- Requirements coverage matrix
+- Open questions for clarification
+- Final recommendation
+
+Focus on:
+- Completeness: Are all requirements addressed?
+- Correctness: Are the technical solutions sound?
+- Feasibility: Is the 9-week implementation plan realistic?
+- Performance: Are the claimed improvements achievable?
+- Risks: Are risks properly identified and mitigated?

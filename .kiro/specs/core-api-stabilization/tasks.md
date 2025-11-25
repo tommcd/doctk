@@ -4,6 +4,7 @@
 
 This document breaks down the implementation of Core API Stabilization into specific, actionable tasks. The work is organized into 8 phases over 11 weeks, with each task including acceptance criteria, dependencies, and deliverables.
 
+**Total Tasks:** 41 tasks
 **Total Duration:** 11 weeks (wall-clock time)
 **Dependencies:** None (foundational work)
 **Blocks:** Fragment Graph Model (Spec 2), Advanced Graph Features (Spec 3)
@@ -1406,7 +1407,7 @@ ______________________________________________________________________
 The Core API Stabilization spec is complete when:
 
 - [ ] All 8 phases completed
-- [ ] All 39 tasks marked as done
+- [ ] All 41 tasks marked as done
 - [ ] Test coverage >90% for new code
 - [ ] All performance targets met (1s render, 200ms interaction)
 - [ ] Documentation complete and reviewed
@@ -1420,12 +1421,12 @@ The Core API Stabilization spec is complete when:
 **Phase 2:** ⬜⬜⬜⬜⬜⬜⬜ 0/7 tasks complete
 **Phase 3:** ⬜⬜⬜⬜ 0/4 tasks complete
 **Phase 4:** ⬜⬜⬜⬜ 0/4 tasks complete
-**Phase 5:** ⬜⬜⬜⬜ 0/4 tasks complete
+**Phase 5:** ⬜⬜⬜⬜⬜ 0/5 tasks complete
 **Phase 6:** ⬜⬜⬜⬜⬜ 0/5 tasks complete
 **Phase 7:** ⬜⬜⬜⬜ 0/4 tasks complete
 **Phase 8:** ⬜⬜⬜⬜ 0/4 tasks complete
 
-**Overall Progress:** 0/39 tasks complete (0%)
+**Overall Progress:** 0/41 tasks complete (0%)
 
 ______________________________________________________________________
 

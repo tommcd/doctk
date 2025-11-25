@@ -8,17 +8,28 @@ The `.kiro/` directory contains two important subdirectories:
 
 ### .kiro/steering/
 
-**Purpose**: Provides always-available context and guidance for AI assistants working in this codebase.
+**Purpose**: Provides essential context and guidance for AI assistants working in this codebase.
 
-Steering documents are automatically included in your context and contain:
+**IMPORTANT:** These documents are automatically included in Kiro's context, but other AI agents (Claude, Codex, Copilot, etc.) must explicitly read them.
 
+**Essential steering documents you MUST read:**
+
+- **ai-agent-quick-reference.md** - Golden rules, checklist, commands (READ THIS FIRST)
+- **workflow.md** - Development workflow, quality standards, branch strategy
+- **spec-maintenance.md** - Keeping specs synchronized with code
 - **product.md** - Product overview, philosophy, and current status
 - **tech.md** - Tech stack, build system, common commands
 - **structure.md** - Project organization, folder structure, conventions
 - **python-wsl-uv.md** - Python environment and WSL-specific rules
 - **validate-spec-accuracy.md** - Spec validation testing guidelines
 
-These documents help you understand the project without needing to ask basic questions.
+**Before starting any work, read:**
+
+1. `.kiro/steering/ai-agent-quick-reference.md` - Understand the golden rules
+1. `.kiro/steering/workflow.md` - Understand the development process
+1. This document (AGENTS.md) - Understand Kiro specs
+
+These documents help you understand the project conventions, quality standards, and development workflow.
 
 ### .kiro/specs/
 
@@ -154,10 +165,17 @@ Specs are located in `.kiro/specs/<spec-name>/`:
 
 Steering documents are located in `.kiro/steering/`:
 
-- These are automatically included in your context
-- They provide project-wide conventions, tech stack info, and structure
+- **For Kiro agents**: These are automatically included in your context
+- **For other agents (Claude, Codex, Copilot, etc.)**: You MUST explicitly read these files
+- They provide project-wide conventions, tech stack info, structure, and workflow
 - Reference them when you need to understand project standards
-- Common files: `product.md`, `tech.md`, `structure.md`
+
+**Critical files to read before starting:**
+
+- `ai-agent-quick-reference.md` - Golden rules and checklist
+- `workflow.md` - Development workflow and quality standards
+- `tech.md` - Tech stack and common commands
+- `structure.md` - Project organization
 
 ## When Tasks Are Complete
 

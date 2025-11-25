@@ -6,19 +6,42 @@
 
 ## Quick Start for AI Assistants
 
-**Before diving into this document**, note that the `.kiro/steering/` directory contains automatically-included context documents:
+**CRITICAL: This project uses spec-driven development with Kiro specs.**
 
-- **product.md** - What doctk is and its philosophy
+All work on this project follows the spec-driven development methodology. You MUST understand how Kiro specs work before contributing.
+
+**Required Reading (in order):**
+
+1. **[AGENTS.md](AGENTS.md)** - How to work with Kiro specs (requirements → design → tasks)
+1. **[.kiro/steering/workflow.md](.kiro/steering/workflow.md)** - Development workflow and quality standards
+1. **[.kiro/steering/ai-agent-quick-reference.md](.kiro/steering/ai-agent-quick-reference.md)** - Quick reference and golden rules
+
+**This document (CLAUDE.md)** provides comprehensive Claude-specific project context and reference information.
+
+**Auto-included steering documents** (always in your context):
+
+- **ai-agent-quick-reference.md** - Golden rules, checklist, commands
+- **workflow.md** - Development workflow, branch strategy, quality gates
+- **spec-maintenance.md** - Keeping specs synchronized with code
+- **product.md** - Product overview and philosophy
 - **tech.md** - Tech stack, build system, and common commands
 - **structure.md** - Project organization and conventions
 
-These steering documents are always available in your context and provide essential project information. Reference them first for quick answers about conventions, commands, and structure.
+## Document Purpose
 
-**For spec-based development work**, see [`AGENTS.md`](AGENTS.md) for detailed guidance on implementing Kiro specs.
+This document provides **comprehensive project context for Claude**.
+
+**IMPORTANT:** This project was built using **spec-driven development with Kiro specs**. All AI agents working on this project must understand and follow the Kiro spec methodology.
+
+**Essential guides for spec-driven development:**
+
+1. **[AGENTS.md](AGENTS.md)** - Understanding Kiro specs (requirements, design, tasks)
+1. **[.kiro/steering/workflow.md](.kiro/steering/workflow.md)** - Development workflow
+1. **[.kiro/steering/ai-agent-quick-reference.md](.kiro/steering/ai-agent-quick-reference.md)** - Quick reference
+1. **CLAUDE.md** (this document) - Comprehensive project reference
 
 ## Table of Contents
 
-1. [Understanding the .kiro Directory](#understanding-the-kiro-directory)
 1. [Project Overview](#project-overview)
 1. [Repository Structure](#repository-structure)
 1. [Development Workflow](#development-workflow)
@@ -28,6 +51,7 @@ These steering documents are always available in your context and provide essent
 1. [Common Tasks](#common-tasks)
 1. [Important Patterns](#important-patterns)
 1. [External Tools System](#external-tools-system)
+1. [Understanding the .kiro Directory](#understanding-the-kiro-directory)
 1. [Quick Reference](#quick-reference)
 
 ______________________________________________________________________
@@ -682,18 +706,40 @@ cat .kiro/specs/<spec-name>/tasks.md
 | Track progress | `.kiro/specs/<spec-name>/tasks.md` |
 | Spec implementation guide | `AGENTS.md` |
 
-### Detailed Spec Implementation Guide
+### Spec-Driven Development Workflow
 
-For comprehensive instructions on working with Kiro specs, including:
+**This project uses Kiro specs for ALL development work.** Understanding the spec-driven methodology is mandatory.
 
-- Understanding the .kiro directory structure
-- How to read and interpret requirements
-- Understanding design documents
-- Task execution best practices
-- Progress tracking conventions
-- Tips for successful spec implementation
+**Essential guides:**
 
-**See**: [`AGENTS.md`](AGENTS.md) in the repository root.
+1. **[AGENTS.md](AGENTS.md)** - Understanding Kiro specs (requirements → design → tasks)
+
+   - How to read requirements.md (acceptance criteria)
+   - How to read design.md (technical approach)
+   - How to execute tasks.md (implementation steps)
+   - How to update task progress
+
+1. **[workflow.md](.kiro/steering/workflow.md)** - Development workflow
+
+   - Spec-driven development cycle
+   - Quality standards (80% coverage, all tests pass)
+   - Branch strategy and PR process
+   - AI-assisted development protocols
+
+1. **[ai-agent-quick-reference.md](.kiro/steering/ai-agent-quick-reference.md)** - Quick reference
+
+   - Golden rules (ONE TASK AT A TIME, NEVER PUSH TO MASTER)
+   - Task implementation checklist
+   - Essential commands
+   - When to stop and ask for help
+
+1. **[spec-maintenance.md](.kiro/steering/spec-maintenance.md)** - Keeping specs synchronized
+
+   - Spec lifecycle and quality standards
+   - When and how to update specs
+   - Spec validation procedures
+
+**All work follows: Read spec → Implement task → Test → Update tasks.md → Stop for review**
 
 ______________________________________________________________________
 

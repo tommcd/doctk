@@ -138,7 +138,7 @@ Don't push repeatedly hoping it will pass - fix locally first.
 
 ## Pull Request Workflow
 
-### Creating a PR
+### Step 1: Creating a PR
 
 ```bash
 # Push your feature branch
@@ -146,6 +146,111 @@ git push origin feature/<your-feature>
 
 # Create PR using GitHub CLI
 gh pr create --title "Feature: <description>" --body "Description of changes"
+```
+
+**IMPORTANT: Stay on your feature branch after creating the PR!**
+
+### Step 2: Monitor PR Status
+
+After creating the PR, **DO NOT switch branches**. Wait for:
+
+1. CI tests to complete
+1. AI code reviewers to provide feedback
+
+Check PR status:
+
+```bash
+# View PR summary
+gh pr view <PR-NUMBER>
+
+# Check CI status
+gh pr checks <PR-NUMBER>
+```
+
+### Step 3: Fetch Code Review Comments
+
+When human confirms reviews are ready, fetch all inline review comments:
+
+```bash
+# Get all inline review comments with their IDs
+gh api repos/tommcd/doctk/pulls/<PR-NUMBER>/comments --jq '.[] | {id: .id, path: .path, line: .line, body: .body}'
+```
+
+This shows:
+
+- `id` - Comment ID (needed to reply)
+- `path` - File with the comment
+- `line` - Line number
+- `body` - The review comment text
+
+### Step 4: Address Review Comments
+
+For each review comment:
+
+1. **Make the fix** on your feature branch
+1. **Commit and push** the fix
+1. **Reply to the comment** to mark it resolved
+
+```bash
+# Make your fixes
+git add <files>
+git commit -m "fix: address review feedback - <description>"
+git push origin feature/<your-feature>
+
+# Reply to each comment (use the comment ID from step 3)
+gh api -X POST repos/tommcd/doctk/pulls/<PR-NUMBER>/comments/<COMMENT-ID>/replies \
+  -f body="✅ Fixed - <explanation of what you changed>"
+```
+
+**Repeat for ALL review comments** from all reviewers (Gemini, Copilot, Codex).
+
+### Step 5: Verify Tests Pass
+
+After addressing all feedback:
+
+```bash
+# Check that CI is now passing
+gh pr checks <PR-NUMBER>
+
+# View full PR status
+gh pr view <PR-NUMBER>
+```
+
+Confirm:
+
+- ✓ All tests passing
+- ✓ All review comments addressed
+- ✓ No merge conflicts
+
+### Step 6: Notify Human
+
+Inform the human that:
+
+- All review comments have been addressed
+- All tests are passing
+- PR is ready to merge
+
+**WAIT for human to merge the PR** - Do not merge yourself!
+
+### Step 7: Post-Merge Cleanup (After Human Confirms Merge)
+
+Only after human confirms the PR has been merged:
+
+```bash
+# Switch to master
+git checkout master
+
+# Pull latest changes (includes your merged PR)
+git pull origin master
+
+# Delete local feature branch
+git branch -d feature/<your-feature>
+
+# Delete remote feature branch
+git push origin --delete feature/<your-feature>
+
+# Verify cleanup
+git branch -a  # Should not show your feature branch
 ```
 
 ### PR Requirements
@@ -165,40 +270,30 @@ This project uses **3 AI code reviewers**:
 
 **You must address ALL code review comments** from all three reviewers before merging.
 
-### Addressing Reviews
+## Common PR Workflow Mistakes to Avoid
 
-- Respond to each comment with either:
-  - Changes made and committed
-  - Explanation of why no change is needed
-  - Request for clarification
-- Push additional commits to address feedback
-- Request re-review after addressing comments
+❌ **Don't switch to master immediately after creating PR**
 
-### Merging
+- Stay on feature branch to address review comments
 
-- PR can only be merged after:
-  - All tests pass
-  - All quality checks pass
-  - All code review comments addressed
-  - At least one human approval (if applicable)
-- Use "Squash and merge" for clean history
+❌ **Don't assume PR will auto-merge**
 
-## Post-Merge Cleanup
+- Wait for human confirmation before switching branches
 
-After PR is merged:
+❌ **Don't ignore review comments**
 
-```bash
-# Switch to master
-git checkout master
+- Address ALL comments from ALL reviewers
 
-# Pull latest changes
-git pull origin master
+❌ **Don't merge yourself**
 
-# Delete local feature branch
-git branch -d feature/<your-feature>
+- Let human click the merge button
 
-# Delete remote feature branch (if not auto-deleted)
+✅ **Do stay on feature branch until merge is confirmed**
+✅ **Do use `gh api` to programmatically handle review comments**
+✅ **Do verify tests pass after addressing feedback**
+✅ **Do wait for human confirmation before cleanup**
 git push origin --delete feature/<your-feature>
+
 ```
 
 ## Incremental Development
@@ -215,6 +310,7 @@ git push origin --delete feature/<your-feature>
 Follow conventional commit format:
 
 ```
+
 <type>(<scope>): <subject>
 
 <body>
@@ -370,12 +466,19 @@ git commit -m "feat(scope): description"
 # Push and create PR
 git push origin feature/my-feature
 gh pr create
+
+# IMPORTANT: Stay on feature/my-feature branch!
+# Wait for human to notify you about code reviews
+# Address all review feedback on this branch
+# Only switch to master AFTER human confirms PR is merged
 ```
 
 ### Fixing a Bug
 
 ```bash
-# Create fix branch
+# Create fix branch from master
+git checkout master
+git pull origin master
 git checkout -b fix/bug-description
 
 # Write failing test first
@@ -383,9 +486,13 @@ git checkout -b fix/bug-description
 # Ensure test passes
 
 # Commit and push
+git add .
 git commit -m "fix(scope): description"
 git push origin fix/bug-description
 gh pr create
+
+# IMPORTANT: Stay on fix/bug-description branch!
+# Wait for reviews, address feedback, then wait for merge confirmation
 ```
 
 ### Updating Dependencies

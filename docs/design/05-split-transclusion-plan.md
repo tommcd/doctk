@@ -37,7 +37,7 @@
    - Cache resolved fragments and invalidate incrementally on edits.
 
 3. **DSL + API Surface**
-   - Add DSL operations: `split(by="heading", depth=n)`, `shard(strategy, max_nodes)`, `transclude(id=...)`, `link(from, to, role)`, `hydrate()`, `merge(strategy, on_conflict)`.
+   - Add DSL operations: `split(by="heading", depth=n)`, `shard(strategy, max_nodes)`, `transclude(id=...)`, `link(from, to, role)`, `hydrate()`, `merge(overlay=..., on_conflict=...)`.
    - Provide Python API mirrors with type-safe signatures and metadata consumed by LSP/JSON-RPC catalogs.
    - Extend operation metadata schema to include graph semantics (edge types, conflict policies, view/materialization hints).
 
@@ -109,17 +109,32 @@ These laws should inform unit tests for hydration/materialization and for the ad
 - **Caching:** keyed by graph hash + policy; invalidated on node edits or edge changes.
 
 ## API/DSL Specification (initial)
-- `split(by: Literal["heading"] = "heading", depth: int = 2) -> list[Fragment]`
-- `shard(strategy: Literal["balanced", "size", "semantic"] = "balanced", max_nodes: int = 200) -> list[Fragment]`
-- `transclude(id: str, mode: Literal["embed", "link"] = "embed", version: str | None = None)`
-  - Valid modes: `"embed"` (inline) or `"link"` (reference-only)
-- `link(from_id: str, to_id: str, role: Literal["seealso", "refines", "depends"] = "seealso")`
-- `hydrate(root_ids: list[str] | None = None, policy: dict[Literal["cycle"], Literal["error", "skip", "inline-once"]] = {"cycle": "error"}) -> MaterializedView`
-- `merge(strategy: Literal["prefer-source", "prefer-target"] = "prefer-source", on_conflict: Literal["annotate", "fail", "prefer-source", "prefer-target"] = "annotate", overlay: Document | None = None) -> Document`
-- `validate_graph(strict: bool = True) -> Diagnostics`
-- All operations emit provenance payloads and stable IDs; JSON-RPC wrappers serialize both logical and materialized views. Type
-  metadata should enumerate accepted string literals (e.g., `role`, `mode`, `strategy`, and `on_conflict`) for LSP/CLI validat
-  ion.
+
+```python
+from typing import Literal, Optional, TypedDict
+
+SplitKey = str  # currently only "heading" is supported; other strategies (e.g., "path", "predicate") can be added
+ShardStrategy = Literal["balanced", "size", "semantic"]
+TransclusionMode = Literal["embed", "link"]
+LinkRole = Literal["seealso", "refines", "depends"]
+CyclePolicy = Literal["error", "skip", "inline-once"]
+
+class HydratePolicy(TypedDict, total=False):
+    cycle: CyclePolicy  # default "error"
+
+ConflictPolicy = Literal["annotate", "fail", "prefer-source", "prefer-target"]
+
+def split(by: SplitKey = "heading", depth: int = 2) -> list[Fragment]: ...
+def shard(strategy: ShardStrategy = "balanced", max_nodes: int = 200) -> list[Fragment]: ...
+def transclude(id: str, mode: TransclusionMode = "embed", version: Optional[str] = None): ...
+def link(from_id: str, to_id: str, role: LinkRole = "seealso"): ...
+def hydrate(root_ids: list[str] | None = None, policy: HydratePolicy | None = None) -> MaterializedView: ...
+def merge(on_conflict: ConflictPolicy = "annotate", overlay: Document | None = None) -> Document: ...
+def validate_graph(strict: bool = True) -> Diagnostics: ...
+```
+
+- All operations emit provenance payloads and stable IDs; JSON-RPC wrappers serialize both logical and materialized views. Type metadata enumerates accepted string literals (e.g., `role`, `mode`, `cycle`, and `on_conflict`) for LSP/CLI validation, and `hydrate` defaults to `{ "cycle": "error" }` when `policy` is omitted.
+- Enumerated parameters use `typing.Literal`/`TypedDict` to make valid options explicit for implementers, validators, and LSP signature help, matching the “enumerate accepted string literals” review guidance.
 
 ## Implementation Steps (detailed)
 1. **Stable ID rollout**

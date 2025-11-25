@@ -52,10 +52,11 @@ The doctk core exposes a functional document model (`Document`, `Node`) with com
 
 - **Immutability hygiene:** deep-copy metadata (or use persistent maps) in transforms to prevent aliasing between originals and results.
 - **Source spans:** attach `source_span` to AST nodes during parse to remove heuristic line matching and to improve diagnostics/round-trip mapping.
+- **Enumerated parameters:** prefer `typing.Literal` (e.g., `mode`, `role`, `strategy`, `cycle`, `on_conflict`) and structured policies (e.g., `TypedDict`) so validators and LSP signature help can surface allowed values consistently.
 
 ## Opportunities to Strengthen the Design
 - **Graph model for split/combine**: Represent documents as fragment graphs with containment, link, and transclusion edges; lift existing tree operations to graph morphisms to support sharding and recomposition.
-- **Conflict-aware merging**: Borrow CRDT/overlay filesystem ideas to resolve shard merges with policies (`prefer-source`, `annotate`, `manual`) and provenance annotations.
+- **Conflict-aware merging**: Borrow CRDT/overlay filesystem ideas to resolve shard merges with policies (`annotate`, `fail`, `prefer-source`, `prefer-target`) and provenance annotations.
 - **Navigation & diagnostics**: Add graph-aware outline diagnostics (cycles, missing targets, version skew) and hover/tooling that surface source provenance and link semantics.
 - **Performance & observability**: Cache resolved fragments, incrementally invalidate on edit, and extend performance monitoring to graph traversals with thresholds for resolution and materialization.
 - **Ecosystem alignment**: Provide adapters for common transclusion syntaxes (Markdown include, Org noweb, DITA conref) to avoid reinventing formats and ease adoption.

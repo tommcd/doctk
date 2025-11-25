@@ -7,7 +7,10 @@ Implements the fundamental Document and Node classes following category theory p
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
+
+if TYPE_CHECKING:
+    from doctk.identity import NodeId, Provenance, SourceSpan
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -40,6 +43,9 @@ class Heading(Node):
     text: str
     children: list[Node] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
+    id: "NodeId | None" = None
+    provenance: "Provenance | None" = None
+    source_span: "SourceSpan | None" = None
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_heading(self)
@@ -78,6 +84,9 @@ class Paragraph(Node):
 
     content: str
     metadata: dict[str, Any] = field(default_factory=dict)
+    id: "NodeId | None" = None
+    provenance: "Provenance | None" = None
+    source_span: "SourceSpan | None" = None
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_paragraph(self)
@@ -93,6 +102,9 @@ class List(Node):
     ordered: bool
     items: list[Node]
     metadata: dict[str, Any] = field(default_factory=dict)
+    id: "NodeId | None" = None
+    provenance: "Provenance | None" = None
+    source_span: "SourceSpan | None" = None
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_list(self)
@@ -120,6 +132,9 @@ class ListItem(Node):
 
     content: list[Node]
     metadata: dict[str, Any] = field(default_factory=dict)
+    id: "NodeId | None" = None
+    provenance: "Provenance | None" = None
+    source_span: "SourceSpan | None" = None
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_list_item(self)
@@ -139,6 +154,9 @@ class CodeBlock(Node):
     code: str
     language: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    id: "NodeId | None" = None
+    provenance: "Provenance | None" = None
+    source_span: "SourceSpan | None" = None
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_code_block(self)
@@ -158,6 +176,9 @@ class BlockQuote(Node):
 
     content: list[Node]
     metadata: dict[str, Any] = field(default_factory=dict)
+    id: "NodeId | None" = None
+    provenance: "Provenance | None" = None
+    source_span: "SourceSpan | None" = None
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_block_quote(self)

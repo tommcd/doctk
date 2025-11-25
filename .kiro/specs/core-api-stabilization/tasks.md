@@ -117,20 +117,20 @@ Implement canonical serialization for all node types and the hint generation fun
 
 **Acceptance Criteria:**
 
-- [ ] `_canonicalize_node()` function for all node types (Heading, Paragraph, CodeBlock, ListItem, List, BlockQuote)
-- [ ] Unicode NFC normalization applied to all text
-- [ ] Whitespace normalized (strip leading/trailing, collapse internal to single space)
-- [ ] Tabs converted to 4 spaces
-- [ ] Line endings converted to LF (\\n)
-- [ ] Heading canonicalization excludes level (preserves ID across promote/demote)
-- [ ] Paragraph canonicalization uses content only
-- [ ] CodeBlock canonicalization includes language and code (preserves whitespace in code)
-- [ ] `_generate_hint()` function with deterministic slugification
-- [ ] Hint generation: lowercase, spaces→hyphens, special chars removed
-- [ ] Hint truncated to 32 characters
-- [ ] Fallback to node type for non-text nodes
-- [ ] Deterministic output (same input → same output)
-- [ ] UTF-8 encoding specified
+- [x] `_canonicalize_node()` function for all node types (Heading, Paragraph, CodeBlock, ListItem, List, BlockQuote)
+- [x] Unicode NFC normalization applied to all text
+- [x] Whitespace normalized (strip leading/trailing, collapse internal to single space)
+- [x] Tabs converted to 4 spaces
+- [x] Line endings converted to LF (\\n)
+- [x] Heading canonicalization excludes level (preserves ID across promote/demote)
+- [x] Paragraph canonicalization uses content only
+- [x] CodeBlock canonicalization includes language and code (preserves whitespace in code)
+- [x] `_generate_hint()` function with deterministic slugification
+- [x] Hint generation: lowercase, spaces→hyphens, special chars removed
+- [x] Hint truncated to 32 characters
+- [x] Fallback to node type for non-text nodes
+- [x] Deterministic output (same input → same output)
+- [x] UTF-8 encoding specified
 
 **Files to Modify:**
 
@@ -217,16 +217,16 @@ Implement caching system for NodeId generation to optimize performance on large 
 
 **Acceptance Criteria:**
 
-- [ ] Module-level cache dictionary `_node_id_cache`
-- [ ] Explicit documentation: "IN-PROCESS, NON-PERSISTENT cache only"
-- [ ] Warning comment: "DO NOT persist or share this cache across processes"
-- [ ] `_get_node_cache_key()` function for lightweight cache keys
-- [ ] Cache keys use Python's `hash()` (process-specific, randomized)
-- [ ] Documentation that cache keys are NOT stable across runs
-- [ ] Cache integration in `NodeId.from_node()`
-- [ ] `clear_node_id_cache()` function for testing
-- [ ] Cache size management (prevent memory leaks)
-- [ ] Performance improvement measurable (>50% speedup on repeated parsing)
+- [x] Module-level cache dictionary `_node_id_cache`
+- [x] Explicit documentation: "IN-PROCESS, NON-PERSISTENT cache only"
+- [x] Warning comment: "DO NOT persist or share this cache across processes"
+- [x] `_get_node_cache_key()` function for lightweight cache keys
+- [x] Cache keys use Python's `hash()` (process-specific, randomized)
+- [x] Documentation that cache keys are NOT stable across runs
+- [x] Cache integration in `NodeId.from_node()`
+- [x] `clear_node_id_cache()` function for testing
+- [x] Cache size management (prevent memory leaks)
+- [x] Performance improvement measurable (>50% speedup on repeated parsing)
 
 **Files to Modify:**
 
@@ -263,12 +263,12 @@ Add NodeId, Provenance, and SourceSpan fields to the Node base class and update 
 
 **Acceptance Criteria:**
 
-- [ ] `Node` base class has `id`, `provenance`, `source_span` fields
-- [ ] All node subclasses (Heading, Paragraph, CodeBlock, etc.) updated
-- [ ] Default values are None (optional fields)
-- [ ] Existing constructors remain compatible
-- [ ] Type hints updated throughout
-- [ ] No breaking changes to existing API
+- [x] `Node` base class has `id`, `provenance`, `source_span` fields
+- [x] All node subclasses (Heading, Paragraph, CodeBlock, etc.) updated
+- [x] Default values are None (optional fields)
+- [x] Existing constructors remain compatible
+- [x] Type hints updated throughout
+- [x] No breaking changes to existing API
 
 **Files to Modify:**
 

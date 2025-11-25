@@ -37,16 +37,16 @@ Implement the core data structures for stable node identity: NodeId, Provenance,
 
 - [x] `NodeId` class with content_hash (full 64-char SHA-256), hint, node_type fields
 - [x] `NodeId.__str__()` returns 16-character canonical format (type:hint:hash16)
-- [ ] `NodeId.to_short_string()` returns 8-character display format (for UI only)
-- [ ] `NodeId.from_string()` method with validation (requires exactly 16-char hash)
-- [ ] `NodeId.from_node()` method with caching
-- [ ] `NodeId.__eq__()` and `__hash__()` use first 16 characters for consistency
-- [ ] Round-trip guarantee: `NodeId.from_string(str(node_id)) == node_id`
-- [ ] `Provenance` class with origin tracking fields
-- [ ] `ProvenanceContext` class for context management
-- [ ] `SourceSpan` class with line/column positions
-- [ ] All classes are frozen dataclasses (immutable)
-- [ ] Comprehensive docstrings and type hints
+- [x] `NodeId.to_short_string()` returns 8-character display format (for UI only)
+- [x] `NodeId.from_string()` method with validation (requires exactly 16-char hash)
+- [x] `NodeId.from_node()` method with caching
+- [x] `NodeId.__eq__()` and `__hash__()` use first 16 characters for consistency
+- [x] Round-trip guarantee: `NodeId.from_string(str(node_id)) == node_id`
+- [x] `Provenance` class with origin tracking fields
+- [x] `ProvenanceContext` class for context management
+- [x] `SourceSpan` class with line/column positions
+- [x] All classes are frozen dataclasses (immutable)
+- [x] Comprehensive docstrings and type hints
 
 **Files to Create:**
 

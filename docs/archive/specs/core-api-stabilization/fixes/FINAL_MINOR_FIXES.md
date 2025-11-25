@@ -77,7 +77,7 @@ def _get_node_cache_key(node: Node) -> str:
 
 ______________________________________________________________________
 
-### Issue 3: Diagnostic.context_lines Field Missing ✅ FIXED
+### Issue 3: [PLANNED] `Diagnostic.context_lines` Field Missing ✅ FIXED
 
 **Problem:** Examples used `context_lines` but `Diagnostic` dataclass didn't have that field.
 
@@ -203,7 +203,7 @@ ______________________________________________________________________
 - ✅ All reviewer concerns addressed (4 reviews)
 - ✅ All documentation complete and consistent
 - ✅ All helper functions specified (\_generate_hint, \_get_node_cache_key)
-- ✅ All data structures complete (Diagnostic.context_lines)
+- ✅ All data structures complete ([PLANNED] `Diagnostic.context_lines`)
 - ✅ All cache contracts documented (in-process only)
 - ✅ All review prompts aligned (12-week timeline)
 

@@ -211,7 +211,7 @@ ______________________________________________________________________
 - Document integration (Task 1.6)
 - Projection methods (Task 1.6)
 
-✅ **Diagnostic.context_lines**:
+✅ **[PLANNED] `Diagnostic.context_lines`**:
 
 - Field added to dataclass (Task 8.2)
 - Helper to generate from span (Task 8.2)

@@ -625,12 +625,12 @@ Create comprehensive integration tests for the internal operations layer.
 **Priority:** High
 
 **Description:**
-Formally define the Document.to_json() and Document.from_json() methods with their JSON schema for use in JSON-RPC bridge and testing.
+Formally define the [PLANNED] `Document.to_json()` and [PLANNED] `Document.from_json()` methods with their JSON schema for use in JSON-RPC bridge and testing.
 
 **Acceptance Criteria:**
 
-- [ ] `Document.to_json()` method signature defined
-- [ ] `Document.from_json()` class method signature defined
+- [ ] [PLANNED] `Document.to_json()` method signature defined
+- [ ] [PLANNED] `Document.from_json()` class method signature defined
 - [ ] JSON schema documented (nodes array, metadata, version)
 - [ ] Node serialization format specified (type, fields, id)
 - [ ] Deserialization error handling specified

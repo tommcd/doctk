@@ -17,7 +17,7 @@ ______________________________________________________________________
 
 1. \_generate_hint() implementation task
 1. NodeId cache documentation requirements
-1. Diagnostic.context_lines field
+1. [PLANNED] `Diagnostic.context_lines` field
 1. ViewSourceMapping for materialized views
 1. Text edit ID semantics (with_text vs promote)
 1. Updated canonicalization specification (Unicode NFC, etc.)
@@ -183,7 +183,7 @@ ______________________________________________________________________
 
 - \_generate_hint() implementation
 - NodeId cache documentation
-- Diagnostic.context_lines addition
+- [PLANNED] `Diagnostic.context_lines` addition
 - ViewSourceMapping implementation
 - Text edit semantics tests
 - Updated canonicalization tests

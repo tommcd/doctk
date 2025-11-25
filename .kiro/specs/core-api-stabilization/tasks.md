@@ -35,8 +35,8 @@ Implement the core data structures for stable node identity: NodeId, Provenance,
 
 **Acceptance Criteria:**
 
-- [ ] `NodeId` class with content_hash (full 64-char SHA-256), hint, node_type fields
-- [ ] `NodeId.__str__()` returns 16-character canonical format (type:hint:hash16)
+- [x] `NodeId` class with content_hash (full 64-char SHA-256), hint, node_type fields
+- [x] `NodeId.__str__()` returns 16-character canonical format (type:hint:hash16)
 - [ ] `NodeId.to_short_string()` returns 8-character display format (for UI only)
 - [ ] `NodeId.from_string()` method with validation (requires exactly 16-char hash)
 - [ ] `NodeId.from_node()` method with caching

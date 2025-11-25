@@ -286,12 +286,12 @@ Add NodeId-based indexing to Document class for O(1) node lookup and update rela
 
 **Acceptance Criteria:**
 
-- [ ] `Document._id_index` dictionary for fast lookup
-- [ ] `Document.find_node(node_id)` method
-- [ ] `Document.find_nodes(predicate)` method
-- [ ] Index automatically built/updated when nodes change
-- [ ] Existing Document API remains stable (no breaking changes)
-- [ ] Performance: O(1) lookup by ID, O(n) by predicate
+- [x] `Document._id_index` dictionary for fast lookup
+- [x] `Document.find_node(node_id)` method
+- [x] `Document.find_nodes(predicate)` method
+- [x] Index automatically built/updated when nodes change
+- [x] Existing Document API remains stable (no breaking changes)
+- [x] Performance: O(1) lookup by ID, O(n) by predicate
 
 **Files to Modify:**
 

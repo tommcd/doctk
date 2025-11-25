@@ -232,6 +232,49 @@ class Document(Generic[T]):
 
     def __init__(self, nodes: list[T]):
         self.nodes = nodes
+        self._id_index: dict[NodeId, T] = {}
+        self._build_id_index()
+
+    def _build_id_index(self) -> None:
+        """Build index of nodes by their IDs for O(1) lookup."""
+        self._id_index.clear()
+        for node in self.nodes:
+            if hasattr(node, "id") and node.id is not None:
+                self._id_index[node.id] = node
+
+    def find_node(self, node_id: "NodeId") -> T | None:
+        """
+        Find node by ID with O(1) lookup.
+
+        Args:
+            node_id: NodeId to search for
+
+        Returns:
+            Node with matching ID, or None if not found
+
+        Examples:
+            >>> doc = Document([heading1, heading2])
+            >>> node = doc.find_node(heading1.id)
+            >>> assert node == heading1
+        """
+        return self._id_index.get(node_id)
+
+    def find_nodes(self, predicate: Callable[[T], bool]) -> "Document[T]":
+        """
+        Find all nodes matching predicate with O(n) search.
+
+        Args:
+            predicate: Function that returns True for matching nodes
+
+        Returns:
+            New Document containing matching nodes
+
+        Examples:
+            >>> doc = Document([heading1, paragraph1, heading2])
+            >>> headings = doc.find_nodes(lambda n: isinstance(n, Heading))
+            >>> assert len(headings.nodes) == 2
+        """
+        return Document([node for node in self.nodes if predicate(node)])
 
     # Functor operations
     def map(self, f: Callable[[T], U]) -> "Document[U]":
@@ -241,7 +284,9 @@ class Document(Generic[T]):
         Functor law: map(id) = id
         Functor law: map(f . g) = map(f) . map(g)
         """
-        return Document([f(node) for node in self.nodes])
+        result = Document([f(node) for node in self.nodes])
+        result._build_id_index()
+        return result
 
     def filter(self, predicate: Callable[[T], bool]) -> "Document[T]":
         """
@@ -249,7 +294,9 @@ class Document(Generic[T]):
 
         This is set-theoretic filtering.
         """
-        return Document([node for node in self.nodes if predicate(node)])
+        result = Document([node for node in self.nodes if predicate(node)])
+        result._build_id_index()
+        return result
 
     # Monad operations
     def flatmap(self, f: Callable[[T], "Document[U]"]) -> "Document[U]":
@@ -260,10 +307,12 @@ class Document(Generic[T]):
         Monad law: return(x).flatmap(f) = f(x)
         Monad law: m.flatmap(f).flatmap(g) = m.flatmap(lambda x: f(x).flatmap(g))
         """
-        result = []
+        result_nodes = []
         for node in self.nodes:
-            result.extend(f(node).nodes)
-        return Document(result)
+            result_nodes.extend(f(node).nodes)
+        result = Document(result_nodes)
+        result._build_id_index()
+        return result
 
     def reduce(self, f: Callable[[U, T], U], initial: U) -> U:
         """

@@ -18,7 +18,9 @@ All work on this project follows the spec-driven development methodology. You MU
 
 **This document (CLAUDE.md)** provides comprehensive Claude-specific project context and reference information.
 
-**Auto-included steering documents** (always in your context):
+**Note:** Unlike Kiro, Claude does not automatically include steering documents. You must explicitly read the files listed above.
+
+**Available steering documents** (read as needed):
 
 - **ai-agent-quick-reference.md** - Golden rules, checklist, commands
 - **workflow.md** - Development workflow, branch strategy, quality gates
@@ -26,19 +28,6 @@ All work on this project follows the spec-driven development methodology. You MU
 - **product.md** - Product overview and philosophy
 - **tech.md** - Tech stack, build system, and common commands
 - **structure.md** - Project organization and conventions
-
-## Document Purpose
-
-This document provides **comprehensive project context for Claude**.
-
-**IMPORTANT:** This project was built using **spec-driven development with Kiro specs**. All AI agents working on this project must understand and follow the Kiro spec methodology.
-
-**Essential guides for spec-driven development:**
-
-1. **[AGENTS.md](AGENTS.md)** - Understanding Kiro specs (requirements, design, tasks)
-1. **[.kiro/steering/workflow.md](.kiro/steering/workflow.md)** - Development workflow
-1. **[.kiro/steering/ai-agent-quick-reference.md](.kiro/steering/ai-agent-quick-reference.md)** - Quick reference
-1. **CLAUDE.md** (this document) - Comprehensive project reference
 
 ## Table of Contents
 

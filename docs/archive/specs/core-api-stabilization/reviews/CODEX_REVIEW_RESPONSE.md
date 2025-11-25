@@ -187,7 +187,7 @@ def test_rollback_from_stable_to_positional():
 
     # Rollback to positional
     config.use_stable_ids = False
-    doc2 = Document.from_json(json_str)
+    doc2 = `Document.from_json`(json_str)  # [PLANNED]
 
     # Should use legacy_id
     assert doc2.nodes[0].id == "h2-0"

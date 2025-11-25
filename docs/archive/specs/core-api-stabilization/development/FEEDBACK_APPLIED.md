@@ -71,7 +71,7 @@ ______________________________________________________________________
 
 ### 2. ✅ Define Serialization Interface First
 
-**Feedback:** "Add a small task to Phase 7 to formally define the Document.to_json / from_json methods before they are implemented and tested."
+**Feedback:** "Add a small task to Phase 7 to formally define the [PLANNED] `Document.to_json` / [PLANNED] `from_json` methods before they are implemented and tested."
 
 **Action Taken:** Added new Task 7.2 before dual-ID serialization:
 
@@ -81,12 +81,12 @@ ______________________________________________________________________
 **Priority:** Critical
 
 **Description:**
-Formally define the Document.to_json() and Document.from_json() methods with their JSON schema before implementing dual-ID serialization.
+Formally define the [PLANNED] `Document.to_json()` and [PLANNED] `Document.from_json()` methods with their JSON schema before implementing dual-ID serialization.
 
 **Acceptance Criteria:**
 
-- [ ] `Document.to_json()` method signature defined
-- [ ] `Document.from_json()` class method signature defined
+- [ ] [PLANNED] `Document.to_json()` method signature defined
+- [ ] [PLANNED] `Document.from_json()` class method signature defined
 - [ ] JSON schema documented (nodes array, metadata, version)
 - [ ] Node serialization format specified (type, fields, id)
 - [ ] Deserialization error handling specified

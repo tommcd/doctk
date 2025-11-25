@@ -297,7 +297,7 @@ Pay special attention to:
 
    - \_generate_hint() specification
    - NodeId cache documentation
-   - Diagnostic.context_lines field
+   - [PLANNED] `Diagnostic.context_lines` field
    - ViewSourceMapping for materialized views
    - Text edit ID semantics
 

@@ -1,0 +1,35 @@
+[33mcommit a170c36a911554a9564511c45596a93f7cee8222[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/stable-node-identity[m[33m)[m
+Author: tommcd <tcmcdermott@gmail.com>
+Date:   Wed Nov 26 07:38:59 2025 +0000
+
+    feat(core): complete Task 1.8 - comprehensive unit tests for stable identity
+
+    - Created 91 comprehensive unit tests across 6 test files
+    - Achieved 95.50% coverage for identity module (exceeds 95% target)
+    - Tests cover:
+      - NodeId creation, string conversion, and round-tripping
+      - Canonical serialization with Unicode/whitespace normalization
+      - Hint generation with slugification and truncation
+      - ID stability across structural operations (promote/demote)
+      - ID changes on text edits
+      - Provenance population and updates
+      - Source span block-level accuracy
+      - ViewSourceMapping projection
+      - Caching performance
+      - Error handling and edge cases
+      - Git command fallbacks
+      - Unknown node type handling
+
+    All tests passing, ruff compliant.
+
+    Validates: Requirements 1.1-1.7, Design sections on stable identity
+
+ .kiro/specs/core-api-stabilization/tasks.md     |  36 [32m++++++[m[31m------[m
+ tests/unit/test_bridge.py                       |   4 [32m+[m[31m-[m
+ tests/unit/test_canonicalization.py             |  44 [32m+++++++++++++++[m
+ tests/unit/test_extension_bridge_integration.py |  10 [32m+[m[31m---[m
+ tests/unit/test_identity_edge_cases.py          | 216 [32m+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ tests/unit/test_provenance.py                   |   4 [32m++[m
+ tests/unit/test_stable_ids.py                   | 195 [32m++++++++++++++++++++++++++++++++++++++++++++++++++[m[31m--------------[m
+ tests/unit/test_view_mapping.py                 | 300 [32m+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ 8 files changed, 740 insertions(+), 69 deletions(-)

@@ -734,9 +734,7 @@ Section content.
         # This document has code blocks which previously caused line number offsets
         from pathlib import Path
 
-        fixture_path = (
-            Path(__file__).resolve().parent.parent.parent / "fixtures/md/realistic_B.md"
-        )
+        fixture_path = Path(__file__).resolve().parent.parent.parent / "fixtures/md/realistic_B.md"
         doc_text = fixture_path.read_text()
 
         request = {

@@ -189,7 +189,8 @@ For each review comment:
 
 1. **Make the fix** on your feature branch
 1. **Commit and push** the fix
-1. **Reply to the comment** to mark it resolved
+1. **Reply to the comment** with detail of the fix or reason not to address
+1. **Resolve conversation** the conversation should be resolved
 
 ```bash
 # Make your fixes

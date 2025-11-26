@@ -57,12 +57,8 @@ def test_bridge_module_can_run_as_main():
 
         # An ImportError would appear in stderr with "No module named"
         stderr_text = stderr.decode()
-        assert "No module named" not in stderr_text, (
-            f"Module import failed: {stderr_text}"
-        )
-        assert "ModuleNotFoundError" not in stderr_text, (
-            f"Module not found: {stderr_text}"
-        )
+        assert "No module named" not in stderr_text, f"Module import failed: {stderr_text}"
+        assert "ModuleNotFoundError" not in stderr_text, f"Module not found: {stderr_text}"
 
     finally:
         # Ensure cleanup
@@ -137,7 +133,7 @@ def test_bridge_process_can_actually_start():
                 if "BRIDGE_READY" in line:
                     ready = True
                     break
-            except Exception:
+            except Exception:  # noqa: S110
                 # If reading fails, continue waiting
                 pass
 

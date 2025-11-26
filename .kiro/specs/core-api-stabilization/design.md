@@ -1471,6 +1471,17 @@ class Document(Generic[T]):
     # ... existing methods (map, filter, etc.)
 ```
 
+**Recursive Indexing:**
+The ID index is built recursively to include all nodes in the document tree, not just top-level nodes. This ensures O(1) lookup for:
+
+- Top-level document nodes
+- Nested list items (`List.items`)
+- BlockQuote nested content (`BlockQuote.content`)
+- Heading children (`Heading.children`)
+- Any other nested structures
+
+**Implementation:** The `_build_id_index()` method uses a recursive helper function to traverse the entire node tree and index every node that has an ID.
+
 ## Error Handling
 
 ### Diagnostic System

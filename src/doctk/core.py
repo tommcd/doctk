@@ -7,7 +7,10 @@ Implements the fundamental Document and Node classes following category theory p
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
+
+if TYPE_CHECKING:
+    from doctk.identity import NodeId, Provenance, SourceSpan, ViewSourceMapping
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -40,6 +43,9 @@ class Heading(Node):
     text: str
     children: list[Node] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
+    id: "NodeId | None" = None
+    provenance: "Provenance | None" = None
+    source_span: "SourceSpan | None" = None
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_heading(self)
@@ -53,23 +59,75 @@ class Heading(Node):
             "metadata": self.metadata,
         }
 
-    def promote(self) -> "Heading":
-        """Decrease heading level (h3 -> h2). Identity if already h1."""
-        return Heading(
-            level=max(1, self.level - 1),
-            text=self.text,
-            children=self.children,
-            metadata=self.metadata,
+    def _with_updates(
+        self,
+        level: int | None = None,
+        text: str | None = None,
+        children: list[Node] | None = None,
+        metadata: dict[str, Any] | None = None,
+        regenerate_id: bool = False,
+    ) -> "Heading":
+        """Create a new Heading with updated attributes."""
+        import copy
+
+        from doctk.identity import NodeId
+
+        new_heading = Heading(
+            level=level if level is not None else self.level,
+            text=text if text is not None else self.text,
+            children=children if children is not None else self.children,
+            metadata=copy.deepcopy(metadata)
+            if metadata is not None
+            else copy.deepcopy(self.metadata),
+            provenance=self.provenance.with_modification() if self.provenance else None,
+            source_span=self.source_span,
         )
+        new_heading.id = NodeId.from_node(new_heading) if regenerate_id else self.id
+        return new_heading
+
+    def with_text(self, text: str) -> "Heading":
+        """
+        Create new heading with different text (generates new NodeId).
+
+        Text is part of canonical form, so changing it generates a new ID.
+
+        Args:
+            text: New heading text
+
+        Returns:
+            New Heading with updated text and new NodeId
+        """
+        return self._with_updates(text=text, regenerate_id=True)
+
+    def with_metadata(self, metadata: dict[str, Any]) -> "Heading":
+        """
+        Create new heading with different metadata (preserves NodeId).
+
+        Metadata is NOT part of canonical form, so ID is preserved.
+
+        Args:
+            metadata: New metadata dictionary
+
+        Returns:
+            New Heading with updated metadata but same NodeId
+        """
+        return self._with_updates(metadata=metadata)
+
+    def promote(self) -> "Heading":
+        """
+        Decrease heading level (h3 -> h2). Identity if already h1.
+
+        Level is NOT part of canonical form, so NodeId is preserved.
+        """
+        return self._with_updates(level=max(1, self.level - 1))
 
     def demote(self) -> "Heading":
-        """Increase heading level (h2 -> h3). Identity if already h6."""
-        return Heading(
-            level=min(6, self.level + 1),
-            text=self.text,
-            children=self.children,
-            metadata=self.metadata,
-        )
+        """
+        Increase heading level (h2 -> h3). Identity if already h6.
+
+        Level is NOT part of canonical form, so NodeId is preserved.
+        """
+        return self._with_updates(level=min(6, self.level + 1))
 
 
 @dataclass
@@ -78,12 +136,65 @@ class Paragraph(Node):
 
     content: str
     metadata: dict[str, Any] = field(default_factory=dict)
+    id: "NodeId | None" = None
+    provenance: "Provenance | None" = None
+    source_span: "SourceSpan | None" = None
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_paragraph(self)
 
     def to_dict(self) -> dict[str, Any]:
         return {"type": "paragraph", "content": self.content, "metadata": self.metadata}
+
+    def _with_updates(
+        self,
+        content: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        regenerate_id: bool = False,
+    ) -> "Paragraph":
+        """Create a new Paragraph with updated attributes."""
+        import copy
+
+        from doctk.identity import NodeId
+
+        new_paragraph = Paragraph(
+            content=content if content is not None else self.content,
+            metadata=copy.deepcopy(metadata)
+            if metadata is not None
+            else copy.deepcopy(self.metadata),
+            provenance=self.provenance.with_modification() if self.provenance else None,
+            source_span=self.source_span,
+        )
+        new_paragraph.id = NodeId.from_node(new_paragraph) if regenerate_id else self.id
+        return new_paragraph
+
+    def with_content(self, content: str) -> "Paragraph":
+        """
+        Create new paragraph with different content (generates new NodeId).
+
+        Content is part of canonical form, so changing it generates a new ID.
+
+        Args:
+            content: New paragraph content
+
+        Returns:
+            New Paragraph with updated content and new NodeId
+        """
+        return self._with_updates(content=content, regenerate_id=True)
+
+    def with_metadata(self, metadata: dict[str, Any]) -> "Paragraph":
+        """
+        Create new paragraph with different metadata (preserves NodeId).
+
+        Metadata is NOT part of canonical form, so ID is preserved.
+
+        Args:
+            metadata: New metadata dictionary
+
+        Returns:
+            New Paragraph with updated metadata but same NodeId
+        """
+        return self._with_updates(metadata=metadata)
 
 
 @dataclass
@@ -93,6 +204,9 @@ class List(Node):
     ordered: bool
     items: list[Node]
     metadata: dict[str, Any] = field(default_factory=dict)
+    id: "NodeId | None" = None
+    provenance: "Provenance | None" = None
+    source_span: "SourceSpan | None" = None
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_list(self)
@@ -105,13 +219,59 @@ class List(Node):
             "metadata": self.metadata,
         }
 
+    def _with_updates(
+        self,
+        ordered: bool | None = None,
+        items: list[Node] | None = None,
+        metadata: dict[str, Any] | None = None,
+        regenerate_id: bool = False,
+    ) -> "List":
+        """Create a new List with updated attributes."""
+        import copy
+
+        from doctk.identity import NodeId
+
+        new_list = List(
+            ordered=ordered if ordered is not None else self.ordered,
+            items=items if items is not None else self.items,
+            metadata=copy.deepcopy(metadata)
+            if metadata is not None
+            else copy.deepcopy(self.metadata),
+            provenance=self.provenance.with_modification() if self.provenance else None,
+            source_span=self.source_span,
+        )
+        new_list.id = NodeId.from_node(new_list) if regenerate_id else self.id
+        return new_list
+
     def to_ordered(self) -> "List":
-        """Convert to ordered list."""
-        return List(ordered=True, items=self.items, metadata=self.metadata)
+        """
+        Convert to ordered list (preserves NodeId).
+
+        List type (ordered/unordered) is NOT part of canonical form.
+        """
+        return self._with_updates(ordered=True)
 
     def to_unordered(self) -> "List":
-        """Convert to unordered list."""
-        return List(ordered=False, items=self.items, metadata=self.metadata)
+        """
+        Convert to unordered list (preserves NodeId).
+
+        List type (ordered/unordered) is NOT part of canonical form.
+        """
+        return self._with_updates(ordered=False)
+
+    def with_metadata(self, metadata: dict[str, Any]) -> "List":
+        """
+        Create new list with different metadata (preserves NodeId).
+
+        Metadata is NOT part of canonical form, so ID is preserved.
+
+        Args:
+            metadata: New metadata dictionary
+
+        Returns:
+            New List with updated metadata but same NodeId
+        """
+        return self._with_updates(metadata=metadata)
 
 
 @dataclass
@@ -120,6 +280,9 @@ class ListItem(Node):
 
     content: list[Node]
     metadata: dict[str, Any] = field(default_factory=dict)
+    id: "NodeId | None" = None
+    provenance: "Provenance | None" = None
+    source_span: "SourceSpan | None" = None
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_list_item(self)
@@ -131,6 +294,56 @@ class ListItem(Node):
             "metadata": self.metadata,
         }
 
+    def _with_updates(
+        self,
+        content: list[Node] | None = None,
+        metadata: dict[str, Any] | None = None,
+        regenerate_id: bool = False,
+    ) -> "ListItem":
+        """Create a new ListItem with updated attributes."""
+        import copy
+
+        from doctk.identity import NodeId
+
+        new_list_item = ListItem(
+            content=content if content is not None else self.content,
+            metadata=copy.deepcopy(metadata)
+            if metadata is not None
+            else copy.deepcopy(self.metadata),
+            provenance=self.provenance.with_modification() if self.provenance else None,
+            source_span=self.source_span,
+        )
+        new_list_item.id = NodeId.from_node(new_list_item) if regenerate_id else self.id
+        return new_list_item
+
+    def with_content(self, content: list[Node]) -> "ListItem":
+        """
+        Create new list item with different content (generates new NodeId).
+
+        Content is part of canonical form, so changing it generates a new ID.
+
+        Args:
+            content: New list item content nodes
+
+        Returns:
+            New ListItem with updated content and new NodeId
+        """
+        return self._with_updates(content=content, regenerate_id=True)
+
+    def with_metadata(self, metadata: dict[str, Any]) -> "ListItem":
+        """
+        Create new list item with different metadata (preserves NodeId).
+
+        Metadata is NOT part of canonical form, so ID is preserved.
+
+        Args:
+            metadata: New metadata dictionary
+
+        Returns:
+            New ListItem with updated metadata but same NodeId
+        """
+        return self._with_updates(metadata=metadata)
+
 
 @dataclass
 class CodeBlock(Node):
@@ -139,6 +352,9 @@ class CodeBlock(Node):
     code: str
     language: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    id: "NodeId | None" = None
+    provenance: "Provenance | None" = None
+    source_span: "SourceSpan | None" = None
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_code_block(self)
@@ -151,6 +367,72 @@ class CodeBlock(Node):
             "metadata": self.metadata,
         }
 
+    def _with_updates(
+        self,
+        code: str | None = None,
+        language: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        regenerate_id: bool = False,
+    ) -> "CodeBlock":
+        """Create a new CodeBlock with updated attributes."""
+        import copy
+
+        from doctk.identity import NodeId
+
+        new_code_block = CodeBlock(
+            code=code if code is not None else self.code,
+            language=language if language is not None else self.language,
+            metadata=copy.deepcopy(metadata)
+            if metadata is not None
+            else copy.deepcopy(self.metadata),
+            provenance=self.provenance.with_modification() if self.provenance else None,
+            source_span=self.source_span,
+        )
+        new_code_block.id = NodeId.from_node(new_code_block) if regenerate_id else self.id
+        return new_code_block
+
+    def with_code(self, code: str) -> "CodeBlock":
+        """
+        Create new code block with different code (generates new NodeId).
+
+        Code is part of canonical form, so changing it generates a new ID.
+
+        Args:
+            code: New code content
+
+        Returns:
+            New CodeBlock with updated code and new NodeId
+        """
+        return self._with_updates(code=code, regenerate_id=True)
+
+    def with_language(self, language: str | None) -> "CodeBlock":
+        """
+        Create new code block with different language (generates new NodeId).
+
+        Language is part of canonical form, so changing it generates a new ID.
+
+        Args:
+            language: New language identifier
+
+        Returns:
+            New CodeBlock with updated language and new NodeId
+        """
+        return self._with_updates(language=language, regenerate_id=True)
+
+    def with_metadata(self, metadata: dict[str, Any]) -> "CodeBlock":
+        """
+        Create new code block with different metadata (preserves NodeId).
+
+        Metadata is NOT part of canonical form, so ID is preserved.
+
+        Args:
+            metadata: New metadata dictionary
+
+        Returns:
+            New CodeBlock with updated metadata but same NodeId
+        """
+        return self._with_updates(metadata=metadata)
+
 
 @dataclass
 class BlockQuote(Node):
@@ -158,6 +440,9 @@ class BlockQuote(Node):
 
     content: list[Node]
     metadata: dict[str, Any] = field(default_factory=dict)
+    id: "NodeId | None" = None
+    provenance: "Provenance | None" = None
+    source_span: "SourceSpan | None" = None
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_block_quote(self)
@@ -168,6 +453,42 @@ class BlockQuote(Node):
             "content": [node.to_dict() for node in self.content],
             "metadata": self.metadata,
         }
+
+    def _with_updates(
+        self,
+        content: list[Node] | None = None,
+        metadata: dict[str, Any] | None = None,
+        regenerate_id: bool = False,
+    ) -> "BlockQuote":
+        """Create a new BlockQuote with updated attributes."""
+        import copy
+
+        from doctk.identity import NodeId
+
+        new_blockquote = BlockQuote(
+            content=content if content is not None else self.content,
+            metadata=copy.deepcopy(metadata)
+            if metadata is not None
+            else copy.deepcopy(self.metadata),
+            provenance=self.provenance.with_modification() if self.provenance else None,
+            source_span=self.source_span,
+        )
+        new_blockquote.id = NodeId.from_node(new_blockquote) if regenerate_id else self.id
+        return new_blockquote
+
+    def with_metadata(self, metadata: dict[str, Any]) -> "BlockQuote":
+        """
+        Create new block quote with different metadata (preserves NodeId).
+
+        Metadata is NOT part of canonical form, so ID is preserved.
+
+        Args:
+            metadata: New metadata dictionary
+
+        Returns:
+            New BlockQuote with updated metadata but same NodeId
+        """
+        return self._with_updates(metadata=metadata)
 
 
 class NodeVisitor(ABC):
@@ -211,6 +532,110 @@ class Document(Generic[T]):
 
     def __init__(self, nodes: list[T]):
         self.nodes = nodes
+        self._id_index: dict[NodeId, T] = {}
+        self._view_mappings: list[ViewSourceMapping] = []
+        self._build_id_index()
+
+    def _build_id_index(self) -> None:
+        """
+        Build index of all nodes in the document tree by their IDs for O(1) lookup.
+
+        Recursively traverses the entire document tree to index all nodes,
+        including nested nodes within Lists, ListItems, and BlockQuotes.
+        """
+        self._id_index.clear()
+        for node in self.nodes:
+            self._index_node_recursive(node)
+
+    def _index_node_recursive(self, node: Any) -> None:
+        """
+        Recursively index a node and all its children.
+
+        Args:
+            node: Node to index (along with all descendants)
+        """
+        # Index this node if it has an ID
+        if hasattr(node, "id") and node.id is not None:
+            self._id_index[node.id] = node
+
+        # Recursively index children based on node type
+        if hasattr(node, "children") and node.children:
+            # Heading nodes have children
+            for child in node.children:
+                self._index_node_recursive(child)
+        elif hasattr(node, "items") and node.items:
+            # List nodes have items
+            for item in node.items:
+                self._index_node_recursive(item)
+        elif hasattr(node, "content") and isinstance(node.content, list):
+            # ListItem and BlockQuote nodes have content lists
+            for child in node.content:
+                self._index_node_recursive(child)
+
+    def find_node(self, node_id: "NodeId") -> T | None:
+        """
+        Find any node in the document tree by ID with O(1) lookup.
+
+        Searches all nodes in the tree, including nested nodes within
+        Lists, ListItems, BlockQuotes, and Heading children.
+
+        Args:
+            node_id: NodeId to search for
+
+        Returns:
+            Node with matching ID, or None if not found
+
+        Examples:
+            >>> doc = Document([heading1, heading2])
+            >>> node = doc.find_node(heading1.id)
+            >>> assert node == heading1
+            >>> # Also works for nested nodes
+            >>> nested_item = doc.find_node(list_item.id)
+            >>> assert nested_item == list_item
+        """
+        return self._id_index.get(node_id)
+
+    def find_nodes(self, predicate: Callable[[T], bool]) -> "Document[T]":
+        """
+        Find all nodes matching predicate with O(n) search.
+
+        Args:
+            predicate: Function that returns True for matching nodes
+
+        Returns:
+            New Document containing matching nodes
+
+        Examples:
+            >>> doc = Document([heading1, paragraph1, heading2])
+            >>> headings = doc.find_nodes(lambda n: isinstance(n, Heading))
+            >>> assert len(headings.nodes) == 2
+        """
+        return Document([node for node in self.nodes if predicate(node)])
+
+    def add_view_mapping(self, mapping: "ViewSourceMapping") -> None:
+        """
+        Register a view-to-source mapping.
+
+        Args:
+            mapping: ViewSourceMapping to add
+        """
+        self._view_mappings.append(mapping)
+
+    def find_source_position(self, view_line: int, view_column: int) -> tuple[str, int, int] | None:
+        """
+        Find the source position for a given view position.
+
+        Args:
+            view_line: Line number in view (0-indexed)
+            view_column: Column number in view (0-indexed)
+
+        Returns:
+            Tuple of (source_file, source_line, source_column) or None if not mapped
+        """
+        for mapping in self._view_mappings:
+            if mapping.view_span.contains(view_line, view_column):
+                return mapping.project_to_source(view_line, view_column)
+        return None
 
     # Functor operations
     def map(self, f: Callable[[T], U]) -> "Document[U]":
@@ -220,7 +645,9 @@ class Document(Generic[T]):
         Functor law: map(id) = id
         Functor law: map(f . g) = map(f) . map(g)
         """
-        return Document([f(node) for node in self.nodes])
+        result = Document([f(node) for node in self.nodes])
+        result._build_id_index()
+        return result
 
     def filter(self, predicate: Callable[[T], bool]) -> "Document[T]":
         """
@@ -228,7 +655,9 @@ class Document(Generic[T]):
 
         This is set-theoretic filtering.
         """
-        return Document([node for node in self.nodes if predicate(node)])
+        result = Document([node for node in self.nodes if predicate(node)])
+        result._build_id_index()
+        return result
 
     # Monad operations
     def flatmap(self, f: Callable[[T], "Document[U]"]) -> "Document[U]":
@@ -239,10 +668,12 @@ class Document(Generic[T]):
         Monad law: return(x).flatmap(f) = f(x)
         Monad law: m.flatmap(f).flatmap(g) = m.flatmap(lambda x: f(x).flatmap(g))
         """
-        result = []
+        result_nodes = []
         for node in self.nodes:
-            result.extend(f(node).nodes)
-        return Document(result)
+            result_nodes.extend(f(node).nodes)
+        result = Document(result_nodes)
+        result._build_id_index()
+        return result
 
     def reduce(self, f: Callable[[U, T], U], initial: U) -> U:
         """

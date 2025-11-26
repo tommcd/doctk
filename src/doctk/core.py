@@ -146,6 +146,28 @@ class Paragraph(Node):
     def to_dict(self) -> dict[str, Any]:
         return {"type": "paragraph", "content": self.content, "metadata": self.metadata}
 
+    def _with_updates(
+        self,
+        content: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        regenerate_id: bool = False,
+    ) -> "Paragraph":
+        """Create a new Paragraph with updated attributes."""
+        import copy
+
+        from doctk.identity import NodeId
+
+        new_paragraph = Paragraph(
+            content=content if content is not None else self.content,
+            metadata=copy.deepcopy(metadata)
+            if metadata is not None
+            else copy.deepcopy(self.metadata),
+            provenance=self.provenance.with_modification() if self.provenance else None,
+            source_span=self.source_span,
+        )
+        new_paragraph.id = NodeId.from_node(new_paragraph) if regenerate_id else self.id
+        return new_paragraph
+
     def with_content(self, content: str) -> "Paragraph":
         """
         Create new paragraph with different content (generates new NodeId).
@@ -158,19 +180,7 @@ class Paragraph(Node):
         Returns:
             New Paragraph with updated content and new NodeId
         """
-        import copy
-
-        from doctk.identity import NodeId, Provenance
-
-        new_paragraph = Paragraph(
-            content=content,
-            metadata=copy.deepcopy(self.metadata),
-            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
-            source_span=self.source_span,
-        )
-        # Generate new ID since canonical content changed
-        new_paragraph.id = NodeId.from_node(new_paragraph)
-        return new_paragraph
+        return self._with_updates(content=content, regenerate_id=True)
 
     def with_metadata(self, metadata: dict[str, Any]) -> "Paragraph":
         """
@@ -184,17 +194,7 @@ class Paragraph(Node):
         Returns:
             New Paragraph with updated metadata but same NodeId
         """
-        import copy
-
-        from doctk.identity import Provenance
-
-        return Paragraph(
-            content=self.content,
-            metadata=copy.deepcopy(metadata),
-            id=self.id,  # Preserve ID
-            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
-            source_span=self.source_span,
-        )
+        return self._with_updates(metadata=metadata)
 
 
 @dataclass
@@ -219,24 +219,37 @@ class List(Node):
             "metadata": self.metadata,
         }
 
+    def _with_updates(
+        self,
+        ordered: bool | None = None,
+        items: list[Node] | None = None,
+        metadata: dict[str, Any] | None = None,
+        regenerate_id: bool = False,
+    ) -> "List":
+        """Create a new List with updated attributes."""
+        import copy
+
+        from doctk.identity import NodeId
+
+        new_list = List(
+            ordered=ordered if ordered is not None else self.ordered,
+            items=items if items is not None else self.items,
+            metadata=copy.deepcopy(metadata)
+            if metadata is not None
+            else copy.deepcopy(self.metadata),
+            provenance=self.provenance.with_modification() if self.provenance else None,
+            source_span=self.source_span,
+        )
+        new_list.id = NodeId.from_node(new_list) if regenerate_id else self.id
+        return new_list
+
     def to_ordered(self) -> "List":
         """
         Convert to ordered list (preserves NodeId).
 
         List type (ordered/unordered) is NOT part of canonical form.
         """
-        import copy
-
-        from doctk.identity import Provenance
-
-        return List(
-            ordered=True,
-            items=self.items,
-            metadata=copy.deepcopy(self.metadata),
-            id=self.id,  # Preserve ID
-            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
-            source_span=self.source_span,
-        )
+        return self._with_updates(ordered=True)
 
     def to_unordered(self) -> "List":
         """
@@ -244,18 +257,7 @@ class List(Node):
 
         List type (ordered/unordered) is NOT part of canonical form.
         """
-        import copy
-
-        from doctk.identity import Provenance
-
-        return List(
-            ordered=False,
-            items=self.items,
-            metadata=copy.deepcopy(self.metadata),
-            id=self.id,  # Preserve ID
-            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
-            source_span=self.source_span,
-        )
+        return self._with_updates(ordered=False)
 
     def with_metadata(self, metadata: dict[str, Any]) -> "List":
         """
@@ -269,18 +271,7 @@ class List(Node):
         Returns:
             New List with updated metadata but same NodeId
         """
-        import copy
-
-        from doctk.identity import Provenance
-
-        return List(
-            ordered=self.ordered,
-            items=self.items,
-            metadata=copy.deepcopy(metadata),
-            id=self.id,  # Preserve ID
-            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
-            source_span=self.source_span,
-        )
+        return self._with_updates(metadata=metadata)
 
 
 @dataclass
@@ -303,6 +294,28 @@ class ListItem(Node):
             "metadata": self.metadata,
         }
 
+    def _with_updates(
+        self,
+        content: list[Node] | None = None,
+        metadata: dict[str, Any] | None = None,
+        regenerate_id: bool = False,
+    ) -> "ListItem":
+        """Create a new ListItem with updated attributes."""
+        import copy
+
+        from doctk.identity import NodeId
+
+        new_list_item = ListItem(
+            content=content if content is not None else self.content,
+            metadata=copy.deepcopy(metadata)
+            if metadata is not None
+            else copy.deepcopy(self.metadata),
+            provenance=self.provenance.with_modification() if self.provenance else None,
+            source_span=self.source_span,
+        )
+        new_list_item.id = NodeId.from_node(new_list_item) if regenerate_id else self.id
+        return new_list_item
+
     def with_content(self, content: list[Node]) -> "ListItem":
         """
         Create new list item with different content (generates new NodeId).
@@ -315,19 +328,7 @@ class ListItem(Node):
         Returns:
             New ListItem with updated content and new NodeId
         """
-        import copy
-
-        from doctk.identity import NodeId, Provenance
-
-        new_list_item = ListItem(
-            content=content,
-            metadata=copy.deepcopy(self.metadata),
-            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
-            source_span=self.source_span,
-        )
-        # Generate new ID since canonical content changed
-        new_list_item.id = NodeId.from_node(new_list_item)
-        return new_list_item
+        return self._with_updates(content=content, regenerate_id=True)
 
     def with_metadata(self, metadata: dict[str, Any]) -> "ListItem":
         """
@@ -341,17 +342,7 @@ class ListItem(Node):
         Returns:
             New ListItem with updated metadata but same NodeId
         """
-        import copy
-
-        from doctk.identity import Provenance
-
-        return ListItem(
-            content=self.content,
-            metadata=copy.deepcopy(metadata),
-            id=self.id,  # Preserve ID
-            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
-            source_span=self.source_span,
-        )
+        return self._with_updates(metadata=metadata)
 
 
 @dataclass
@@ -378,29 +369,27 @@ class CodeBlock(Node):
 
     def _with_updates(
         self,
-        level: int | None = None,
-        text: str | None = None,
-        children: list[Node] | None = None,
+        code: str | None = None,
+        language: str | None = None,
         metadata: dict[str, Any] | None = None,
         regenerate_id: bool = False,
-    ) -> "Heading":
-        """Create a new Heading with updated attributes."""
+    ) -> "CodeBlock":
+        """Create a new CodeBlock with updated attributes."""
         import copy
 
         from doctk.identity import NodeId
 
-        new_heading = Heading(
-            level=level if level is not None else self.level,
-            text=text if text is not None else self.text,
-            children=children if children is not None else self.children,
+        new_code_block = CodeBlock(
+            code=code if code is not None else self.code,
+            language=language if language is not None else self.language,
             metadata=copy.deepcopy(metadata)
             if metadata is not None
             else copy.deepcopy(self.metadata),
             provenance=self.provenance.with_modification() if self.provenance else None,
             source_span=self.source_span,
         )
-        new_heading.id = NodeId.from_node(new_heading) if regenerate_id else self.id
-        return new_heading
+        new_code_block.id = NodeId.from_node(new_code_block) if regenerate_id else self.id
+        return new_code_block
 
     def with_code(self, code: str) -> "CodeBlock":
         """
@@ -414,20 +403,7 @@ class CodeBlock(Node):
         Returns:
             New CodeBlock with updated code and new NodeId
         """
-        import copy
-
-        from doctk.identity import NodeId, Provenance
-
-        new_code_block = CodeBlock(
-            code=code,
-            language=self.language,
-            metadata=copy.deepcopy(self.metadata),
-            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
-            source_span=self.source_span,
-        )
-        # Generate new ID since canonical content changed
-        new_code_block.id = NodeId.from_node(new_code_block)
-        return new_code_block
+        return self._with_updates(code=code, regenerate_id=True)
 
     def with_language(self, language: str | None) -> "CodeBlock":
         """
@@ -441,20 +417,7 @@ class CodeBlock(Node):
         Returns:
             New CodeBlock with updated language and new NodeId
         """
-        import copy
-
-        from doctk.identity import NodeId, Provenance
-
-        new_code_block = CodeBlock(
-            code=self.code,
-            language=language,
-            metadata=copy.deepcopy(self.metadata),
-            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
-            source_span=self.source_span,
-        )
-        # Generate new ID since canonical content changed
-        new_code_block.id = NodeId.from_node(new_code_block)
-        return new_code_block
+        return self._with_updates(language=language, regenerate_id=True)
 
     def with_metadata(self, metadata: dict[str, Any]) -> "CodeBlock":
         """
@@ -468,18 +431,7 @@ class CodeBlock(Node):
         Returns:
             New CodeBlock with updated metadata but same NodeId
         """
-        import copy
-
-        from doctk.identity import Provenance
-
-        return CodeBlock(
-            code=self.code,
-            language=self.language,
-            metadata=copy.deepcopy(metadata),
-            id=self.id,  # Preserve ID
-            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
-            source_span=self.source_span,
-        )
+        return self._with_updates(metadata=metadata)
 
 
 @dataclass
@@ -502,6 +454,28 @@ class BlockQuote(Node):
             "metadata": self.metadata,
         }
 
+    def _with_updates(
+        self,
+        content: list[Node] | None = None,
+        metadata: dict[str, Any] | None = None,
+        regenerate_id: bool = False,
+    ) -> "BlockQuote":
+        """Create a new BlockQuote with updated attributes."""
+        import copy
+
+        from doctk.identity import NodeId
+
+        new_blockquote = BlockQuote(
+            content=content if content is not None else self.content,
+            metadata=copy.deepcopy(metadata)
+            if metadata is not None
+            else copy.deepcopy(self.metadata),
+            provenance=self.provenance.with_modification() if self.provenance else None,
+            source_span=self.source_span,
+        )
+        new_blockquote.id = NodeId.from_node(new_blockquote) if regenerate_id else self.id
+        return new_blockquote
+
     def with_metadata(self, metadata: dict[str, Any]) -> "BlockQuote":
         """
         Create new block quote with different metadata (preserves NodeId).
@@ -514,17 +488,7 @@ class BlockQuote(Node):
         Returns:
             New BlockQuote with updated metadata but same NodeId
         """
-        import copy
-
-        from doctk.identity import Provenance
-
-        return BlockQuote(
-            content=self.content,
-            metadata=copy.deepcopy(metadata),
-            id=self.id,  # Preserve ID
-            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
-            source_span=self.source_span,
-        )
+        return self._with_updates(metadata=metadata)
 
 
 class NodeVisitor(ABC):

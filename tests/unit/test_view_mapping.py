@@ -94,8 +94,8 @@ class TestViewSourceMapping:
         source_file, source_line, source_column = mapping.project_to_source(1, 5)
 
         assert source_file == "source.md"
-        assert source_line == 10
-        assert source_column == 5  # Approximate offset for multi-line
+        assert source_line == 11  # 10 + (1 - 0) = 11
+        assert source_column == 5
 
     def test_project_to_source_position_not_in_span(self):
         """Test error when position is outside view span."""

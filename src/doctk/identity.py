@@ -99,6 +99,7 @@ class NodeId:
         """Parse from canonical string representation.
 
         Accepts format: "type:hint:hash16" (16-character hash prefix)
+        Robust parsing handles hints that may contain colons.
 
         Args:
             s: String in format "node_type:hint:hash16"
@@ -118,11 +119,13 @@ class NodeId:
             >>> len(node_id.content_hash)
             16
         """
-        parts = s.split(":")
-        if len(parts) != 3:
-            raise ValueError(f"Invalid NodeId format: {s}. Expected 'type:hint:hash16'")
-
-        node_type, hint, hash_prefix = parts
+        try:
+            # Split from left to get type, then from right to get hash
+            # This handles hints that contain colons
+            node_type, rest = s.split(":", 1)
+            hint, hash_prefix = rest.rsplit(":", 1)
+        except ValueError:
+            raise ValueError(f"Invalid NodeId format: {s}. Expected 'type:hint:hash16'") from None
 
         # Validate hash length (must be 16 chars for canonical format)
         if len(hash_prefix) != 16:
@@ -220,7 +223,9 @@ def _get_node_cache_key(node: "Node") -> str:
     from doctk.core import BlockQuote, CodeBlock, Heading, List, ListItem, Paragraph
 
     if isinstance(node, Heading):
-        return f"h:{node.level}:{hash(node.text)}"
+        # Exclude level from cache key (level not in canonical form)
+        # Limit text length for consistent performance
+        return f"h:{hash(node.text[:100])}"
     elif isinstance(node, Paragraph):
         return f"p:{hash(node.content[:100])}"
     elif isinstance(node, CodeBlock):
@@ -264,10 +269,10 @@ def _canonicalize_node(node: "Node") -> str:
         """Apply normalization rules."""
         # NFC normalization
         text = unicodedata.normalize("NFC", text)
+        # Convert tabs to spaces BEFORE collapsing whitespace
+        text = text.replace("\t", "    ")
         # Strip and collapse whitespace
         text = " ".join(text.split())
-        # Convert tabs to spaces
-        text = text.replace("\t", "    ")
         return text
 
     if isinstance(node, Heading):
@@ -287,9 +292,9 @@ def _canonicalize_node(node: "Node") -> str:
         return f"listitem:{content_str}"
 
     elif isinstance(node, List):
+        # IMPORTANT: Exclude ordered status so to_ordered()/to_unordered() preserve ID
         items_canonical = "|".join(_canonicalize_node(item) for item in node.items)
-        list_type = "ordered" if node.ordered else "unordered"
-        return f"list:{list_type}:{items_canonical}"
+        return f"list:{items_canonical}"
 
     elif isinstance(node, BlockQuote):
         # BlockQuote.content is list[Node], need to serialize it
@@ -459,16 +464,15 @@ class ViewSourceMapping:
         if not self.view_span.contains(view_line, view_column):
             raise ValueError(f"Position ({view_line}, {view_column}) not in view span")
 
-        # Calculate offset within view span
+        # Calculate source position within source span
         if view_line == self.view_span.start_line:
-            offset = view_column - self.view_span.start_column
+            source_line = self.source_span.start_line
+            source_column = self.source_span.start_column + (
+                view_column - self.view_span.start_column
+            )
         else:
-            # Multi-line: approximate offset
-            offset = view_column
-
-        # Map to source span
-        source_line = self.source_span.start_line
-        source_column = self.source_span.start_column + offset
+            source_line = self.source_span.start_line + (view_line - self.view_span.start_line)
+            source_column = view_column
 
         return (self.source_span.source_file or "", source_line, source_column)
 

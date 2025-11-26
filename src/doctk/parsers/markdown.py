@@ -148,7 +148,7 @@ class MarkdownParser:
             elif token.type == "fence" or token.type == "code_block":
                 # Code block (fence has language info, code_block doesn't)
                 code = token.content
-                language = token.info if hasattr(token, "info") and token.info else None
+                language = token.info if token.info else None
 
                 code_block = CodeBlock(code=code, language=language)
 
@@ -233,7 +233,7 @@ class MarkdownParser:
             elif token.type == "fence" or token.type == "code_block":
                 # Code block (fence has language info, code_block doesn't)
                 code = token.content
-                language = token.info if hasattr(token, "info") and token.info else None
+                language = token.info if token.info else None
 
                 nodes.append(CodeBlock(code=code, language=language))
                 i += 1
@@ -396,14 +396,14 @@ class MarkdownParser:
             line_num: 0-indexed line number
 
         Returns:
-            0-indexed column number of last character (exclusive)
+            0-indexed column number of the last character (inclusive).
         """
         if line_num >= len(lines):
             return 0
 
         line = lines[line_num]
-        # Return length of line (exclusive end position)
-        return len(line)
+        # Return index of last character (inclusive)
+        return len(line) - 1 if line else 0
 
     def _extract_until_close(
         self, tokens: list[Token], start: int, close_type: str

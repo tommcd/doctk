@@ -44,13 +44,14 @@ class TestCanonicalization:
         assert id1.content_hash == id2.content_hash
 
     def test_canonicalization_tabs(self):
-        """Test tab conversion."""
+        """Test tab conversion to 4 spaces before whitespace collapse."""
         h1 = Heading(level=2, text="Text\twith\ttabs")
         h2 = Heading(level=2, text="Text    with    tabs")
 
         id1 = NodeId.from_node(h1)
         id2 = NodeId.from_node(h2)
 
+        # After tab→4 spaces conversion and whitespace collapse, these should match
         assert id1.content_hash == id2.content_hash
 
     def test_canonicalization_deterministic(self):
@@ -113,7 +114,7 @@ class TestCanonicalization:
         assert id1.content_hash == id2.content_hash
 
     def test_list_ordered_vs_unordered(self):
-        """Test ordered vs unordered lists have different hashes."""
+        """Test ordered vs unordered lists have SAME hash (preserves ID on conversion)."""
         item = ListItem(content=[Paragraph(content="Item")])
 
         list1 = List(ordered=True, items=[item])
@@ -122,7 +123,8 @@ class TestCanonicalization:
         id1 = NodeId.from_node(list1)
         id2 = NodeId.from_node(list2)
 
-        assert id1.content_hash != id2.content_hash
+        # Ordered status NOT in canonical form, so IDs match
+        assert id1.content_hash == id2.content_hash
 
     def test_listitem_canonicalization(self):
         """Test ListItem canonicalization."""
@@ -217,8 +219,10 @@ class TestCanonicalizationEdgeCases:
 
         canonical = _canonicalize_node(list_node)
 
-        assert "list:ordered:" in canonical
+        # Ordered status NOT in canonical form (preserves ID across to_ordered/to_unordered)
+        assert "list:" in canonical
         assert "listitem:" in canonical
+        assert "ordered" not in canonical
 
     def test_list_item_canonicalization(self):
         """Test ListItem canonicalization."""

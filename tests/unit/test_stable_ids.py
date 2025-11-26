@@ -432,8 +432,10 @@ class TestCanonicalizationEdgeCases:
         ]
         list_node = List(ordered=True, items=items)
         canonical: str = _canonicalize_node(list_node)
-        assert "list:ordered:" in canonical
+        # Ordered status NOT in canonical form (preserves ID across to_ordered/to_unordered)
+        assert "list:" in canonical
         assert "listitem:" in canonical
+        assert "ordered" not in canonical
 
     def test_list_item_canonicalization(self) -> None:
         """Test ListItem canonicalization."""

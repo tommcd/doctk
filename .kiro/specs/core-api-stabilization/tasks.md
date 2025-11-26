@@ -289,13 +289,23 @@ Add NodeId-based indexing to Document class for O(1) node lookup and update rela
 - [x] `Document._id_index` dictionary for fast lookup
 - [x] `Document.find_node(node_id)` method
 - [x] `Document.find_nodes(predicate)` method
-- [x] Index automatically built/updated when nodes change
+- [x] Index automatically built/updated when nodes change (recursive indexing of entire tree)
 - [x] Existing Document API remains stable (no breaking changes)
 - [x] Performance: O(1) lookup by ID, O(n) by predicate
 
 **Files to Modify:**
 
 - `src/doctk/core.py`
+
+**Implementation Note (2025-11-26):**
+Initial implementation only indexed top-level nodes. Fixed to recursively index entire node tree including:
+
+- `List.items` (ListItem children)
+- `BlockQuote.content` (nested nodes)
+- `Heading.children` (child nodes)
+- Any nested structures
+
+This ensures `find_node()` provides true O(1) lookup for all nodes with IDs, not just top-level nodes.
 
 **Dependencies:** Task 1.4
 
@@ -463,6 +473,28 @@ Create comprehensive unit tests for the stable identity system.
 - `tests/unit/test_text_edit_semantics.py`
 
 **Dependencies:** Task 1.7
+
+______________________________________________________________________
+
+## Phase 1 Completion Notes
+
+**Completed:** 2025-11-26
+**Status:** ✅ All 8 tasks complete with fixes applied
+
+**Post-Completion Fixes:**
+
+- **Finding #5 (Critical):** Added recursive indexing to `_build_id_index()` to support nested node lookup
+- Review document: `docs/archive/specs/core-api-stabilization/reviews/phase1-pr56-review.md`
+
+**Deferred to Follow-up PR (Non-blocking):**
+
+- **Finding #2:** Freeze `ProvenanceContext` dataclass per Task 1.1 spec (~30 min)
+- **Finding #3:** Add LRU cache eviction policy per Task 1.3 spec (~2-3 hours)
+- **Finding #4:** Update design.md to document List canonicalization excludes ordered status (~15 min)
+- **Finding #1:** Decide on hash validation strategy (strict vs flexible parsing) (~1 hour)
+
+**Test Coverage:** 95.50% (889 passing tests, 91 new for Phase 1)
+**Performance:** All targets met (ID generation \<10% overhead, cache 50%+ speedup)
 
 ______________________________________________________________________
 

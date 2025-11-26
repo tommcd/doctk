@@ -345,19 +345,19 @@ Implement methods that handle text edits correctly - generating new IDs when can
 
 **Acceptance Criteria:**
 
-- [ ] `Heading.with_text()` method generates new NodeId
-- [ ] `Paragraph.with_content()` method generates new NodeId
-- [ ] `CodeBlock.with_code()` method generates new NodeId
-- [ ] `CodeBlock.with_language()` method generates new NodeId
-- [ ] `ListItem.with_content()` method generates new NodeId
-- [ ] All node types with canonical fields have `with_*` methods
-- [ ] `Heading.promote()` preserves NodeId (level not in canonical form)
-- [ ] `Heading.demote()` preserves NodeId
-- [ ] `Node.with_metadata()` preserves NodeId (metadata not in canonical form)
-- [ ] All transformation methods use `copy.deepcopy()` for metadata
-- [ ] Provenance updated appropriately (with_modification())
-- [ ] Source spans preserved
-- [ ] Documentation of text edit vs structural change semantics
+- [x] `Heading.with_text()` method generates new NodeId
+- [x] `Paragraph.with_content()` method generates new NodeId
+- [x] `CodeBlock.with_code()` method generates new NodeId
+- [x] `CodeBlock.with_language()` method generates new NodeId
+- [x] `ListItem.with_content()` method generates new NodeId
+- [x] All node types with canonical fields have `with_*` methods
+- [x] `Heading.promote()` preserves NodeId (level not in canonical form)
+- [x] `Heading.demote()` preserves NodeId
+- [x] `Node.with_metadata()` preserves NodeId (metadata not in canonical form)
+- [x] All transformation methods use `copy.deepcopy()` for metadata
+- [x] Provenance updated appropriately (with_modification())
+- [x] Source spans preserved
+- [x] Documentation of text edit vs structural change semantics
 
 **Files to Modify:**
 

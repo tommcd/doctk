@@ -309,21 +309,21 @@ Enhance MarkdownParser to attach accurate source spans with block-level precisio
 
 **Acceptance Criteria:**
 
-- [ ] `MarkdownParser.parse_file()` method with provenance
-- [ ] `MarkdownParser.parse_string()` method with context
-- [ ] `_find_token_start_column()` method for block-level column recovery
-- [ ] `_find_token_end_column()` method for end positions
-- [ ] Block-level source spans attached to all structural nodes (headings, paragraphs, lists, code blocks)
-- [ ] Inline elements inherit parent block's source span
-- [ ] Documentation of block-level precision scope
-- [ ] NodeIds generated and attached during parsing
-- [ ] Provenance populated from context
-- [ ] Support for file-based and REPL contexts
-- [ ] `ViewSourceMapping` class for materialized view tracking
-- [ ] `Document._view_mappings` list for storing mappings
-- [ ] `Document.add_view_mapping()` method
-- [ ] `Document.find_source_position()` method for view→source projection
-- [ ] Identity mappings created during parsing (view = source initially)
+- [x] `MarkdownParser.parse_file()` method with provenance
+- [x] `MarkdownParser.parse_string()` method with context
+- [x] `_find_token_start_column()` method for block-level column recovery
+- [x] `_find_token_end_column()` method for end positions
+- [x] Block-level source spans attached to all structural nodes (headings, paragraphs, lists, code blocks)
+- [x] Inline elements inherit parent block's source span
+- [x] Documentation of block-level precision scope
+- [x] NodeIds generated and attached during parsing
+- [x] Provenance populated from context
+- [x] Support for file-based and REPL contexts
+- [x] `ViewSourceMapping` class for materialized view tracking
+- [x] `Document._view_mappings` list for storing mappings
+- [x] `Document.add_view_mapping()` method
+- [x] `Document.find_source_position()` method for view→source projection
+- [x] Identity mappings created during parsing (view = source initially)
 
 **Files to Modify:**
 

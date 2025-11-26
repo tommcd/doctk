@@ -59,22 +59,98 @@ class Heading(Node):
             "metadata": self.metadata,
         }
 
+    def with_text(self, text: str) -> "Heading":
+        """
+        Create new heading with different text (generates new NodeId).
+
+        Text is part of canonical form, so changing it generates a new ID.
+
+        Args:
+            text: New heading text
+
+        Returns:
+            New Heading with updated text and new NodeId
+        """
+        import copy
+
+        from doctk.identity import NodeId, Provenance
+
+        new_heading = Heading(
+            level=self.level,
+            text=text,
+            children=self.children,
+            metadata=copy.deepcopy(self.metadata),
+            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
+            source_span=self.source_span,
+        )
+        # Generate new ID since canonical content changed
+        new_heading.id = NodeId.from_node(new_heading)
+        return new_heading
+
+    def with_metadata(self, metadata: dict[str, Any]) -> "Heading":
+        """
+        Create new heading with different metadata (preserves NodeId).
+
+        Metadata is NOT part of canonical form, so ID is preserved.
+
+        Args:
+            metadata: New metadata dictionary
+
+        Returns:
+            New Heading with updated metadata but same NodeId
+        """
+        import copy
+
+        from doctk.identity import Provenance
+
+        return Heading(
+            level=self.level,
+            text=self.text,
+            children=self.children,
+            metadata=copy.deepcopy(metadata),
+            id=self.id,  # Preserve ID
+            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
+            source_span=self.source_span,
+        )
+
     def promote(self) -> "Heading":
-        """Decrease heading level (h3 -> h2). Identity if already h1."""
+        """
+        Decrease heading level (h3 -> h2). Identity if already h1.
+
+        Level is NOT part of canonical form, so NodeId is preserved.
+        """
+        import copy
+
+        from doctk.identity import Provenance
+
         return Heading(
             level=max(1, self.level - 1),
             text=self.text,
             children=self.children,
-            metadata=self.metadata,
+            metadata=copy.deepcopy(self.metadata),
+            id=self.id,  # Preserve ID
+            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
+            source_span=self.source_span,
         )
 
     def demote(self) -> "Heading":
-        """Increase heading level (h2 -> h3). Identity if already h6."""
+        """
+        Increase heading level (h2 -> h3). Identity if already h6.
+
+        Level is NOT part of canonical form, so NodeId is preserved.
+        """
+        import copy
+
+        from doctk.identity import Provenance
+
         return Heading(
             level=min(6, self.level + 1),
             text=self.text,
             children=self.children,
-            metadata=self.metadata,
+            metadata=copy.deepcopy(self.metadata),
+            id=self.id,  # Preserve ID
+            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
+            source_span=self.source_span,
         )
 
 
@@ -93,6 +169,56 @@ class Paragraph(Node):
 
     def to_dict(self) -> dict[str, Any]:
         return {"type": "paragraph", "content": self.content, "metadata": self.metadata}
+
+    def with_content(self, content: str) -> "Paragraph":
+        """
+        Create new paragraph with different content (generates new NodeId).
+
+        Content is part of canonical form, so changing it generates a new ID.
+
+        Args:
+            content: New paragraph content
+
+        Returns:
+            New Paragraph with updated content and new NodeId
+        """
+        import copy
+
+        from doctk.identity import NodeId, Provenance
+
+        new_paragraph = Paragraph(
+            content=content,
+            metadata=copy.deepcopy(self.metadata),
+            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
+            source_span=self.source_span,
+        )
+        # Generate new ID since canonical content changed
+        new_paragraph.id = NodeId.from_node(new_paragraph)
+        return new_paragraph
+
+    def with_metadata(self, metadata: dict[str, Any]) -> "Paragraph":
+        """
+        Create new paragraph with different metadata (preserves NodeId).
+
+        Metadata is NOT part of canonical form, so ID is preserved.
+
+        Args:
+            metadata: New metadata dictionary
+
+        Returns:
+            New Paragraph with updated metadata but same NodeId
+        """
+        import copy
+
+        from doctk.identity import Provenance
+
+        return Paragraph(
+            content=self.content,
+            metadata=copy.deepcopy(metadata),
+            id=self.id,  # Preserve ID
+            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
+            source_span=self.source_span,
+        )
 
 
 @dataclass
@@ -118,12 +244,67 @@ class List(Node):
         }
 
     def to_ordered(self) -> "List":
-        """Convert to ordered list."""
-        return List(ordered=True, items=self.items, metadata=self.metadata)
+        """
+        Convert to ordered list (preserves NodeId).
+
+        List type (ordered/unordered) is NOT part of canonical form.
+        """
+        import copy
+
+        from doctk.identity import Provenance
+
+        return List(
+            ordered=True,
+            items=self.items,
+            metadata=copy.deepcopy(self.metadata),
+            id=self.id,  # Preserve ID
+            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
+            source_span=self.source_span,
+        )
 
     def to_unordered(self) -> "List":
-        """Convert to unordered list."""
-        return List(ordered=False, items=self.items, metadata=self.metadata)
+        """
+        Convert to unordered list (preserves NodeId).
+
+        List type (ordered/unordered) is NOT part of canonical form.
+        """
+        import copy
+
+        from doctk.identity import Provenance
+
+        return List(
+            ordered=False,
+            items=self.items,
+            metadata=copy.deepcopy(self.metadata),
+            id=self.id,  # Preserve ID
+            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
+            source_span=self.source_span,
+        )
+
+    def with_metadata(self, metadata: dict[str, Any]) -> "List":
+        """
+        Create new list with different metadata (preserves NodeId).
+
+        Metadata is NOT part of canonical form, so ID is preserved.
+
+        Args:
+            metadata: New metadata dictionary
+
+        Returns:
+            New List with updated metadata but same NodeId
+        """
+        import copy
+
+        from doctk.identity import Provenance
+
+        return List(
+            ordered=self.ordered,
+            items=self.items,
+            metadata=copy.deepcopy(metadata),
+            id=self.id,  # Preserve ID
+            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
+            source_span=self.source_span,
+        )
 
 
 @dataclass
@@ -145,6 +326,56 @@ class ListItem(Node):
             "content": [node.to_dict() for node in self.content],
             "metadata": self.metadata,
         }
+
+    def with_content(self, content: list[Node]) -> "ListItem":
+        """
+        Create new list item with different content (generates new NodeId).
+
+        Content is part of canonical form, so changing it generates a new ID.
+
+        Args:
+            content: New list item content nodes
+
+        Returns:
+            New ListItem with updated content and new NodeId
+        """
+        import copy
+
+        from doctk.identity import NodeId, Provenance
+
+        new_list_item = ListItem(
+            content=content,
+            metadata=copy.deepcopy(self.metadata),
+            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
+            source_span=self.source_span,
+        )
+        # Generate new ID since canonical content changed
+        new_list_item.id = NodeId.from_node(new_list_item)
+        return new_list_item
+
+    def with_metadata(self, metadata: dict[str, Any]) -> "ListItem":
+        """
+        Create new list item with different metadata (preserves NodeId).
+
+        Metadata is NOT part of canonical form, so ID is preserved.
+
+        Args:
+            metadata: New metadata dictionary
+
+        Returns:
+            New ListItem with updated metadata but same NodeId
+        """
+        import copy
+
+        from doctk.identity import Provenance
+
+        return ListItem(
+            content=self.content,
+            metadata=copy.deepcopy(metadata),
+            id=self.id,  # Preserve ID
+            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
+            source_span=self.source_span,
+        )
 
 
 @dataclass
@@ -169,6 +400,85 @@ class CodeBlock(Node):
             "metadata": self.metadata,
         }
 
+    def with_code(self, code: str) -> "CodeBlock":
+        """
+        Create new code block with different code (generates new NodeId).
+
+        Code is part of canonical form, so changing it generates a new ID.
+
+        Args:
+            code: New code content
+
+        Returns:
+            New CodeBlock with updated code and new NodeId
+        """
+        import copy
+
+        from doctk.identity import NodeId, Provenance
+
+        new_code_block = CodeBlock(
+            code=code,
+            language=self.language,
+            metadata=copy.deepcopy(self.metadata),
+            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
+            source_span=self.source_span,
+        )
+        # Generate new ID since canonical content changed
+        new_code_block.id = NodeId.from_node(new_code_block)
+        return new_code_block
+
+    def with_language(self, language: str | None) -> "CodeBlock":
+        """
+        Create new code block with different language (generates new NodeId).
+
+        Language is part of canonical form, so changing it generates a new ID.
+
+        Args:
+            language: New language identifier
+
+        Returns:
+            New CodeBlock with updated language and new NodeId
+        """
+        import copy
+
+        from doctk.identity import NodeId, Provenance
+
+        new_code_block = CodeBlock(
+            code=self.code,
+            language=language,
+            metadata=copy.deepcopy(self.metadata),
+            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
+            source_span=self.source_span,
+        )
+        # Generate new ID since canonical content changed
+        new_code_block.id = NodeId.from_node(new_code_block)
+        return new_code_block
+
+    def with_metadata(self, metadata: dict[str, Any]) -> "CodeBlock":
+        """
+        Create new code block with different metadata (preserves NodeId).
+
+        Metadata is NOT part of canonical form, so ID is preserved.
+
+        Args:
+            metadata: New metadata dictionary
+
+        Returns:
+            New CodeBlock with updated metadata but same NodeId
+        """
+        import copy
+
+        from doctk.identity import Provenance
+
+        return CodeBlock(
+            code=self.code,
+            language=self.language,
+            metadata=copy.deepcopy(metadata),
+            id=self.id,  # Preserve ID
+            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
+            source_span=self.source_span,
+        )
+
 
 @dataclass
 class BlockQuote(Node):
@@ -189,6 +499,30 @@ class BlockQuote(Node):
             "content": [node.to_dict() for node in self.content],
             "metadata": self.metadata,
         }
+
+    def with_metadata(self, metadata: dict[str, Any]) -> "BlockQuote":
+        """
+        Create new block quote with different metadata (preserves NodeId).
+
+        Metadata is NOT part of canonical form, so ID is preserved.
+
+        Args:
+            metadata: New metadata dictionary
+
+        Returns:
+            New BlockQuote with updated metadata but same NodeId
+        """
+        import copy
+
+        from doctk.identity import Provenance
+
+        return BlockQuote(
+            content=self.content,
+            metadata=copy.deepcopy(metadata),
+            id=self.id,  # Preserve ID
+            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
+            source_span=self.source_span,
+        )
 
 
 class NodeVisitor(ABC):

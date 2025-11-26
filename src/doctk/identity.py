@@ -224,7 +224,8 @@ def _get_node_cache_key(node: "Node") -> str:
     elif isinstance(node, Paragraph):
         return f"p:{hash(node.content[:100])}"
     elif isinstance(node, CodeBlock):
-        return f"c:{hash(node.code[:100])}"
+        # Include language in cache key since it's part of canonical form
+        return f"c:{node.language}:{hash(node.code[:100])}"
     elif isinstance(node, List):
         return f"l:{node.ordered}:{hash(str(node.items)[:100])}"
     elif isinstance(node, ListItem):

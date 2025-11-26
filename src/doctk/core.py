@@ -97,23 +97,7 @@ class Heading(Node):
         Returns:
             New Heading with updated text and new NodeId
         """
-        import copy
-
         return self._with_updates(text=text, regenerate_id=True)
-
-        from doctk.identity import NodeId, Provenance
-
-        new_heading = Heading(
-            level=self.level,
-            text=text,
-            children=self.children,
-            metadata=copy.deepcopy(self.metadata),
-            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
-            source_span=self.source_span,
-        )
-        # Generate new ID since canonical content changed
-        new_heading.id = NodeId.from_node(new_heading)
-        return new_heading
 
     def with_metadata(self, metadata: dict[str, Any]) -> "Heading":
         """
@@ -127,21 +111,7 @@ class Heading(Node):
         Returns:
             New Heading with updated metadata but same NodeId
         """
-        import copy
-
         return self._with_updates(metadata=metadata)
-
-        from doctk.identity import Provenance
-
-        return Heading(
-            level=self.level,
-            text=self.text,
-            children=self.children,
-            metadata=copy.deepcopy(metadata),
-            id=self.id,  # Preserve ID
-            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
-            source_span=self.source_span,
-        )
 
     def promote(self) -> "Heading":
         """
@@ -149,21 +119,7 @@ class Heading(Node):
 
         Level is NOT part of canonical form, so NodeId is preserved.
         """
-        import copy
-
         return self._with_updates(level=max(1, self.level - 1))
-
-        from doctk.identity import Provenance
-
-        return Heading(
-            level=max(1, self.level - 1),
-            text=self.text,
-            children=self.children,
-            metadata=copy.deepcopy(self.metadata),
-            id=self.id,  # Preserve ID
-            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
-            source_span=self.source_span,
-        )
 
     def demote(self) -> "Heading":
         """
@@ -171,21 +127,7 @@ class Heading(Node):
 
         Level is NOT part of canonical form, so NodeId is preserved.
         """
-        import copy
-
         return self._with_updates(level=min(6, self.level + 1))
-
-        from doctk.identity import Provenance
-
-        return Heading(
-            level=min(6, self.level + 1),
-            text=self.text,
-            children=self.children,
-            metadata=copy.deepcopy(self.metadata),
-            id=self.id,  # Preserve ID
-            provenance=Provenance.with_modification(self.provenance) if self.provenance else None,
-            source_span=self.source_span,
-        )
 
 
 @dataclass
@@ -434,6 +376,32 @@ class CodeBlock(Node):
             "metadata": self.metadata,
         }
 
+    def _with_updates(
+        self,
+        level: int | None = None,
+        text: str | None = None,
+        children: list[Node] | None = None,
+        metadata: dict[str, Any] | None = None,
+        regenerate_id: bool = False,
+    ) -> "Heading":
+        """Create a new Heading with updated attributes."""
+        import copy
+
+        from doctk.identity import NodeId
+
+        new_heading = Heading(
+            level=level if level is not None else self.level,
+            text=text if text is not None else self.text,
+            children=children if children is not None else self.children,
+            metadata=copy.deepcopy(metadata)
+            if metadata is not None
+            else copy.deepcopy(self.metadata),
+            provenance=self.provenance.with_modification() if self.provenance else None,
+            source_span=self.source_span,
+        )
+        new_heading.id = NodeId.from_node(new_heading) if regenerate_id else self.id
+        return new_heading
+
     def with_code(self, code: str) -> "CodeBlock":
         """
         Create new code block with different code (generates new NodeId).
@@ -678,7 +646,9 @@ class Document(Generic[T]):
         Functor law: map(id) = id
         Functor law: map(f . g) = map(f) . map(g)
         """
-        return Document([f(node) for node in self.nodes])
+        result = Document([f(node) for node in self.nodes])
+        result._build_id_index()
+        return result
 
     def filter(self, predicate: Callable[[T], bool]) -> "Document[T]":
         """
@@ -686,7 +656,9 @@ class Document(Generic[T]):
 
         This is set-theoretic filtering.
         """
-        return Document([node for node in self.nodes if predicate(node)])
+        result = Document([node for node in self.nodes if predicate(node)])
+        result._build_id_index()
+        return result
 
     # Monad operations
     def flatmap(self, f: Callable[[T], "Document[U]"]) -> "Document[U]":
@@ -700,7 +672,9 @@ class Document(Generic[T]):
         result_nodes = []
         for node in self.nodes:
             result_nodes.extend(f(node).nodes)
-        return Document(result_nodes)
+        result = Document(result_nodes)
+        result._build_id_index()
+        return result
 
     def reduce(self, f: Callable[[U, T], U], initial: U) -> U:
         """

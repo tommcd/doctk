@@ -145,15 +145,20 @@ class TestNodeIdParsing:
         with pytest.raises(ValueError, match="Invalid NodeId format"):
             NodeId.from_string("heading:intro")
 
-    def test_from_string_invalid_hash_length_too_short(self) -> None:
-        """Test validation rejects hash shorter than 16 chars."""
-        with pytest.raises(ValueError, match="Invalid hash length"):
-            NodeId.from_string("heading:intro:a3f5")  # Too short
+    def test_from_string_short_hash(self) -> None:
+        """Test parsing accepts hash shorter than 16 chars (e.g., from to_short_string)."""
+        node_id = NodeId.from_string("heading:intro:a3f5b9c2")  # 8 chars
+        assert node_id.node_type == "heading"
+        assert node_id.hint == "intro"
+        assert node_id.content_hash == "a3f5b9c2"
 
-    def test_from_string_invalid_hash_length_too_long(self) -> None:
-        """Test validation rejects hash longer than 16 chars."""
-        with pytest.raises(ValueError, match="Invalid hash length"):
-            NodeId.from_string("heading:intro:a3f5b9c2d1e4f6a7extra")  # Too long
+    def test_from_string_long_hash(self) -> None:
+        """Test parsing accepts hash longer than 16 chars (e.g., full 64-char hash)."""
+        full_hash = "a3f5b9c2d1e4f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1"
+        node_id = NodeId.from_string(f"heading:intro:{full_hash}")
+        assert node_id.node_type == "heading"
+        assert node_id.hint == "intro"
+        assert node_id.content_hash == full_hash
 
 
 class TestNodeIdRoundTrip:

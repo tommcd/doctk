@@ -127,15 +127,9 @@ class NodeId:
         except ValueError:
             raise ValueError(f"Invalid NodeId format: {s}. Expected 'type:hint:hash16'") from None
 
-        # Validate hash length (must be 16 chars for canonical format)
-        if len(hash_prefix) != 16:
-            raise ValueError(
-                f"Invalid hash length: {len(hash_prefix)}. "
-                f"Expected 16 characters. Use NodeId.from_string() "
-                f"only with canonical format from __str__()"
-            )
-
-        # Store hash prefix (we don't have full hash from string)
+        # Store the provided hash prefix. The __eq__ and __hash__ methods
+        # are designed to work correctly with prefixes of any length,
+        # though comparison is most reliable with at least 16 characters.
         return NodeId(node_type=node_type, hint=hint, content_hash=hash_prefix)
 
     @staticmethod

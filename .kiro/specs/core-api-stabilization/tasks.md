@@ -510,17 +510,17 @@ Create the new internal operations layer that works with rich Document objects i
 
 **Acceptance Criteria:**
 
-- [ ] `InternalOperations` class with all core operations
-- [ ] Operations return `OperationResult` with Document objects
-- [ ] Node IDs preserved across operations
-- [ ] Metadata deep-copied to ensure immutability
-- [ ] Provenance updated during transformations
-- [ ] Source spans preserved where appropriate
-- [ ] No JSON serialization in internal layer
+- [x] `InternalOperations` class with all core operations
+- [x] Operations return `OperationResult` with Document objects
+- [x] Node IDs preserved across operations
+- [x] Metadata deep-copied to ensure immutability
+- [x] Provenance updated during transformations
+- [x] Source spans preserved where appropriate
+- [x] No JSON serialization in internal layer
 
-**Files to Create:**
+**Files Created:**
 
-- `src/doctk/core/internal_ops.py`
+- `src/doctk/internal_ops.py` (placed in main doctk directory to avoid circular imports)
 
 **Dependencies:** Phase 1 complete
 

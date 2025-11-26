@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 if TYPE_CHECKING:
-    from doctk.identity import NodeId, Provenance, SourceSpan
+    from doctk.identity import NodeId, Provenance, SourceSpan, ViewSourceMapping
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -233,6 +233,7 @@ class Document(Generic[T]):
     def __init__(self, nodes: list[T]):
         self.nodes = nodes
         self._id_index: dict[NodeId, T] = {}
+        self._view_mappings: list[ViewSourceMapping] = []
         self._build_id_index()
 
     def _build_id_index(self) -> None:
@@ -275,6 +276,31 @@ class Document(Generic[T]):
             >>> assert len(headings.nodes) == 2
         """
         return Document([node for node in self.nodes if predicate(node)])
+
+    def add_view_mapping(self, mapping: "ViewSourceMapping") -> None:
+        """
+        Register a view-to-source mapping.
+
+        Args:
+            mapping: ViewSourceMapping to add
+        """
+        self._view_mappings.append(mapping)
+
+    def find_source_position(self, view_line: int, view_column: int) -> tuple[str, int, int] | None:
+        """
+        Find the source position for a given view position.
+
+        Args:
+            view_line: Line number in view (0-indexed)
+            view_column: Column number in view (0-indexed)
+
+        Returns:
+            Tuple of (source_file, source_line, source_column) or None if not mapped
+        """
+        for mapping in self._view_mappings:
+            if mapping.view_span.contains(view_line, view_column):
+                return mapping.project_to_source(view_line, view_column)
+        return None
 
     # Functor operations
     def map(self, f: Callable[[T], U]) -> "Document[U]":

@@ -382,12 +382,14 @@ class SourceSpan:
         start_column: 0-indexed column number where node starts
         end_line: 0-indexed line number where node ends
         end_column: 0-indexed column number where node ends
+        source_file: Optional source file path (for multi-file documents)
     """
 
     start_line: int  # 0-indexed line number
     start_column: int  # 0-indexed column number
     end_line: int  # 0-indexed line number
     end_column: int  # 0-indexed column number
+    source_file: str | None = None  # Optional source file path
 
     def contains(self, line: int, column: int) -> bool:
         """Check if position is within this span.
@@ -417,6 +419,57 @@ class SourceSpan:
             True if spans overlap
         """
         return not (self.end_line < other.start_line or other.end_line < self.start_line)
+
+
+@dataclass(frozen=True)
+class ViewSourceMapping:
+    """
+    Maps positions in a materialized view back to original source.
+
+    Used for LSP diagnostics, quick-fixes, and go-to-definition when documents
+    are transformed (promoted, nested, split across files).
+
+    Attributes:
+        view_span: Position in materialized/transformed document
+        source_span: Position in original source file
+        node_id: Stable node identifier
+        transform: Description of transformation (e.g., "promoted", "nested", "split")
+    """
+
+    view_span: SourceSpan  # Position in materialized/transformed document
+    source_span: SourceSpan  # Position in original source file
+    node_id: NodeId  # Stable node identifier
+    transform: str  # e.g., "promoted", "nested", "split"
+
+    def project_to_source(self, view_line: int, view_column: int) -> tuple[str, int, int]:
+        """
+        Project a position in the view back to source file coordinates.
+
+        Args:
+            view_line: Line number in view (0-indexed)
+            view_column: Column number in view (0-indexed)
+
+        Returns:
+            Tuple of (source_file, source_line, source_column)
+
+        Raises:
+            ValueError: If position is not within view span
+        """
+        if not self.view_span.contains(view_line, view_column):
+            raise ValueError(f"Position ({view_line}, {view_column}) not in view span")
+
+        # Calculate offset within view span
+        if view_line == self.view_span.start_line:
+            offset = view_column - self.view_span.start_column
+        else:
+            # Multi-line: approximate offset
+            offset = view_column
+
+        # Map to source span
+        source_line = self.source_span.start_line
+        source_column = self.source_span.start_column + offset
+
+        return (self.source_span.source_file or "", source_line, source_column)
 
 
 @dataclass(frozen=True)

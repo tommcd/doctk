@@ -537,15 +537,47 @@ class Document(Generic[T]):
         self._build_id_index()
 
     def _build_id_index(self) -> None:
-        """Build index of nodes by their IDs for O(1) lookup."""
+        """
+        Build index of all nodes in the document tree by their IDs for O(1) lookup.
+
+        Recursively traverses the entire document tree to index all nodes,
+        including nested nodes within Lists, ListItems, and BlockQuotes.
+        """
         self._id_index.clear()
         for node in self.nodes:
-            if hasattr(node, "id") and node.id is not None:
-                self._id_index[node.id] = node
+            self._index_node_recursive(node)
+
+    def _index_node_recursive(self, node: Any) -> None:
+        """
+        Recursively index a node and all its children.
+
+        Args:
+            node: Node to index (along with all descendants)
+        """
+        # Index this node if it has an ID
+        if hasattr(node, "id") and node.id is not None:
+            self._id_index[node.id] = node
+
+        # Recursively index children based on node type
+        if hasattr(node, "children") and node.children:
+            # Heading nodes have children
+            for child in node.children:
+                self._index_node_recursive(child)
+        elif hasattr(node, "items") and node.items:
+            # List nodes have items
+            for item in node.items:
+                self._index_node_recursive(item)
+        elif hasattr(node, "content") and isinstance(node.content, list):
+            # ListItem and BlockQuote nodes have content lists
+            for child in node.content:
+                self._index_node_recursive(child)
 
     def find_node(self, node_id: "NodeId") -> T | None:
         """
-        Find node by ID with O(1) lookup.
+        Find any node in the document tree by ID with O(1) lookup.
+
+        Searches all nodes in the tree, including nested nodes within
+        Lists, ListItems, BlockQuotes, and Heading children.
 
         Args:
             node_id: NodeId to search for
@@ -557,6 +589,9 @@ class Document(Generic[T]):
             >>> doc = Document([heading1, heading2])
             >>> node = doc.find_node(heading1.id)
             >>> assert node == heading1
+            >>> # Also works for nested nodes
+            >>> nested_item = doc.find_node(list_item.id)
+            >>> assert nested_item == list_item
         """
         return self._id_index.get(node_id)
 

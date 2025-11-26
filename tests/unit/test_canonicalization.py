@@ -199,3 +199,47 @@ class TestHintGeneration:
 
         # Should fallback to node type
         assert node_id.hint == "listitem"
+
+
+class TestCanonicalizationEdgeCases:
+    """Test edge cases in canonicalization."""
+
+    def test_list_canonicalization(self):
+        """Test List canonicalization."""
+        from doctk.core import List, ListItem, Paragraph
+        from doctk.identity import _canonicalize_node
+
+        items = [
+            ListItem(content=[Paragraph(content="Item 1")]),
+            ListItem(content=[Paragraph(content="Item 2")]),
+        ]
+        list_node = List(ordered=True, items=items)
+
+        canonical = _canonicalize_node(list_node)
+
+        assert "list:ordered:" in canonical
+        assert "listitem:" in canonical
+
+    def test_list_item_canonicalization(self):
+        """Test ListItem canonicalization."""
+        from doctk.core import ListItem, Paragraph
+        from doctk.identity import _canonicalize_node
+
+        list_item = ListItem(content=[Paragraph(content="Test content")])
+
+        canonical = _canonicalize_node(list_item)
+
+        assert "listitem:" in canonical
+        assert "paragraph:" in canonical
+
+    def test_block_quote_canonicalization(self):
+        """Test BlockQuote canonicalization."""
+        from doctk.core import BlockQuote, Paragraph
+        from doctk.identity import _canonicalize_node
+
+        block_quote = BlockQuote(content=[Paragraph(content="Quoted text")])
+
+        canonical = _canonicalize_node(block_quote)
+
+        assert "blockquote:" in canonical
+        assert "paragraph:" in canonical

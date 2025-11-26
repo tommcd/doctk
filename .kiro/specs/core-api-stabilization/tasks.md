@@ -435,24 +435,24 @@ Create comprehensive unit tests for the stable identity system.
 
 **Acceptance Criteria:**
 
-- [ ] Test NodeId creation and string conversion (16-char format)
-- [ ] Test NodeId round-tripping (from_string/\_\_str\_\_)
-- [ ] Test to_short_string() for display
-- [ ] Test canonical serialization determinism
-- [ ] Test Unicode NFC normalization
-- [ ] Test whitespace and tab normalization
-- [ ] Test hint generation with slugification
-- [ ] Test hint truncation to 32 characters
-- [ ] Test ID stability across operations (promote/demote)
-- [ ] Test ID changes on text edits
-- [ ] Test ID consistency across re-parsing
-- [ ] Test provenance population and updates
-- [ ] Test source span block-level accuracy
-- [ ] Test ViewSourceMapping projection
-- [ ] Test caching performance (>50% speedup)
-- [ ] Test cache is in-process only
-- [ ] Test error handling and edge cases
-- [ ] >95% code coverage for identity module
+- [x] Test NodeId creation and string conversion (16-char format)
+- [x] Test NodeId round-tripping (from_string/\_\_str\_\_)
+- [x] Test to_short_string() for display
+- [x] Test canonical serialization determinism
+- [x] Test Unicode NFC normalization
+- [x] Test whitespace and tab normalization
+- [x] Test hint generation with slugification
+- [x] Test hint truncation to 32 characters
+- [x] Test ID stability across operations (promote/demote)
+- [x] Test ID changes on text edits
+- [x] Test ID consistency across re-parsing
+- [x] Test provenance population and updates
+- [x] Test source span block-level accuracy
+- [x] Test ViewSourceMapping projection
+- [x] Test caching performance (>50% speedup)
+- [x] Test cache is in-process only
+- [x] Test error handling and edge cases
+- [x] >95% code coverage for identity module
 
 **Files to Create:**
 

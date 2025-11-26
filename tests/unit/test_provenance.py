@@ -125,3 +125,7 @@ class TestProvenanceContext:
         assert context.file_path == "manual.md"
         assert context.version == "v1.0.0"
         assert context.author == "Manual User"
+
+
+class TestProvenanceEdgeCases:
+    """Test edge cases in Provenance."""

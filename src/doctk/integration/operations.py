@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from doctk.core import Document, Heading, Node
+from doctk.identity import NodeId
 from doctk.integration.protocols import ModifiedRange, OperationResult, TreeNode, ValidationResult
+from doctk.internal_ops import InternalOperations
 
 
 class DocumentTreeBuilder:
@@ -186,6 +188,27 @@ class DocumentTreeBuilder:
             The node if found, None otherwise
         """
         return self.node_map.get(node_id)
+
+    def get_stable_node_id(self, temp_node_id: str) -> NodeId | None:
+        """
+        Get the stable NodeId for a temporary node ID.
+
+        Args:
+            temp_node_id: Temporary ID like "h2-0"
+
+        Returns:
+            The stable NodeId if found, None otherwise
+        """
+        node = self.find_node(temp_node_id)
+        if node is None:
+            return None
+
+        # Ensure node has a stable ID
+        if node.id is None:
+            # Generate stable ID if not present
+            node.id = NodeId.from_node(node)
+
+        return node.id
 
     def get_node_index(self, node_id: str) -> int | None:
         """
@@ -421,57 +444,70 @@ class StructureOperations:
     """High-level operations for document structure manipulation."""
 
     @staticmethod
+    def _ensure_document_has_ids(document: Document[Node]) -> Document[Node]:
+        """
+        Ensure all nodes in the document have stable IDs.
+
+        This is needed because InternalOperations requires nodes to have IDs
+        for the document.find_node() method to work.
+
+        Args:
+            document: The document to process
+
+        Returns:
+            A new document with all nodes having stable IDs
+        """
+        nodes_with_ids = []
+        for node in document.nodes:
+            if node.id is None:
+                node.id = NodeId.from_node(node)
+            nodes_with_ids.append(node)
+        return Document(nodes_with_ids)
+
+    @staticmethod
     def promote(document: Document[Node], node_id: str) -> OperationResult:
         """
         Decrease heading level by one (e.g., h3 -> h2).
 
         Args:
             document: The document to operate on
-            node_id: The ID of the node to promote
+            node_id: The ID of the node to promote (temporary ID like "h2-0")
 
         Returns:
-            Operation result
+            Operation result with serialized document
         """
-        tree_builder = DocumentTreeBuilder(document)
-        node = tree_builder.find_node(node_id)
+        # Ensure all nodes have IDs
+        doc_with_ids = StructureOperations._ensure_document_has_ids(document)
 
-        if node is None:
+        # Map temporary ID to stable NodeId
+        tree_builder = DocumentTreeBuilder(doc_with_ids)
+        stable_id = tree_builder.get_stable_node_id(node_id)
+
+        if stable_id is None:
             return OperationResult(success=False, error=f"Node not found: {node_id}")
 
-        if not isinstance(node, Heading):
-            return OperationResult(success=False, error=f"Node {node_id} is not a heading")
+        # Delegate to internal operations
+        internal_result = InternalOperations.promote(doc_with_ids, stable_id)
 
-        # Validate: already at minimum level?
-        if node.level <= 1:
+        if not internal_result.success:
             return OperationResult(
-                success=True,
-                document=document.to_string(),
-                error=None,
+                success=False,
+                error=internal_result.error,
             )
 
-        # Get the index of the node
-        node_index = tree_builder.get_node_index(node_id)
-        if node_index is None:
-            return OperationResult(success=False, error=f"Could not find index for node: {node_id}")
+        # Serialize document at boundary
+        serialized_doc = internal_result.document.to_string()
 
-        # Create new promoted node
-        promoted_node = node.promote()
-
-        # Create new document with updated node
-        new_nodes = list(document.nodes)
-        new_nodes[node_index] = promoted_node
-        new_document = Document(new_nodes)
-
-        # Compute modified ranges
+        # Compute modified ranges for JSON-RPC response
         modified_ranges = DiffComputer.compute_ranges(
             original_doc=document,
-            modified_doc=new_document,
+            modified_doc=internal_result.document,
             affected_node_ids=[node_id],
         )
 
         return OperationResult(
             success=True,
-            document=new_document.to_string(),
+            document=serialized_doc,
             modified_ranges=modified_ranges,
         )
 
@@ -482,51 +518,43 @@ class StructureOperations:
 
         Args:
             document: The document to operate on
-            node_id: The ID of the node to demote
+            node_id: The ID of the node to demote (temporary ID like "h2-0")
 
         Returns:
-            Operation result
+            Operation result with serialized document
         """
-        tree_builder = DocumentTreeBuilder(document)
-        node = tree_builder.find_node(node_id)
+        # Ensure all nodes have IDs
+        doc_with_ids = StructureOperations._ensure_document_has_ids(document)
 
-        if node is None:
+        # Map temporary ID to stable NodeId
+        tree_builder = DocumentTreeBuilder(doc_with_ids)
+        stable_id = tree_builder.get_stable_node_id(node_id)
+
+        if stable_id is None:
             return OperationResult(success=False, error=f"Node not found: {node_id}")
 
-        if not isinstance(node, Heading):
-            return OperationResult(success=False, error=f"Node {node_id} is not a heading")
+        # Delegate to internal operations
+        internal_result = InternalOperations.demote(doc_with_ids, stable_id)
 
-        # Validate: already at maximum level?
-        if node.level >= 6:
+        if not internal_result.success:
             return OperationResult(
-                success=True,
-                document=document.to_string(),
-                error=None,
+                success=False,
+                error=internal_result.error,
             )
 
-        # Get the index of the node
-        node_index = tree_builder.get_node_index(node_id)
-        if node_index is None:
-            return OperationResult(success=False, error=f"Could not find index for node: {node_id}")
+        # Serialize document at boundary
+        serialized_doc = internal_result.document.to_string()
 
-        # Create new demoted node
-        demoted_node = node.demote()
-
-        # Create new document with updated node
-        new_nodes = list(document.nodes)
-        new_nodes[node_index] = demoted_node
-        new_document = Document(new_nodes)
-
-        # Compute modified ranges
+        # Compute modified ranges for JSON-RPC response
         modified_ranges = DiffComputer.compute_ranges(
             original_doc=document,
-            modified_doc=new_document,
+            modified_doc=internal_result.document,
             affected_node_ids=[node_id],
         )
 
         return OperationResult(
             success=True,
-            document=new_document.to_string(),
+            document=serialized_doc,
             modified_ranges=modified_ranges,
         )
 
@@ -585,91 +613,43 @@ class StructureOperations:
 
         Args:
             document: The document to operate on
-            node_id: The ID of the node to move up
+            node_id: The ID of the node to move up (temporary ID like "h2-0")
 
         Returns:
-            Operation result
+            Operation result with serialized document
         """
-        tree_builder = DocumentTreeBuilder(document)
-        node = tree_builder.find_node(node_id)
+        # Ensure all nodes have IDs
+        doc_with_ids = StructureOperations._ensure_document_has_ids(document)
 
-        if node is None:
+        # Map temporary ID to stable NodeId
+        tree_builder = DocumentTreeBuilder(doc_with_ids)
+        stable_id = tree_builder.get_stable_node_id(node_id)
+
+        if stable_id is None:
             return OperationResult(success=False, error=f"Node not found: {node_id}")
 
-        if not isinstance(node, Heading):
-            return OperationResult(success=False, error=f"Node {node_id} is not a heading")
+        # Delegate to internal operations
+        internal_result = InternalOperations.move_up(doc_with_ids, stable_id)
 
-        # Get the section range for the current node
-        section_range = tree_builder.get_section_range(node_id)
-        if section_range is None:
+        if not internal_result.success:
             return OperationResult(
-                success=False, error=f"Could not find section for node: {node_id}"
+                success=False,
+                error=internal_result.error,
             )
 
-        section_start, section_end = section_range
+        # Serialize document at boundary
+        serialized_doc = internal_result.document.to_string()
 
-        # Check if already at the top
-        if section_start == 0:
-            return OperationResult(
-                success=True,
-                document=document.to_string(),
-                error=None,
-            )
-
-        # Find the previous sibling heading (same level or higher)
-        prev_heading_index = section_start - 1
-        while prev_heading_index >= 0:
-            prev_node = document.nodes[prev_heading_index]
-            if isinstance(prev_node, Heading) and prev_node.level <= node.level:
-                break
-            prev_heading_index -= 1
-
-        # If we can't find a valid previous sibling, stay in place
-        if prev_heading_index < 0:
-            return OperationResult(
-                success=True,
-                document=document.to_string(),
-                error=None,
-            )
-
-        # Get the section range for the previous sibling
-        prev_node_id = None
-        for nid, n in tree_builder.node_map.items():
-            if n is document.nodes[prev_heading_index]:
-                prev_node_id = nid
-                break
-
-        if prev_node_id is None:
-            return OperationResult(success=False, error="Could not find previous section ID")
-
-        prev_section_range = tree_builder.get_section_range(prev_node_id)
-        if prev_section_range is None:
-            return OperationResult(success=False, error="Could not find previous section range")
-
-        prev_section_start, prev_section_end = prev_section_range
-
-        # Move the entire current section to before the previous section
-        new_nodes = list(document.nodes)
-        current_section = new_nodes[section_start : section_end + 1]
-        # Remove current section
-        del new_nodes[section_start : section_end + 1]
-        # Insert current section before previous section
-        new_nodes[prev_section_start:prev_section_start] = current_section
-        new_document = Document(new_nodes)
-
-        # Collect all affected node IDs from the moved section
-        affected_node_ids = [node_id]  # At minimum, the heading itself
-
-        # Compute modified ranges
+        # Compute modified ranges for JSON-RPC response
         modified_ranges = DiffComputer.compute_ranges(
             original_doc=document,
-            modified_doc=new_document,
-            affected_node_ids=affected_node_ids,
+            modified_doc=internal_result.document,
+            affected_node_ids=[node_id],
         )
 
         return OperationResult(
             success=True,
-            document=new_document.to_string(),
+            document=serialized_doc,
             modified_ranges=modified_ranges,
         )
 
@@ -680,93 +660,43 @@ class StructureOperations:
 
         Args:
             document: The document to operate on
-            node_id: The ID of the node to move down
+            node_id: The ID of the node to move down (temporary ID like "h2-0")
 
         Returns:
-            Operation result
+            Operation result with serialized document
         """
-        tree_builder = DocumentTreeBuilder(document)
-        node = tree_builder.find_node(node_id)
+        # Ensure all nodes have IDs
+        doc_with_ids = StructureOperations._ensure_document_has_ids(document)
 
-        if node is None:
+        # Map temporary ID to stable NodeId
+        tree_builder = DocumentTreeBuilder(doc_with_ids)
+        stable_id = tree_builder.get_stable_node_id(node_id)
+
+        if stable_id is None:
             return OperationResult(success=False, error=f"Node not found: {node_id}")
 
-        if not isinstance(node, Heading):
-            return OperationResult(success=False, error=f"Node {node_id} is not a heading")
+        # Delegate to internal operations
+        internal_result = InternalOperations.move_down(doc_with_ids, stable_id)
 
-        # Get the section range for the current node
-        section_range = tree_builder.get_section_range(node_id)
-        if section_range is None:
+        if not internal_result.success:
             return OperationResult(
-                success=False, error=f"Could not find section for node: {node_id}"
+                success=False,
+                error=internal_result.error,
             )
 
-        section_start, section_end = section_range
+        # Serialize document at boundary
+        serialized_doc = internal_result.document.to_string()
 
-        # Check if already at the bottom
-        if section_end >= len(document.nodes) - 1:
-            return OperationResult(
-                success=True,
-                document=document.to_string(),
-                error=None,
-            )
-
-        # Find the next sibling heading (same level or higher)
-        next_heading_index = section_end + 1
-        while next_heading_index < len(document.nodes):
-            next_node = document.nodes[next_heading_index]
-            if isinstance(next_node, Heading) and next_node.level <= node.level:
-                break
-            next_heading_index += 1
-
-        # If we can't find a valid next sibling, stay in place
-        if next_heading_index >= len(document.nodes):
-            return OperationResult(
-                success=True,
-                document=document.to_string(),
-                error=None,
-            )
-
-        # Get the section range for the next sibling
-        next_node_id = None
-        for nid, n in tree_builder.node_map.items():
-            if n is document.nodes[next_heading_index]:
-                next_node_id = nid
-                break
-
-        if next_node_id is None:
-            return OperationResult(success=False, error="Could not find next section ID")
-
-        next_section_range = tree_builder.get_section_range(next_node_id)
-        if next_section_range is None:
-            return OperationResult(success=False, error="Could not find next section range")
-
-        next_section_start, next_section_end = next_section_range
-
-        # Move the entire current section to after the next section
-        new_nodes = list(document.nodes)
-        current_section = new_nodes[section_start : section_end + 1]
-        # Remove current section
-        del new_nodes[section_start : section_end + 1]
-        # Calculate new insertion position (after removing current section)
-        insert_pos = next_section_end - (section_end - section_start)
-        # Insert current section after next section
-        new_nodes[insert_pos:insert_pos] = current_section
-        new_document = Document(new_nodes)
-
-        # Collect all affected node IDs from the moved section
-        affected_node_ids = [node_id]  # At minimum, the heading itself
-
-        # Compute modified ranges
+        # Compute modified ranges for JSON-RPC response
         modified_ranges = DiffComputer.compute_ranges(
             original_doc=document,
-            modified_doc=new_document,
-            affected_node_ids=affected_node_ids,
+            modified_doc=internal_result.document,
+            affected_node_ids=[node_id],
         )
 
         return OperationResult(
             success=True,
-            document=new_document.to_string(),
+            document=serialized_doc,
             modified_ranges=modified_ranges,
         )
 
@@ -828,93 +758,48 @@ class StructureOperations:
 
         Args:
             document: The document to operate on
-            node_id: The ID of the node to nest
-            parent_id: The ID of the parent node
+            node_id: The ID of the node to nest (temporary ID like "h2-0")
+            parent_id: The ID of the parent node (temporary ID like "h1-0")
 
         Returns:
-            Operation result
+            Operation result with serialized document
         """
-        tree_builder = DocumentTreeBuilder(document)
-        node = tree_builder.find_node(node_id)
-        parent = tree_builder.find_node(parent_id)
+        # Ensure all nodes have IDs
+        doc_with_ids = StructureOperations._ensure_document_has_ids(document)
 
-        if node is None:
+        # Map temporary IDs to stable NodeIds
+        tree_builder = DocumentTreeBuilder(doc_with_ids)
+        stable_node_id = tree_builder.get_stable_node_id(node_id)
+        stable_parent_id = tree_builder.get_stable_node_id(parent_id)
+
+        if stable_node_id is None:
             return OperationResult(success=False, error=f"Node not found: {node_id}")
 
-        if parent is None:
+        if stable_parent_id is None:
             return OperationResult(success=False, error=f"Parent node not found: {parent_id}")
 
-        if not isinstance(node, Heading):
-            return OperationResult(success=False, error=f"Node {node_id} is not a heading")
+        # Delegate to internal operations
+        internal_result = InternalOperations.nest(doc_with_ids, stable_node_id, stable_parent_id)
 
-        if not isinstance(parent, Heading):
-            return OperationResult(success=False, error=f"Parent node {parent_id} is not a heading")
-
-        # Get section ranges
-        section_range = tree_builder.get_section_range(node_id)
-        parent_section_range = tree_builder.get_section_range(parent_id)
-
-        if section_range is None:
+        if not internal_result.success:
             return OperationResult(
-                success=False, error=f"Could not find section for node: {node_id}"
+                success=False,
+                error=internal_result.error,
             )
 
-        if parent_section_range is None:
-            return OperationResult(
-                success=False, error=f"Could not find section for parent: {parent_id}"
-            )
+        # Serialize document at boundary
+        serialized_doc = internal_result.document.to_string()
 
-        section_start, section_end = section_range
-        parent_section_start, parent_section_end = parent_section_range
-
-        # Calculate level adjustment (difference between parent+1 and current level)
-        level_adjustment = (parent.level + 1) - node.level
-
-        # Extract the section and adjust all heading levels
-        new_nodes = list(document.nodes)
-        section_nodes = new_nodes[section_start : section_end + 1]
-        adjusted_section: list[Node] = []
-
-        for section_node in section_nodes:
-            if isinstance(section_node, Heading):
-                # Adjust level, capping at 6
-                adjusted_level = min(6, section_node.level + level_adjustment)
-                adjusted_node = Heading(
-                    level=adjusted_level,
-                    text=section_node.text,
-                    children=section_node.children,
-                    metadata=section_node.metadata,
-                )
-                adjusted_section.append(adjusted_node)
-            else:
-                # Non-heading nodes are kept as-is
-                adjusted_section.append(section_node)
-
-        # Remove section from current position
-        del new_nodes[section_start : section_end + 1]
-
-        # Adjust parent section end if section was before parent
-        if section_start < parent_section_start:
-            parent_section_end -= section_end - section_start + 1
-
-        # Insert adjusted section after parent section
-        new_nodes[parent_section_end + 1 : parent_section_end + 1] = adjusted_section
-
-        new_document = Document(new_nodes)
-
-        # Collect all affected node IDs from the nested section
-        affected_node_ids = [node_id]  # At minimum, the heading itself
-
-        # Compute modified ranges
+        # Compute modified ranges for JSON-RPC response
         modified_ranges = DiffComputer.compute_ranges(
             original_doc=document,
-            modified_doc=new_document,
-            affected_node_ids=affected_node_ids,
+            modified_doc=internal_result.document,
+            affected_node_ids=[node_id],
         )
 
         return OperationResult(
             success=True,
-            document=new_document.to_string(),
+            document=serialized_doc,
             modified_ranges=modified_ranges,
         )
 
@@ -928,51 +813,43 @@ class StructureOperations:
 
         Args:
             document: The document to operate on
-            node_id: The ID of the node to unnest
+            node_id: The ID of the node to unnest (temporary ID like "h2-0")
 
         Returns:
-            Operation result
+            Operation result with serialized document
         """
-        tree_builder = DocumentTreeBuilder(document)
-        node = tree_builder.find_node(node_id)
+        # Ensure all nodes have IDs
+        doc_with_ids = StructureOperations._ensure_document_has_ids(document)
 
-        if node is None:
+        # Map temporary ID to stable NodeId
+        tree_builder = DocumentTreeBuilder(doc_with_ids)
+        stable_id = tree_builder.get_stable_node_id(node_id)
+
+        if stable_id is None:
             return OperationResult(success=False, error=f"Node not found: {node_id}")
 
-        if not isinstance(node, Heading):
-            return OperationResult(success=False, error=f"Node {node_id} is not a heading")
+        # Delegate to internal operations
+        internal_result = InternalOperations.unnest(doc_with_ids, stable_id)
 
-        # Validate: already at minimum level?
-        if node.level <= 1:
+        if not internal_result.success:
             return OperationResult(
-                success=True,
-                document=document.to_string(),
-                error=None,
+                success=False,
+                error=internal_result.error,
             )
 
-        # Get the index of the node
-        node_index = tree_builder.get_node_index(node_id)
-        if node_index is None:
-            return OperationResult(success=False, error=f"Could not find index for node: {node_id}")
+        # Serialize document at boundary
+        serialized_doc = internal_result.document.to_string()
 
-        # Create new unnested node (promote by one level)
-        unnested_node = node.promote()
-
-        # Create new document with updated node
-        new_nodes = list(document.nodes)
-        new_nodes[node_index] = unnested_node
-        new_document = Document(new_nodes)
-
-        # Compute modified ranges
+        # Compute modified ranges for JSON-RPC response
         modified_ranges = DiffComputer.compute_ranges(
             original_doc=document,
-            modified_doc=new_document,
+            modified_doc=internal_result.document,
             affected_node_ids=[node_id],
         )
 
         return OperationResult(
             success=True,
-            document=new_document.to_string(),
+            document=serialized_doc,
             modified_ranges=modified_ranges,
         )
 

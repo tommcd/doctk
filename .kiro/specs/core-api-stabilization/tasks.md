@@ -536,14 +536,14 @@ Implement internal versions of all existing operations: promote, demote, nest, u
 
 **Acceptance Criteria:**
 
-- [ ] `promote()` operation with ID preservation
-- [ ] `demote()` operation with ID preservation
-- [ ] `nest()` operation with relationship tracking
-- [ ] `unnest()` operation with structure updates
-- [ ] All operations handle metadata immutability
-- [ ] All operations update provenance appropriately
-- [ ] Error handling for invalid operations
-- [ ] Consistent return format (OperationResult)
+- [x] `promote()` operation with ID preservation
+- [x] `demote()` operation with ID preservation
+- [x] `nest()` operation with relationship tracking
+- [x] `unnest()` operation with structure updates
+- [x] All operations handle metadata immutability
+- [x] All operations update provenance appropriately
+- [x] Error handling for invalid operations
+- [x] Consistent return format (OperationResult)
 
 **Files to Modify:**
 

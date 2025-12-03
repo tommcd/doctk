@@ -760,6 +760,124 @@ class Document(Generic[T]):
         writer = MarkdownWriter()
         return writer.write_string(self)
 
+    def to_json(self) -> str:
+        """
+        Serialize document to JSON string.
+
+        Returns:
+            JSON string representation of the document
+
+        Examples:
+            >>> doc = Document.from_string("# Hello\\n\\nWorld")
+            >>> json_str = doc.to_json()
+            >>> restored = Document.from_json(json_str)
+            >>> assert len(restored.nodes) == len(doc.nodes)
+        """
+        import json
+
+        return json.dumps(
+            {"version": "1.0", "nodes": [node.to_dict() for node in self.nodes]}, indent=2
+        )
+
+    @classmethod
+    def from_json(cls, json_str: str) -> "Document[Node]":
+        """
+        Deserialize document from JSON string.
+
+        Args:
+            json_str: JSON string representation
+
+        Returns:
+            Document instance
+
+        Raises:
+            ValueError: If JSON is invalid or missing required fields
+
+        Examples:
+            >>> json_str = '{"version": "1.0", "nodes": []}'
+            >>> doc = Document.from_json(json_str)
+            >>> assert len(doc.nodes) == 0
+        """
+        import json
+
+        try:
+            data = json.loads(json_str)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON: {e}") from e
+
+        if not isinstance(data, dict):
+            raise ValueError("JSON must be an object")
+
+        if "nodes" not in data:
+            raise ValueError("JSON must contain 'nodes' field")
+
+        if not isinstance(data["nodes"], list):
+            raise ValueError("'nodes' field must be an array")
+
+        # Convert dict representations back to Node objects
+        nodes = []
+        for node_dict in data["nodes"]:
+            node = cls._dict_to_node(node_dict)
+            nodes.append(node)
+
+        return cls(nodes)
+
+    @staticmethod
+    def _dict_to_node(node_dict: dict[str, Any]) -> Node:
+        """
+        Convert dictionary representation to Node object.
+
+        Args:
+            node_dict: Dictionary with node data
+
+        Returns:
+            Node instance
+
+        Raises:
+            ValueError: If node type is unknown or required fields are missing
+        """
+        if not isinstance(node_dict, dict):
+            raise ValueError("Node must be an object")
+
+        if "type" not in node_dict:
+            raise ValueError("Node must have 'type' field")
+
+        node_type = node_dict["type"]
+
+        if node_type == "heading":
+            children = [Document._dict_to_node(child) for child in node_dict.get("children", [])]
+            return Heading(
+                level=node_dict.get("level", 1),
+                text=node_dict.get("text", ""),
+                children=children,
+                metadata=node_dict.get("metadata", {}),
+            )
+        elif node_type == "paragraph":
+            return Paragraph(
+                content=node_dict.get("content", ""), metadata=node_dict.get("metadata", {})
+            )
+        elif node_type == "list":
+            items = [Document._dict_to_node(item) for item in node_dict.get("items", [])]
+            return List(
+                ordered=node_dict.get("ordered", False),
+                items=items,
+                metadata=node_dict.get("metadata", {}),
+            )
+        elif node_type == "list_item":
+            content = [Document._dict_to_node(child) for child in node_dict.get("content", [])]
+            return ListItem(content=content, metadata=node_dict.get("metadata", {}))
+        elif node_type == "code_block":
+            return CodeBlock(
+                code=node_dict.get("code", ""),
+                language=node_dict.get("language"),
+                metadata=node_dict.get("metadata", {}),
+            )
+        elif node_type == "block_quote":
+            content = [Document._dict_to_node(child) for child in node_dict.get("content", [])]
+            return BlockQuote(content=content, metadata=node_dict.get("metadata", {}))
+        else:
+            raise ValueError(f"Unknown node type: {node_type}")
+
     def __len__(self) -> int:
         """Number of nodes in document."""
         return len(self.nodes)

@@ -21,7 +21,8 @@
  */
 
 import * as vscode from 'vscode';
-import { OutlineNode, DocumentTree, BackendTreeNode } from './types';
+import { OutlineNode, DocumentTree } from './types';
+import { scanHeadings } from './outlineScanner';
 import { PythonBridge } from './pythonBridge';
 import { getLogger } from './logger';
 
@@ -213,38 +214,15 @@ export class DocumentOutlineProvider
     }
 
     logger.debug(`Setting debounce timer (${this.getDebounceDelay()}ms)`);
-    this.debounceTimer = setTimeout(async () => {
+    this.debounceTimer = setTimeout(() => {
       logger.debug('Debounce timer fired, updating document tree');
       this.document = document;
 
-      // Try to use backend tree with centralized IDs if bridge is available
-      if (this.pythonBridge && this.pythonBridge.isRunning()) {
-        logger.debug('Python bridge is available, requesting document tree from backend');
-        try {
-          const documentText = document.getText();
-          logger.debug(`Document text length: ${documentText.length} characters`);
-          const treeResponse = await this.pythonBridge.getDocumentTree(documentText);
-          logger.debug('Received tree response from backend:', treeResponse);
-          this.documentTree = this.deserializeBackendTree(treeResponse.root, document, treeResponse.version);
-          logger.debug(`Document tree built: ${this.documentTree.nodeMap.size} nodes`);
-          // Compute and cache the large document flag once after tree is built
-          this.computeIsLargeDocument();
-          logger.debug(`Large document: ${this.isLargeDoc}`);
-          logger.debug('Calling refresh() to update tree view');
-          this.refresh();
-          return;
-        } catch (error) {
-          logger.warn('Failed to get tree from backend, falling back to local parsing:', error);
-          // Fall through to local parsing
-        }
-      } else {
-        logger.debug('Python bridge not available or not running, using local parsing');
-      }
-
-      // Fallback to local parsing if backend is unavailable
-      logger.debug('Parsing document locally');
+      // Build the tree in-process: no Python in the keystroke path. The
+      // scanner emits the same stable ids as the backend, so operations
+      // (which DO go through Python, once per user action) resolve them.
       this.documentTree = this.parseDocument(document);
-      logger.debug(`Document tree built locally: ${this.documentTree.nodeMap.size} nodes`);
+      logger.debug(`Document tree built: ${this.documentTree.nodeMap.size} nodes`);
       // Compute and cache the large document flag once after tree is built
       this.computeIsLargeDocument();
       logger.debug(`Large document: ${this.isLargeDoc}`);
@@ -254,88 +232,13 @@ export class DocumentOutlineProvider
   }
 
   /**
-   * Deserialize backend tree into frontend OutlineNode format.
+   * Parse a document to build the outline tree.
    *
-   * Converts the backend TreeNode structure (with line/column positions)
-   * into the frontend OutlineNode structure (with VS Code Ranges).
-   *
-   * @param backendNode - Backend tree node
-   * @param document - VS Code text document for creating ranges
-   * @param version - Tree version number
-   * @returns DocumentTree structure
-   */
-  private deserializeBackendTree(
-    backendNode: BackendTreeNode,
-    document: vscode.TextDocument,
-    version: number
-  ): DocumentTree {
-    const nodeMap = new Map<string, OutlineNode>();
-
-    // Convert backend node to outline node
-    const convertNode = (bNode: BackendTreeNode, parentNode?: OutlineNode): OutlineNode => {
-      // Create range from line/column positions
-      // Warn if backend returns out-of-bounds line numbers
-      if (bNode.line >= document.lineCount) {
-        logger.warn(
-          `Backend returned out-of-bounds line number: ${bNode.line} for node "${bNode.label}". ` +
-          `Document has ${document.lineCount} lines. Clamping to last line.`
-        );
-      }
-      const line = Math.min(bNode.line, document.lineCount - 1);
-      const lineText = document.lineAt(line).text;
-      const endColumn = lineText.length;
-
-      // Clamp column to prevent out-of-bounds access
-      const column = Math.min(bNode.column, lineText.length);
-
-      const range = new vscode.Range(
-        new vscode.Position(line, column),
-        new vscode.Position(line, endColumn)
-      );
-
-      // Create outline node
-      const outlineNode: OutlineNode = {
-        id: bNode.id,
-        label: bNode.label,
-        level: bNode.level,
-        range,
-        children: [],
-        parent: parentNode,
-        // Note: Metadata is not provided by backend and would require
-        // document content analysis to calculate accurately. Omitted to
-        // avoid displaying incorrect placeholder values in tooltips.
-        // TODO: Consider calculating content metadata from document ranges
-      };
-
-      // Add to node map (skip root node)
-      if (bNode.id !== 'root') {
-        nodeMap.set(bNode.id, outlineNode);
-      }
-
-      // Recursively convert children
-      for (const bChild of bNode.children) {
-        const childNode = convertNode(bChild, outlineNode);
-        outlineNode.children.push(childNode);
-      }
-
-      return outlineNode;
-    };
-
-    // Convert the tree starting from root
-    const root = convertNode(backendNode);
-
-    return {
-      root,
-      nodeMap,
-      version,
-    };
-  }
-
-  /**
-   * Parse a document to build the outline tree (local fallback).
-   *
-   * This method is used as a fallback when the backend is unavailable.
-   * It performs local ID generation which may differ from backend IDs.
+   * This is the primary tree source: it runs in-process on every debounced
+   * change, keeping the keystroke path free of Python. Ids are the same
+   * stable content-derived ids the backend emits and resolves
+   * (see outlineScanner.ts), so tree nodes are directly addressable by
+   * structure operations.
    *
    * @param document - The text document to parse
    * @returns DocumentTree structure
@@ -351,54 +254,36 @@ export class DocumentOutlineProvider
 
     const nodeMap = new Map<string, OutlineNode>();
     const stack: OutlineNode[] = [root];
-    const headingCounters = new Map<number, number>();
 
-    // Parse document line by line
-    for (let i = 0; i < document.lineCount; i++) {
-      const line = document.lineAt(i);
-      const text = line.text;
+    for (const heading of scanHeadings(document.getText())) {
+      const line = Math.min(heading.line, document.lineCount - 1);
 
-      // Match Markdown heading pattern (# Heading)
-      const headingMatch = text.match(/^(#{1,6})\s+(.+)$/);
-      if (headingMatch) {
-        const level = headingMatch[1].length;
-        const label = headingMatch[2].trim();
+      const node: OutlineNode = {
+        id: heading.id,
+        label: heading.text,
+        level: heading.level,
+        range: document.lineAt(line).range,
+        children: [],
+        metadata: {
+          hasContent: false,
+          contentLength: 0,
+          lastModified: Date.now(),
+        },
+      };
 
-        // Generate unique ID
-        const count = headingCounters.get(level) || 0;
-        headingCounters.set(level, count + 1);
-        const id = `h${level}-${count}`;
-
-        // Create node
-        const node: OutlineNode = {
-          id,
-          label,
-          level,
-          range: line.range,
-          children: [],
-          metadata: {
-            hasContent: false,
-            contentLength: 0,
-            lastModified: Date.now(),
-          },
-        };
-
-        // Find parent in stack
-        // Pop stack until we find a node with level < current level
-        while (stack.length > 0 && stack[stack.length - 1].level >= level) {
-          stack.pop();
-        }
-
-        if (stack.length > 0) {
-          const parent = stack[stack.length - 1];
-          node.parent = parent;
-          parent.children.push(node);
-        }
-
-        // Push current node to stack
-        stack.push(node);
-        nodeMap.set(id, node);
+      // Find parent in stack: pop until a node with level < current level
+      while (stack.length > 0 && stack[stack.length - 1].level >= heading.level) {
+        stack.pop();
       }
+
+      if (stack.length > 0) {
+        const parent = stack[stack.length - 1];
+        node.parent = parent;
+        parent.children.push(node);
+      }
+
+      stack.push(node);
+      nodeMap.set(heading.id, node);
     }
 
     return {

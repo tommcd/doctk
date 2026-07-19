@@ -1,10 +1,12 @@
 # 07 - Revival Plan: A Personal Structural Editor on an Algebraic Core
 
-**Status**: Active - steps 1-3 complete (2026-07-19); next: step 4
-(performance shape). Step 3 verified via typecheck and health-check logic
-tests; the cold-restart acceptance test still needs a live VS Code run.
-Remaining from step 2: align LSP completion/hover metadata with the
-executor's full vocabulary.
+**Status**: All four steps implemented (2026-07-19). The outline tree is
+built in TypeScript with backend-identical stable ids (enforced by
+tests/e2e/test_ts_scanner_conformance.py); the LSP starts lazily so
+Markdown work runs one Python process. Outstanding: a live VS Code
+session for the step 3/4 acceptance tests (cold restart; feel of a
+500-heading document), and aligning LSP completion/hover metadata with
+the executor's full vocabulary.
 **Date**: 2026-07-19
 **Supersedes**: `core-api-stabilization` phases 2-8, `fragment-graph-model`, `advanced-graph-features` (all deferred indefinitely)
 

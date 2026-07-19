@@ -54,14 +54,34 @@ export async function activate(context: vscode.ExtensionContext) {
   } else {
     logger.info(`doctk ${health.version} available from ${python.command}`);
 
-    // Language server for .tk files (same interpreter as the bridge)
+    // Language server for .tk files, started lazily on first .tk document
+    // so ordinary Markdown outlining keeps a single Python process (the
+    // bridge). Same health-checked interpreter as the bridge.
     languageClient = new DoctkLanguageClient(context);
-    try {
-      await languageClient.start(python.command);
-      logger.info('doctk language server started successfully');
-    } catch (error) {
-      logger.error('Failed to start language server:', error);
-      // Non-fatal - continue with extension activation
+    let lspStarted = false;
+    const startLspIfNeeded = async (document: vscode.TextDocument) => {
+      if (lspStarted) {
+        return;
+      }
+      const isTk =
+        document.languageId === 'doctk' || document.uri.fsPath.endsWith('.tk');
+      if (!isTk) {
+        return;
+      }
+      lspStarted = true;
+      try {
+        await languageClient.start(python.command);
+        logger.info('doctk language server started (first .tk document opened)');
+      } catch (error) {
+        logger.error('Failed to start language server:', error);
+        // Non-fatal - outlining continues to work without the LSP
+      }
+    };
+    context.subscriptions.push(
+      vscode.workspace.onDidOpenTextDocument(startLspIfNeeded)
+    );
+    for (const document of vscode.workspace.textDocuments) {
+      void startLspIfNeeded(document);
     }
   }
 

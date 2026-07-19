@@ -49,10 +49,14 @@ Parse -> write must be faithful before any operation can be trusted.
 - Wire `identity.py` NodeIds into `StructureOperations` and the bridge,
   replacing positional `h2-0` IDs.
 - Collapse the four operation vocabularies into one; every documented example
-  must execute (fix `select`/`heading` composition, implement `nest(under=)`).
+  must execute (fix `select`/`heading` composition).
+- Each operation lives at exactly one altitude: uniform transforms
+  (promote/demote, selectors) in the functional pipeline; id-addressed
+  structural moves (nest/unnest/move_up/move_down) in `StructureOperations`
+  and the DSL. No aliases that give one name two meanings across layers.
 - Delete consumer-less scaffolding (`integration/memory.py`, `performance.py`,
   `compat.py`, `errors.py`, unwired `lsp/ai_support.py`, legacy parser paths).
-- **Acceptance**: README examples run as doctests; one vocabulary shared by
+- **Acceptance**: documented examples run as tests; one vocabulary shared by
   Python API, DSL, and bridge; operations are total (no `NotImplementedError`).
 
 ### 3. Reliable bridge

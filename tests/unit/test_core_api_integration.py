@@ -98,10 +98,10 @@ class TestDynamicOperationDiscovery:
             "compose",
             "first",
             "last",
-            "lift",
-            "lower",
             "nest",
             "unnest",
+            "move_up",
+            "move_down",
         ]
 
         for op_name in expected_operations:
@@ -286,9 +286,7 @@ class TestIntegrationWorkflow:
         operation_map = {
             "promote": StructureOperations.promote,
             "demote": StructureOperations.demote,
-            "lift": StructureOperations.promote,  # alias
-            "unnest": StructureOperations.promote,  # alias
-            "lower": StructureOperations.demote,  # alias
+            "unnest": StructureOperations.unnest,
             "move_up": StructureOperations.move_up,
             "move_down": StructureOperations.move_down,
         }
@@ -296,19 +294,15 @@ class TestIntegrationWorkflow:
         for op_metadata in structure_ops:
             op_name = op_metadata.name
 
-            # Skip operations that aren't in StructureOperations
+            # Skip operations with a different signature (nest takes parent_id)
             if op_name not in operation_map:
                 continue
 
-            # Should be able to execute
-            try:
-                op_func = operation_map[op_name]
-                result = op_func(doc, "h2-0")
-                # Some operations may fail (e.g., unnest on h2-0), but should return result
-                assert result is not None
-            except (NotImplementedError, AttributeError):
-                # Some operations may not be fully implemented yet
-                pass
+            # Should be able to execute; the result object is always returned,
+            # even when the specific move is invalid for this document
+            op_func = operation_map[op_name]
+            result = op_func(doc, "h2-0")
+            assert result is not None
 
 
 class TestAPIStability:

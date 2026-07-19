@@ -57,6 +57,7 @@ class TestLanguageServerLifecycle:
         assert server.hover_provider is not None
         assert hasattr(server.hover_provider, "provide_hover")
 
+
 class TestLanguageServerDocumentHandling:
     """Test document lifecycle handling."""
 

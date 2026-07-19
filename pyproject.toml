@@ -36,6 +36,7 @@ ignore = [
   "B008", # Allow function calls in argument defaults (required for typer)
   "B007", # Allow unused loop variables (sometimes used for dict iteration)
   "S101", # Allow assert statements (used in tests)
+  "S106", # False positive: "token_type" means markdown-it parser tokens, not credentials
   "S603", # Allow subprocess calls (test suite runs trusted scripts)
   "S607", # Allow partial executable paths (test suite uses standard tools)
   "E501", # Line too long (handled by formatter)

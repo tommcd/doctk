@@ -19,6 +19,7 @@ from doctk.core import (
     ListItem,
     Node,
     Paragraph,
+    RawBlock,
 )
 from doctk.identity import (
     NodeId,
@@ -54,6 +55,7 @@ class MarkdownParser:
         tokens = self.md.parse(content)
         lines = content.split("\n")
         nodes = self._convert_tokens_with_spans(tokens, lines, context)
+        nodes = self._attach_source_text(nodes, lines, context)
 
         # Create document with identity mappings (view = source initially)
         doc = Document(nodes)
@@ -71,7 +73,11 @@ class MarkdownParser:
         return doc
 
     def _convert_tokens_with_spans(
-        self, tokens: list[Token], lines: list[str], context: ProvenanceContext
+        self,
+        tokens: list[Token],
+        lines: list[str],
+        context: ProvenanceContext,
+        nested: bool = False,
     ) -> list[Node]:
         """Convert markdown-it tokens to doctk nodes with source spans and IDs."""
         nodes = []
@@ -172,7 +178,9 @@ class MarkdownParser:
                 content_tokens, consumed = self._extract_until_close(
                     tokens, i + 1, "blockquote_close"
                 )
-                content_nodes = self._convert_tokens_with_spans(content_tokens, lines, context)
+                content_nodes = self._convert_tokens_with_spans(
+                    content_tokens, lines, context, nested=True
+                )
 
                 block_quote = BlockQuote(content=content_nodes)
 
@@ -192,10 +200,133 @@ class MarkdownParser:
                 i += consumed + 2  # Skip blockquote_open and blockquote_close
 
             else:
-                # Skip other tokens for now
-                i += 1
+                # Preserve unknown block-level tokens verbatim instead of dropping them
+                raw_result = self._try_create_raw_block(tokens, i, lines, context, nested)
+                if raw_result is not None:
+                    raw_block, consumed = raw_result
+                    nodes.append(raw_block)
+                    i += consumed
+                else:
+                    # Structural token with no standalone content (e.g. stray close)
+                    i += 1
 
         return nodes
+
+    def _try_create_raw_block(
+        self,
+        tokens: list[Token],
+        i: int,
+        lines: list[str],
+        context: ProvenanceContext,
+        nested: bool,
+    ) -> tuple[Node, int] | None:
+        """
+        Build a RawBlock from an unmodeled block-level token.
+
+        Returns (raw_block, tokens_consumed), or None for tokens that carry no
+        standalone content (closing tokens, positionless tokens). For opening
+        tokens of unknown containers, consumes through the matching close.
+
+        Nested raw blocks (inside block quotes or list items) use the token's
+        own content rather than raw source lines, because source lines include
+        container prefixes ("> ", list indentation) that must not be duplicated
+        when the parent is re-rendered.
+        """
+        token = tokens[i]
+        if token.map is None or token.nesting < 0:
+            return None
+
+        if token.nesting == 0:
+            consumed = 1
+        else:
+            # Opening token of an unknown container: consume to matching close
+            depth = 0
+            j = i
+            while j < len(tokens):
+                depth += tokens[j].nesting
+                j += 1
+                if depth == 0:
+                    break
+            consumed = j - i
+
+        start_line, end_line = token.map
+        if nested:
+            content = token.content.rstrip("\n") or token.markup
+        else:
+            content = "\n".join(lines[start_line:end_line])
+
+        raw_block = RawBlock(content=content, token_type=token.type)
+        raw_block.source_span = self._create_source_span(token, lines, context.file_path)
+        raw_block.id = NodeId.from_node(raw_block)
+        raw_block.provenance = Provenance.from_context(context)
+        return raw_block, consumed
+
+    def _attach_source_text(
+        self, nodes: list[Node], lines: list[str], context: ProvenanceContext
+    ) -> list[Node]:
+        """
+        Attach exact source text to top-level nodes, tiling the full source.
+
+        Each node's source_text covers its own lines plus any following blank
+        lines up to the next node, so concatenating all tiles reproduces the
+        original source byte-for-byte. Line ranges between nodes that contain
+        non-blank content (e.g. link reference definitions, which produce no
+        tokens) become RawBlock nodes so no content is ever dropped.
+
+        Only top-level nodes receive source_text: nested nodes' source lines
+        include container prefixes ("> ", indentation) that would corrupt
+        output if spliced outside their original context.
+        """
+        if not nodes:
+            return nodes
+        if any(node.source_span is None for node in nodes):
+            # Cannot tile safely without full position info; fall back to rendering
+            return nodes
+
+        result: list[Node] = []
+        for idx, node in enumerate(nodes):
+            start = node.source_span.start_line
+            own_end = node.source_span.end_line + 1
+            next_start = (
+                nodes[idx + 1].source_span.start_line if idx + 1 < len(nodes) else len(lines)
+            )
+
+            if idx == 0 and start > 0:
+                leading = lines[:start]
+                if any(line.strip() for line in leading):
+                    result.append(self._make_gap_raw_block(lines, 0, start, context))
+                else:
+                    start = 0  # Fold leading blank lines into the first tile
+
+            gap = lines[own_end:next_start]
+            if any(line.strip() for line in gap):
+                node.source_text = "\n".join(lines[start:own_end])
+                result.append(node)
+                result.append(self._make_gap_raw_block(lines, own_end, next_start, context))
+            else:
+                node.source_text = "\n".join(lines[start:next_start])
+                result.append(node)
+
+        return result
+
+    def _make_gap_raw_block(
+        self, lines: list[str], start: int, end: int, context: ProvenanceContext
+    ) -> RawBlock:
+        """Create a RawBlock for source lines that produced no tokens."""
+        content = "\n".join(lines[start:end])
+        raw_block = RawBlock(content=content, token_type="untokenized")
+        end_column = len(lines[end - 1]) - 1 if lines[end - 1] else 0
+        raw_block.source_span = SourceSpan(
+            start_line=start,
+            start_column=0,
+            end_line=end - 1,
+            end_column=end_column,
+            source_file=context.file_path,
+        )
+        raw_block.id = NodeId.from_node(raw_block)
+        raw_block.provenance = Provenance.from_context(context)
+        raw_block.source_text = content
+        return raw_block
 
     def _convert_tokens(self, tokens: list[Token]) -> list[Node]:
         """Convert markdown-it tokens to doctk nodes (legacy method for compatibility)."""
@@ -295,7 +426,9 @@ class MarkdownParser:
                 content_tokens, consumed = self._extract_until_close(
                     tokens, i + 1, "list_item_close"
                 )
-                content_nodes = self._convert_tokens_with_spans(content_tokens, lines, context)
+                content_nodes = self._convert_tokens_with_spans(
+                    content_tokens, lines, context, nested=True
+                )
 
                 list_item = ListItem(content=content_nodes)
 

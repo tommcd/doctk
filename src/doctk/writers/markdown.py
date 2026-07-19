@@ -16,11 +16,20 @@ from doctk.core import (
     Node,
     NodeVisitor,
     Paragraph,
+    RawBlock,
 )
 
 
 class MarkdownWriter(NodeVisitor):
-    """Write doctk Document to Markdown."""
+    """
+    Write doctk Document to Markdown.
+
+    Source-faithful by default: nodes that still carry their exact source text
+    (attached at parse time, invalidated when an operation changes content)
+    are emitted verbatim. Only nodes that were created or modified in memory
+    are rendered from the AST. Parsing a document and writing it back without
+    modification therefore reproduces the source byte-for-byte.
+    """
 
     def __init__(self):
         self.output = []
@@ -33,10 +42,19 @@ class MarkdownWriter(NodeVisitor):
 
     def write_string(self, doc: Document[Node]) -> str:
         """Convert document to Markdown string."""
-        self.output = []
+        all_lines: list[str] = []
         for node in doc.nodes:
-            node.accept(self)
-        return "\n".join(self.output)
+            source_text = getattr(node, "source_text", None)
+            if source_text is not None:
+                all_lines.extend(source_text.split("\n"))
+            else:
+                self.output = []
+                self.list_depth = 0
+                node.accept(self)
+                if not self.output or self.output[-1] != "":
+                    self.output.append("")  # Blank line between rendered blocks
+                all_lines.extend(self.output)
+        return "\n".join(all_lines)
 
     def visit_heading(self, node: Heading) -> None:
         """Write heading."""
@@ -88,6 +106,11 @@ class MarkdownWriter(NodeVisitor):
         self.output.append(node.code.rstrip())
         self.output.append("```")
         self.output.append("")  # Blank line after code block
+
+    def visit_raw_block(self, node: RawBlock) -> None:
+        """Write raw block verbatim."""
+        self.output.extend(node.content.split("\n"))
+        self.output.append("")  # Blank line after raw block
 
     def visit_block_quote(self, node: BlockQuote) -> None:
         """Write block quote."""

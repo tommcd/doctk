@@ -20,7 +20,6 @@ class TestLanguageServerLifecycle:
         assert hasattr(server, "registry")
         assert hasattr(server, "completion_provider")
         assert hasattr(server, "hover_provider")
-        assert hasattr(server, "ai_support")
 
     def test_server_has_required_handlers(self):
         """Test that the server has all required LSP handlers registered."""
@@ -57,15 +56,6 @@ class TestLanguageServerLifecycle:
 
         assert server.hover_provider is not None
         assert hasattr(server.hover_provider, "provide_hover")
-
-    def test_server_ai_support_ready(self):
-        """Test that the AI support module is initialized and ready."""
-        server = DoctkLanguageServer()
-
-        assert server.ai_support is not None
-        assert hasattr(server.ai_support, "get_operation_catalog")
-        assert hasattr(server.ai_support, "get_structured_docs")
-
 
 class TestLanguageServerDocumentHandling:
     """Test document lifecycle handling."""
@@ -221,4 +211,3 @@ class TestLanguageServerConfiguration:
         assert server.registry is not None
         assert server.completion_provider is not None
         assert server.hover_provider is not None
-        assert server.ai_support is not None

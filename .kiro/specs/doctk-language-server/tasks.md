@@ -146,7 +146,7 @@ This implementation plan breaks down the language server into discrete, actionab
     - Return complete operation metadata in JSON format
     - Include all parameters, types, and examples
     - _Requirements: 11.1, 11.2_
-    - _Implemented in: src/doctk/lsp/ai_support.py (AIAgentSupport class)_
+    - _Implemented in: src/doctk/lsp/ai_support.py (AIAgentSupport class) [REMOVED] (2026-07: deleted as unused scaffolding, see docs/design/07-revival-plan.md)_
 
   - [x] 5.2 Add signature help support
 
@@ -175,7 +175,7 @@ This implementation plan breaks down the language server into discrete, actionab
     - Test signature help
     - Test document symbols
     - _Requirements: 11_
-    - _Tests in: tests/unit/test_ai_support.py (18 tests), tests/unit/test_lsp_ai_features.py (26 tests)_
+    - _Tests in: tests/unit/test_ai_support.py (18 tests), tests/unit/test_lsp_ai_features.py (26 tests) [REMOVED] (2026-07: deleted as unused scaffolding, see docs/design/07-revival-plan.md)_
 
 - [x] 6. Connect language server to VS Code extension
 
@@ -256,15 +256,15 @@ This implementation plan breaks down the language server into discrete, actionab
     - Add memory usage monitoring
     - Evict least recently used documents when memory limit reached
     - _Requirements: 17.5_
-    - _Implemented in: src/doctk/integration/memory.py_
-    - _Tests in: tests/unit/test_memory.py (22 tests, all passing)_
+    - _Implemented in: src/doctk/integration/memory.py [REMOVED] (2026-07: deleted as unused scaffolding, see docs/design/07-revival-plan.md)_
+    - _Tests in: tests/unit/test_memory.py (22 tests, all passing) [REMOVED] (2026-07: deleted as unused scaffolding, see docs/design/07-revival-plan.md)_
 
   - [x] 8.2 Write performance tests
 
     - Test memory usage stays under 500MB
     - Test with large documents
     - _Requirements: 17_
-    - _Tests in: tests/unit/test_memory.py::TestMemoryPerformance (8 tests, all passing)_
+    - _Tests in: tests/unit/test_memory.py::TestMemoryPerformance (8 tests, all passing) [REMOVED] (2026-07: deleted as unused scaffolding, see docs/design/07-revival-plan.md)_
 
 - [x] 9. Add configuration and customization
 

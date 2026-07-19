@@ -293,32 +293,6 @@ class TestLSPHover:
 class TestLSPAISupport:
     """Test AI-friendly features."""
 
-    def test_operation_catalog_for_ai(self):
-        """Test getting complete operation catalog for AI consumption."""
-        server = DoctkLanguageServer()
-
-        catalog = server.ai_support.get_operation_catalog()
-
-        # Should return structured data as dict[str, dict]
-        assert isinstance(catalog, dict)
-        assert len(catalog) > 0
-
-        # Check structure of a specific operation
-        assert "select" in catalog
-        assert "description" in catalog["select"]
-
-    def test_structured_docs_for_ai(self):
-        """Test getting structured documentation for AI."""
-        server = DoctkLanguageServer()
-
-        docs = server.ai_support.get_structured_docs("select")
-
-        # Should return StructuredDocumentation dataclass
-        assert docs is not None
-        assert hasattr(docs, "operation")
-        assert hasattr(docs, "summary")
-        assert docs.operation == "select"
-
     def test_signature_help_returns_structured_info(self):
         """Test that signature help returns structured parameter info."""
         server = DoctkLanguageServer()

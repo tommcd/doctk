@@ -6,18 +6,7 @@ and can be used by all consumers.
 """
 
 from doctk.integration.bridge import ExtensionBridge
-from doctk.integration.compat import (
-    CompatibilityChecker,
-    VersionInfo,
-    check_compatibility,
-    check_feature,
-    get_compatibility_checker,
-    get_doctk_version,
-)
-from doctk.integration.errors import ErrorCategory, ErrorHandler, RetryConfig
-from doctk.integration.memory import DocumentStateManager, LRUCache
 from doctk.integration.operations import DocumentTreeBuilder, StructureOperations
-from doctk.integration.performance import PerformanceMonitor
 from doctk.integration.protocols import (
     DocumentInterface,
     DocumentOperation,
@@ -28,25 +17,13 @@ from doctk.integration.protocols import (
 )
 
 __all__ = [
-    "CompatibilityChecker",
     "DocumentInterface",
     "DocumentOperation",
-    "DocumentStateManager",
     "DocumentTreeBuilder",
-    "ErrorCategory",
-    "ErrorHandler",
     "ExtensionBridge",
-    "LRUCache",
     "ModifiedRange",
     "OperationResult",
-    "PerformanceMonitor",
-    "RetryConfig",
     "StructureOperations",
     "TreeNode",
     "ValidationResult",
-    "VersionInfo",
-    "check_compatibility",
-    "check_feature",
-    "get_compatibility_checker",
-    "get_doctk_version",
 ]

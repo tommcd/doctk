@@ -44,7 +44,6 @@ from pygls.lsp.server import LanguageServer
 
 from doctk.dsl.lexer import Lexer, LexerError
 from doctk.dsl.parser import ParseError, Parser, Pipeline
-from doctk.lsp.ai_support import AIAgentSupport
 from doctk.lsp.completion import CompletionProvider
 from doctk.lsp.config import LSPConfiguration
 from doctk.lsp.hover import HoverProvider
@@ -88,7 +87,6 @@ class DoctkLanguageServer(LanguageServer):  # type: ignore[misc]
         self.registry = OperationRegistry()
         self.completion_provider = CompletionProvider(self.registry)
         self.hover_provider = HoverProvider(self.registry)
-        self.ai_support = AIAgentSupport(self.registry)
 
         # Register handlers
         self._register_handlers()

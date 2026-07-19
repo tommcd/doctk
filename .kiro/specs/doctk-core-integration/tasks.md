@@ -281,14 +281,14 @@ This implementation plan breaks down the core integration layer and execution ca
 
   - [x] 10.2 Implement memory management
 
-    - Implemented `LRUCache` class in `src/doctk/integration/memory.py`
+    - Implemented `LRUCache` class in `src/doctk/integration/memory.py` [REMOVED] (2026-07: deleted as unused scaffolding, see docs/design/07-revival-plan.md)
     - Implemented `DocumentStateManager` class with LRU caching
     - Added memory usage monitoring (500MB threshold)
     - Implemented automatic eviction of least recently used documents
     - Supports optional psutil for accurate memory monitoring
     - Fallback to sys.getsizeof-based estimation when psutil unavailable
     - Comprehensive statistics and reporting methods
-    - Written 22 tests in `tests/unit/test_memory.py` (all passing)
+    - Written 22 tests in `tests/unit/test_memory.py` (all passing) [REMOVED] (2026-07: deleted as unused scaffolding, see docs/design/07-revival-plan.md)
     - Exported via `src/doctk/lsp/__init__.py`
     - _Requirements: 17.5_
 
@@ -390,7 +390,7 @@ This implementation plan breaks down the core integration layer and execution ca
     - VersionInfo class for version parsing and comparison
     - CompatibilityChecker class for version checking and feature detection
     - Global API functions: check_compatibility(), get_doctk_version(), check_feature()
-    - 29 tests passing in tests/unit/test_compat.py (98.89% coverage)
+    - 29 tests passing in tests/unit/test_compat.py (98.89% coverage) [REMOVED] (2026-07: deleted as unused scaffolding, see docs/design/07-revival-plan.md)
     - _Requirements: 20.5_
 
   - [x] 13.4 Write integration tests

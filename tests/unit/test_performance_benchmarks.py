@@ -10,13 +10,29 @@ specified in requirements.md (Requirement 17):
 
 import gc
 import time
+from contextlib import contextmanager
 from typing import Any
 
 import pytest
 
 from doctk.core import Document, Heading, Paragraph
 from doctk.integration.operations import DocumentTreeBuilder, StructureOperations
-from doctk.integration.performance import PerformanceMonitor
+
+
+class _Timer:
+    """Minimal wall-clock timer for benchmarks."""
+
+    def __init__(self) -> None:
+        self.durations: dict[str, float] = {}
+
+    @contextmanager
+    def measure(self, name: str):
+        start = time.perf_counter()
+        try:
+            yield
+        finally:
+            self.durations[name] = time.perf_counter() - start
+
 
 # Performance thresholds from requirements.md (Requirement 17)
 STRUCTURAL_OPERATION_THRESHOLD = 2.0  # seconds (Requirement 17.4)
@@ -98,7 +114,7 @@ class TestPerformanceBenchmarks:
 
     def setup_method(self):
         """Set up test fixtures."""
-        self.monitor = PerformanceMonitor()
+        self.monitor = _Timer()
         # Force garbage collection before each test
         gc.collect()
 
@@ -136,10 +152,7 @@ class TestPerformanceBenchmarks:
             builder = DocumentTreeBuilder(doc)
             tree = builder.build_tree_with_ids()
 
-        # Get the actual duration
-        stats = self.monitor.get_stats("build_tree_1000")
-        assert stats is not None
-        duration = stats.average_duration
+        duration = self.monitor.durations["build_tree_1000"]
 
         # Verify tree was built correctly
         assert tree.id == "root"
@@ -193,10 +206,7 @@ class TestPerformanceBenchmarks:
         with self.monitor.measure(f"{operation_name}_large"):
             result = operation_func(doc, *node_args)
 
-        # Get the actual duration
-        stats = self.monitor.get_stats(f"{operation_name}_large")
-        assert stats is not None
-        duration = stats.average_duration
+        duration = self.monitor.durations[f"{operation_name}_large"]
 
         # Verify operation succeeded
         assert result.success, f"{operation_name} operation failed: {result.error}"
@@ -235,9 +245,7 @@ class TestPerformanceBenchmarks:
             if result.document:
                 doc = Document.from_string(result.document)
 
-            stats = self.monitor.get_stats(op_name)
-            assert stats is not None
-            total_time += stats.average_duration
+            total_time += self.monitor.durations[op_name]
 
         # All operations combined should be reasonably fast
         assert total_time < SEQUENTIAL_OPERATIONS_THRESHOLD, (
@@ -285,40 +293,6 @@ class TestPerformanceBenchmarks:
             f"Memory increase: {memory_increase:.2f}MB (should be < {MEMORY_THRESHOLD_MB}MB)"
         )
 
-    def test_performance_summary_generation(self):
-        """
-        Test: Performance monitoring should track all operations and
-        provide useful summary data.
-        """
-        doc = generate_large_document(100)
-
-        # Perform various operations
-        with self.monitor.measure("promote"):
-            StructureOperations.promote(doc, "h2-5")
-
-        with self.monitor.measure("demote"):
-            StructureOperations.demote(doc, "h1-5")
-
-        with self.monitor.measure("build_tree"):
-            builder = DocumentTreeBuilder(doc)
-            builder.build_tree_with_ids()
-
-        # Get summary
-        summary = self.monitor.get_summary()
-
-        # Verify summary contains expected information
-        assert "Performance Summary:" in summary
-        assert "promote" in summary
-        assert "demote" in summary
-        assert "build_tree" in summary
-
-        # Verify slow operations detection works
-        slow_ops = self.monitor.get_slow_operations()
-        # With small document (100 headings), operations should be fast
-        assert len(slow_ops) == 0 or all(duration < 1.0 for _, duration in slow_ops), (
-            "Operations on small document should be fast"
-        )
-
 
 @pytest.mark.slow
 class TestPerformanceScalability:
@@ -326,7 +300,7 @@ class TestPerformanceScalability:
 
     def setup_method(self):
         """Set up test fixtures."""
-        self.monitor = PerformanceMonitor()
+        self.monitor = _Timer()
         # Force garbage collection before each test
         gc.collect()
 
@@ -352,9 +326,7 @@ class TestPerformanceScalability:
                 builder = DocumentTreeBuilder(doc)
                 builder.build_tree_with_ids()
 
-            stats = self.monitor.get_stats(f"tree_build_{size}")
-            assert stats is not None
-            durations.append(stats.average_duration)
+            durations.append(self.monitor.durations[f"tree_build_{size}"])
 
         # Calculate scaling ratio (100 → 1000 headings)
         ratio = durations[2] / durations[0] if durations[0] > 0 else float("inf")
@@ -382,9 +354,8 @@ class TestPerformanceScalability:
             assert result.success, f"Promote on {size} headings failed: {result.error}"
 
             # Verify performance requirement
-            stats = self.monitor.get_stats(f"promote_{size}")
-            assert stats is not None
-            assert stats.average_duration <= STRUCTURAL_OPERATION_THRESHOLD, (
-                f"Promote on {size} headings took {stats.average_duration:.3f}s "
+            duration = self.monitor.durations[f"promote_{size}"]
+            assert duration <= STRUCTURAL_OPERATION_THRESHOLD, (
+                f"Promote on {size} headings took {duration:.3f}s "
                 f"(required: ≤ {STRUCTURAL_OPERATION_THRESHOLD}s)"
             )

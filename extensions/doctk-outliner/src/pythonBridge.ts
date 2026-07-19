@@ -54,6 +54,7 @@ export class PythonBridge {
   private nextId = 1;
   private pendingRequests = new Map<number, PendingRequest>();
   private buffer = '';
+  private stderrTail = '';
   private options: Required<PythonBridgeOptions>;
   private restartCount = 0;
   private isStarting = false;
@@ -294,9 +295,11 @@ export class PythonBridge {
       this.handleStdout(data.toString());
     });
 
-    // Handle stderr data (errors)
+    // Handle stderr data (errors); keep a tail for startup diagnostics
     this.process.stderr!.on('data', (data: Buffer) => {
-      logger.error('Python bridge error:', data.toString());
+      const text = data.toString();
+      this.stderrTail = (this.stderrTail + text).slice(-2000);
+      logger.error('Python bridge error:', text);
     });
 
     // Handle process exit
@@ -400,24 +403,50 @@ export class PythonBridge {
 
   /**
    * Wait for the process to be ready.
+   *
+   * Rejects with captured stderr when the process dies or times out before
+   * signalling readiness, so startup failures carry their actual cause
+   * (e.g. "ModuleNotFoundError: No module named 'doctk'") instead of a
+   * generic timeout.
    */
   private async waitForReady(): Promise<void> {
     return new Promise((resolve, reject) => {
+      const failWith = (reason: string) => {
+        cleanup();
+        const detail = this.stderrTail.trim();
+        reject(new Error(detail ? `${reason}: ${detail}` : reason));
+      };
+
       const timeout = setTimeout(() => {
-        reject(new Error('Bridge process failed to start within timeout'));
+        failWith('Bridge process failed to start within timeout');
       }, 5000); // 5 second timeout
 
       const onData = (data: Buffer) => {
         const output = data.toString();
         if (output.includes('BRIDGE_READY')) {
-          clearTimeout(timeout);
-          // Remove the data listener since we got the ready signal
-          this.process!.stdout!.removeListener('data', onData);
+          cleanup();
           resolve();
         }
       };
 
+      const onExit = (code: number | null) => {
+        failWith(`Bridge process exited with code ${code} before becoming ready`);
+      };
+
+      const onError = (error: Error) => {
+        failWith(`Bridge process failed to spawn (${error.message})`);
+      };
+
+      const cleanup = () => {
+        clearTimeout(timeout);
+        this.process?.stdout?.removeListener('data', onData);
+        this.process?.removeListener('exit', onExit);
+        this.process?.removeListener('error', onError);
+      };
+
       this.process!.stdout!.on('data', onData);
+      this.process!.on('exit', onExit);
+      this.process!.on('error', onError);
     });
   }
 

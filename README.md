@@ -130,6 +130,11 @@ doctk includes a VS Code extension with visual document outlining and manipulati
 - doctk package installed (see [Installation](#installation) above)
 - VS Code 1.80.0 or higher
 
+The extension resolves a Python interpreter automatically (ms-python's
+active interpreter, then a workspace `.venv`, then `python3` on PATH) and
+health-checks that doctk is importable before starting. If resolution
+picks the wrong Python, set `doctk.pythonPath` in your settings.
+
 **Option 1: Build from source** (recommended)
 
 ```bash

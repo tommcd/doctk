@@ -1,6 +1,8 @@
 # 07 - Revival Plan: A Personal Structural Editor on an Algebraic Core
 
-**Status**: Active
+**Status**: Active - steps 1 and 2 complete (2026-07-19); next: step 3
+(reliable bridge). Remaining from step 2: align LSP completion/hover
+metadata with the executor's full vocabulary.
 **Date**: 2026-07-19
 **Supersedes**: `core-api-stabilization` phases 2-8, `fragment-graph-model`, `advanced-graph-features` (all deferred indefinitely)
 

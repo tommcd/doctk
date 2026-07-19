@@ -410,7 +410,7 @@ class TestGetDocumentTree:
 
         # Check first child
         child = root["children"][0]
-        assert child["id"] == "h1-0"
+        assert child["id"].startswith("heading:")
         assert child["label"] == "Title"
         assert child["level"] == 1
 
@@ -431,11 +431,11 @@ class TestGetDocumentTree:
 
         # Should have 3 children
         assert len(root["children"]) == 3
-        assert root["children"][0]["id"] == "h1-0"
+        assert root["children"][0]["id"].startswith("heading:")
         assert root["children"][0]["label"] == "First"
-        assert root["children"][1]["id"] == "h1-1"
+        assert root["children"][1]["id"].startswith("heading:")
         assert root["children"][1]["label"] == "Second"
-        assert root["children"][2]["id"] == "h1-2"
+        assert root["children"][2]["id"].startswith("heading:")
         assert root["children"][2]["label"] == "Third"
 
     def test_get_document_tree_nested_structure(self):
@@ -465,17 +465,17 @@ class TestGetDocumentTree:
 
         # Chapter 1 should have 2 sections
         chapter1 = root["children"][0]
-        assert chapter1["id"] == "h1-0"
+        assert chapter1["id"].startswith("heading:")
         assert chapter1["label"] == "Chapter 1"
         assert len(chapter1["children"]) == 2
-        assert chapter1["children"][0]["id"] == "h2-0"
+        assert chapter1["children"][0]["id"].startswith("heading:")
         assert chapter1["children"][0]["label"] == "Section 1.1"
-        assert chapter1["children"][1]["id"] == "h2-1"
+        assert chapter1["children"][1]["id"].startswith("heading:")
         assert chapter1["children"][1]["label"] == "Section 1.2"
 
         # Chapter 2 should have no children
         chapter2 = root["children"][1]
-        assert chapter2["id"] == "h1-1"
+        assert chapter2["id"].startswith("heading:")
         assert chapter2["label"] == "Chapter 2"
         assert len(chapter2["children"]) == 0
 
@@ -503,19 +503,19 @@ class TestGetDocumentTree:
 
         # Navigate through the tree
         level1 = root["children"][0]
-        assert level1["id"] == "h1-0"
+        assert level1["id"].startswith("heading:")
         assert level1["label"] == "Level 1"
 
         level2 = level1["children"][0]
-        assert level2["id"] == "h2-0"
+        assert level2["id"].startswith("heading:")
         assert level2["label"] == "Level 2"
 
         level3 = level2["children"][0]
-        assert level3["id"] == "h3-0"
+        assert level3["id"].startswith("heading:")
         assert level3["label"] == "Level 3"
 
         level4 = level3["children"][0]
-        assert level4["id"] == "h4-0"
+        assert level4["id"].startswith("heading:")
         assert level4["label"] == "Level 4"
         assert len(level4["children"]) == 0
 
@@ -753,23 +753,23 @@ Section content.
         # was reporting incorrect line numbers after code blocks
 
         cli_heading = root["children"][0]
-        assert cli_heading["id"] == "h1-0"
+        assert cli_heading["id"].startswith("heading:")
         assert cli_heading["label"] == "CLI Tool Documentation"
         assert lines[cli_heading["line"]].strip() == "# CLI Tool Documentation"
 
         prereq_heading = cli_heading["children"][0]
-        assert prereq_heading["id"] == "h2-0"
+        assert prereq_heading["id"].startswith("heading:")
         assert prereq_heading["label"] == "Prerequisites"
         assert lines[prereq_heading["line"]].strip() == "## Prerequisites"
 
         install_heading = cli_heading["children"][1]
-        assert install_heading["id"] == "h2-1"
+        assert install_heading["id"].startswith("heading:")
         assert install_heading["label"] == "Installation"
         assert lines[install_heading["line"]].strip() == "## Installation"
 
         # This is where the bug manifested - headings after code blocks had wrong line numbers
         usage_heading = cli_heading["children"][2]
-        assert usage_heading["id"] == "h2-2"
+        assert usage_heading["id"].startswith("heading:")
         assert usage_heading["label"] == "Usage"
         assert lines[usage_heading["line"]].strip() == "## Usage", (
             f"Expected line {usage_heading['line']} to be '## Usage', "
@@ -777,7 +777,7 @@ Section content.
         )
 
         options_heading = cli_heading["children"][3]
-        assert options_heading["id"] == "h2-3"
+        assert options_heading["id"].startswith("heading:")
         assert options_heading["label"] == "Options"
         assert lines[options_heading["line"]].strip() == "## Options", (
             f"Expected line {options_heading['line']} to be '## Options', "
@@ -785,7 +785,7 @@ Section content.
         )
 
         examples_heading = cli_heading["children"][4]
-        assert examples_heading["id"] == "h2-4"
+        assert examples_heading["id"].startswith("heading:")
         assert examples_heading["label"] == "Examples"
         assert lines[examples_heading["line"]].strip() == "## Examples", (
             f"Expected line {examples_heading['line']} to be '## Examples', "

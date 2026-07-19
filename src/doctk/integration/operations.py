@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from doctk.core import Document, Heading, Node
+from doctk.identity import NodeId
 from doctk.integration.protocols import ModifiedRange, OperationResult, TreeNode, ValidationResult
 
 
@@ -24,21 +25,51 @@ class DocumentTreeBuilder:
         self.source_text = source_text
         self.node_map: dict[str, Node] = {}
         self.parent_map: dict[str, str] = {}
+        self._display_ids: dict[int, str] = {}  # node_index -> id shown in the tree
         self._line_position_cache: dict[int, int] = {}  # Cache: node_index -> line_number
         self._line_count_cache: dict[int, int] = {}  # Cache: node_index -> line_count
         self._build_node_map()
         self._build_line_position_cache()
 
     def _build_node_map(self) -> None:
-        """Build a map of node IDs to nodes."""
-        heading_counter: dict[int, int] = {}
+        """
+        Build a map of node IDs to nodes.
 
-        for node in self.document.nodes:
-            if isinstance(node, Heading):
-                level = node.level
-                heading_counter[level] = heading_counter.get(level, 0) + 1
-                node_id = f"h{level}-{heading_counter[level] - 1}"
-                self.node_map[node_id] = node
+        Every heading is addressable by two id forms:
+
+        - Stable content-derived id: str(NodeId), e.g.
+          "heading:introduction:a3f5b9c2d1e4f6a7". Stable across level
+          changes and moves (level is excluded from the canonical form).
+          Headings with identical content are disambiguated by an
+          occurrence suffix in document order ("...#2"); "#1" is accepted
+          as an alias for the first occurrence.
+        - Positional id: "h{level}-{index}" (legacy; unstable across edits,
+          kept for backward compatibility).
+
+        The stable form is what build_tree_with_ids() emits.
+        """
+        heading_counter: dict[int, int] = {}
+        stable_counter: dict[str, int] = {}
+
+        for node_index, node in enumerate(self.document.nodes):
+            if not isinstance(node, Heading):
+                continue
+
+            level = node.level
+            heading_counter[level] = heading_counter.get(level, 0) + 1
+            positional_id = f"h{level}-{heading_counter[level] - 1}"
+            self.node_map[positional_id] = node
+
+            stable = str(node.id) if node.id is not None else str(NodeId.from_node(node))
+            occurrence = stable_counter.get(stable, 0) + 1
+            stable_counter[stable] = occurrence
+            if occurrence == 1:
+                self.node_map[stable] = node
+                display_id = stable
+            else:
+                display_id = f"{stable}#{occurrence}"
+            self.node_map[f"{stable}#{occurrence}"] = node
+            self._display_ids[node_index] = display_id
 
     def _build_line_position_cache(self) -> None:
         """
@@ -114,15 +145,11 @@ class DocumentTreeBuilder:
         # level 0 is the root, level 1-6 are heading levels
         level_stack: list[TreeNode] = [root]
 
-        # Counter for generating node IDs
-        heading_counter: dict[int, int] = {}
-
         # Build the tree by iterating through all nodes
         for node_index, node in enumerate(self.document.nodes):
             if isinstance(node, Heading):
                 level = node.level
-                heading_counter[level] = heading_counter.get(level, 0) + 1
-                node_id = f"h{level}-{heading_counter[level] - 1}"
+                node_id = self._display_ids[node_index]
 
                 # Get line number from cache (O(1) lookup instead of O(n) calculation)
                 node_line = self._line_position_cache.get(node_index, 0)
@@ -201,10 +228,12 @@ class DocumentTreeBuilder:
         if node is None:
             return None
 
-        try:
-            return self.document.nodes.index(node)
-        except ValueError:
-            return None
+        # Identity-based scan: equality would conflate headings with
+        # identical content, breaking occurrence-suffixed ids ("...#2")
+        for index, candidate in enumerate(self.document.nodes):
+            if candidate is node:
+                return index
+        return None
 
     def get_section_range(self, node_id: str) -> tuple[int, int] | None:
         """

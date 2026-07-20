@@ -214,7 +214,7 @@ def _get_node_cache_key(node: "Node") -> str:
         Cache key string
     """
     # Import here to avoid circular dependency
-    from doctk.core import BlockQuote, CodeBlock, Heading, List, ListItem, Paragraph
+    from doctk.core import BlockQuote, CodeBlock, Heading, List, ListItem, Paragraph, RawBlock
 
     if isinstance(node, Heading):
         # Exclude level from cache key (level not in canonical form)
@@ -231,6 +231,8 @@ def _get_node_cache_key(node: "Node") -> str:
         return f"li:{hash(str(node.content)[:100])}"
     elif isinstance(node, BlockQuote):
         return f"bq:{hash(str(node.content)[:100])}"
+    elif isinstance(node, RawBlock):
+        return f"raw:{hash(node.content[:100])}"
     else:
         return f"{type(node).__name__.lower()}:{hash(str(node)[:100])}"
 
@@ -257,7 +259,7 @@ def _canonicalize_node(node: "Node") -> str:
         Canonical string representation
     """
     # Import here to avoid circular dependency
-    from doctk.core import BlockQuote, CodeBlock, Heading, List, ListItem, Paragraph
+    from doctk.core import BlockQuote, CodeBlock, Heading, List, ListItem, Paragraph, RawBlock
 
     def normalize_text(text: str) -> str:
         """Apply normalization rules."""
@@ -294,6 +296,10 @@ def _canonicalize_node(node: "Node") -> str:
         # BlockQuote.content is list[Node], need to serialize it
         content_str = "|".join(_canonicalize_node(n) for n in node.content)
         return f"blockquote:{content_str}"
+
+    elif isinstance(node, RawBlock):
+        # Preserve content exactly (raw blocks are verbatim by definition)
+        return f"rawblock:{node.content}"
 
     else:
         # Fallback for unknown types

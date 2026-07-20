@@ -217,33 +217,16 @@ class CodeBlockExecutor:
             FileNotFoundError: If file not found
 
         Notes:
-            **Node ID Remapping Limitation (chain_state=True)**:
+            **Node addressing across blocks (chain_state=True)**:
 
-            When operations are executed, node IDs are regenerated based on the new
-            document structure. This means that if Block 1 promotes h2-0 to h1, the
-            node IDs in the resulting document will be different from the original.
+            Stable content-derived ids ("heading:setup:1a2b3c4d5e6f7a8b")
+            survive re-parsing and level-changing operations, so chained
+            blocks can safely reference the same node throughout. Two
+            caveats remain:
 
-            If Block 2's code still references h2-0, it will operate on the wrong node
-            or fail because the IDs have changed.
-
-            **Recommendations**:
-            - Use chain_state=False (default) for independent, predictable execution
-            - If you need chained operations, use a single code block with multiple
-              operations instead of multiple blocks
-            - Or use DSL variable assignments within a single block
-
-            **Example of the issue**:
-            ```markdown
-            ## Original Heading     <- This is h2-0
-
-            ```doctk
-            doc | promote h2-0     <- After this, heading becomes h1-1 (not h2-0!)
-            ```
-
-            ```doctk
-            doc | demote h2-0      <- This will fail or operate on wrong node!
-            ```
-            ```
+            - Editing a heading's TEXT changes its id (content addressing)
+            - Legacy positional ids (h2-0) are still accepted but are
+              reassigned whenever structure changes; avoid them in chains
 
         Example:
             ```python

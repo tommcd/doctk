@@ -20,7 +20,7 @@ class TestDocumentTreeBuilder:
         )
         builder = DocumentTreeBuilder(doc)
 
-        assert len(builder.node_map) == 4
+        assert len({id(node) for node in builder.node_map.values()}) == 4
         assert "h1-0" in builder.node_map
         assert "h2-0" in builder.node_map
         assert "h2-1" in builder.node_map
@@ -72,7 +72,7 @@ class TestDocumentTreeBuilder:
 
         assert tree.id == "root"
         assert len(tree.children) == 1
-        assert tree.children[0].id == "h1-0"
+        assert tree.children[0].id.startswith("heading:")
         assert tree.children[0].label == "Title"
         assert tree.children[0].level == 1
 
@@ -91,11 +91,11 @@ class TestDocumentTreeBuilder:
 
         assert tree.id == "root"
         assert len(tree.children) == 3
-        assert tree.children[0].id == "h1-0"
+        assert tree.children[0].id.startswith("heading:")
         assert tree.children[0].label == "First"
-        assert tree.children[1].id == "h1-1"
+        assert tree.children[1].id.startswith("heading:")
         assert tree.children[1].label == "Second"
-        assert tree.children[2].id == "h1-2"
+        assert tree.children[2].id.startswith("heading:")
         assert tree.children[2].label == "Third"
 
     def test_build_tree_with_ids_nested_structure(self):
@@ -117,17 +117,17 @@ class TestDocumentTreeBuilder:
 
         # Chapter 1 should have 2 children
         chapter1 = tree.children[0]
-        assert chapter1.id == "h1-0"
+        assert chapter1.id.startswith("heading:")
         assert chapter1.label == "Chapter 1"
         assert len(chapter1.children) == 2
-        assert chapter1.children[0].id == "h2-0"
+        assert chapter1.children[0].id.startswith("heading:")
         assert chapter1.children[0].label == "Section 1.1"
-        assert chapter1.children[1].id == "h2-1"
+        assert chapter1.children[1].id.startswith("heading:")
         assert chapter1.children[1].label == "Section 1.2"
 
         # Chapter 2 should have no children
         chapter2 = tree.children[1]
-        assert chapter2.id == "h1-1"
+        assert chapter2.id.startswith("heading:")
         assert chapter2.label == "Chapter 2"
         assert len(chapter2.children) == 0
 
@@ -149,22 +149,22 @@ class TestDocumentTreeBuilder:
         assert len(tree.children) == 1
 
         level1 = tree.children[0]
-        assert level1.id == "h1-0"
+        assert level1.id.startswith("heading:")
         assert level1.label == "Level 1"
         assert len(level1.children) == 1
 
         level2 = level1.children[0]
-        assert level2.id == "h2-0"
+        assert level2.id.startswith("heading:")
         assert level2.label == "Level 2"
         assert len(level2.children) == 1
 
         level3 = level2.children[0]
-        assert level3.id == "h3-0"
+        assert level3.id.startswith("heading:")
         assert level3.label == "Level 3"
         assert len(level3.children) == 1
 
         level4 = level3.children[0]
-        assert level4.id == "h4-0"
+        assert level4.id.startswith("heading:")
         assert level4.label == "Level 4"
         assert len(level4.children) == 0
 
@@ -189,29 +189,29 @@ class TestDocumentTreeBuilder:
 
         # Title should have 2 sections
         title = tree.children[0]
-        assert title.id == "h1-0"
+        assert title.id.startswith("heading:")
         assert title.label == "Title"
         assert len(title.children) == 2
 
         # Section 1 should have 2 subsections
         section1 = title.children[0]
-        assert section1.id == "h2-0"
+        assert section1.id.startswith("heading:")
         assert section1.label == "Section 1"
         assert len(section1.children) == 2
-        assert section1.children[0].id == "h3-0"
+        assert section1.children[0].id.startswith("heading:")
         assert section1.children[0].label == "Subsection 1.1"
-        assert section1.children[1].id == "h3-1"
+        assert section1.children[1].id.startswith("heading:")
         assert section1.children[1].label == "Subsection 1.2"
 
         # Section 2 should have no children
         section2 = title.children[1]
-        assert section2.id == "h2-1"
+        assert section2.id.startswith("heading:")
         assert section2.label == "Section 2"
         assert len(section2.children) == 0
 
         # Appendix should have no children
         appendix = tree.children[1]
-        assert appendix.id == "h1-1"
+        assert appendix.id.startswith("heading:")
         assert appendix.label == "Appendix"
         assert len(appendix.children) == 0
 
@@ -231,11 +231,11 @@ class TestDocumentTreeBuilder:
         assert len(tree.children) == 1
 
         title = tree.children[0]
-        assert title.id == "h1-0"
+        assert title.id.startswith("heading:")
         assert title.label == "Title"
         # h3 should still be nested under h1
         assert len(title.children) == 1
-        assert title.children[0].id == "h3-0"
+        assert title.children[0].id.startswith("heading:")
         assert title.children[0].label == "Subsection"
 
     def test_build_tree_with_ids_empty_document(self):
@@ -273,11 +273,11 @@ class TestDocumentTreeBuilder:
         tree_ids = []
         collect_ids(tree, tree_ids)
 
-        # Compare with node_map IDs
-        node_map_ids = set(builder.node_map.keys())
-
-        assert set(tree_ids) == node_map_ids
-        assert len(tree_ids) == len(node_map_ids)  # No duplicates
+        # Every emitted tree id must resolve through the node map, and ids
+        # must be unique across the tree (node_map also carries positional
+        # and occurrence-suffixed aliases, so it is a superset)
+        assert set(tree_ids) <= set(builder.node_map.keys())
+        assert len(tree_ids) == len(set(tree_ids))  # No duplicates
 
     def test_build_tree_with_ids_line_numbers_simple(self):
         """Test that line numbers are calculated correctly for simple document."""

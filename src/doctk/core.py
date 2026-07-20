@@ -46,6 +46,7 @@ class Heading(Node):
     id: "NodeId | None" = None
     provenance: "Provenance | None" = None
     source_span: "SourceSpan | None" = None
+    source_text: str | None = field(default=None, compare=False, repr=False)
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_heading(self)
@@ -72,6 +73,11 @@ class Heading(Node):
 
         from doctk.identity import NodeId
 
+        content_changed = (
+            (level is not None and level != self.level)
+            or (text is not None and text != self.text)
+            or (children is not None and children != self.children)
+        )
         new_heading = Heading(
             level=level if level is not None else self.level,
             text=text if text is not None else self.text,
@@ -81,6 +87,7 @@ class Heading(Node):
             else copy.deepcopy(self.metadata),
             provenance=self.provenance.with_modification() if self.provenance else None,
             source_span=self.source_span,
+            source_text=None if content_changed else self.source_text,
         )
         new_heading.id = NodeId.from_node(new_heading) if regenerate_id else self.id
         return new_heading
@@ -139,6 +146,7 @@ class Paragraph(Node):
     id: "NodeId | None" = None
     provenance: "Provenance | None" = None
     source_span: "SourceSpan | None" = None
+    source_text: str | None = field(default=None, compare=False, repr=False)
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_paragraph(self)
@@ -157,6 +165,7 @@ class Paragraph(Node):
 
         from doctk.identity import NodeId
 
+        content_changed = content is not None and content != self.content
         new_paragraph = Paragraph(
             content=content if content is not None else self.content,
             metadata=copy.deepcopy(metadata)
@@ -164,6 +173,7 @@ class Paragraph(Node):
             else copy.deepcopy(self.metadata),
             provenance=self.provenance.with_modification() if self.provenance else None,
             source_span=self.source_span,
+            source_text=None if content_changed else self.source_text,
         )
         new_paragraph.id = NodeId.from_node(new_paragraph) if regenerate_id else self.id
         return new_paragraph
@@ -207,6 +217,7 @@ class List(Node):
     id: "NodeId | None" = None
     provenance: "Provenance | None" = None
     source_span: "SourceSpan | None" = None
+    source_text: str | None = field(default=None, compare=False, repr=False)
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_list(self)
@@ -231,6 +242,9 @@ class List(Node):
 
         from doctk.identity import NodeId
 
+        content_changed = (ordered is not None and ordered != self.ordered) or (
+            items is not None and items != self.items
+        )
         new_list = List(
             ordered=ordered if ordered is not None else self.ordered,
             items=items if items is not None else self.items,
@@ -239,6 +253,7 @@ class List(Node):
             else copy.deepcopy(self.metadata),
             provenance=self.provenance.with_modification() if self.provenance else None,
             source_span=self.source_span,
+            source_text=None if content_changed else self.source_text,
         )
         new_list.id = NodeId.from_node(new_list) if regenerate_id else self.id
         return new_list
@@ -283,6 +298,7 @@ class ListItem(Node):
     id: "NodeId | None" = None
     provenance: "Provenance | None" = None
     source_span: "SourceSpan | None" = None
+    source_text: str | None = field(default=None, compare=False, repr=False)
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_list_item(self)
@@ -305,6 +321,7 @@ class ListItem(Node):
 
         from doctk.identity import NodeId
 
+        content_changed = content is not None and content != self.content
         new_list_item = ListItem(
             content=content if content is not None else self.content,
             metadata=copy.deepcopy(metadata)
@@ -312,6 +329,7 @@ class ListItem(Node):
             else copy.deepcopy(self.metadata),
             provenance=self.provenance.with_modification() if self.provenance else None,
             source_span=self.source_span,
+            source_text=None if content_changed else self.source_text,
         )
         new_list_item.id = NodeId.from_node(new_list_item) if regenerate_id else self.id
         return new_list_item
@@ -355,6 +373,7 @@ class CodeBlock(Node):
     id: "NodeId | None" = None
     provenance: "Provenance | None" = None
     source_span: "SourceSpan | None" = None
+    source_text: str | None = field(default=None, compare=False, repr=False)
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_code_block(self)
@@ -379,6 +398,9 @@ class CodeBlock(Node):
 
         from doctk.identity import NodeId
 
+        content_changed = (code is not None and code != self.code) or (
+            language is not None and language != self.language
+        )
         new_code_block = CodeBlock(
             code=code if code is not None else self.code,
             language=language if language is not None else self.language,
@@ -387,6 +409,7 @@ class CodeBlock(Node):
             else copy.deepcopy(self.metadata),
             provenance=self.provenance.with_modification() if self.provenance else None,
             source_span=self.source_span,
+            source_text=None if content_changed else self.source_text,
         )
         new_code_block.id = NodeId.from_node(new_code_block) if regenerate_id else self.id
         return new_code_block
@@ -443,6 +466,7 @@ class BlockQuote(Node):
     id: "NodeId | None" = None
     provenance: "Provenance | None" = None
     source_span: "SourceSpan | None" = None
+    source_text: str | None = field(default=None, compare=False, repr=False)
 
     def accept(self, visitor: "NodeVisitor") -> Any:
         return visitor.visit_block_quote(self)
@@ -465,6 +489,7 @@ class BlockQuote(Node):
 
         from doctk.identity import NodeId
 
+        content_changed = content is not None and content != self.content
         new_blockquote = BlockQuote(
             content=content if content is not None else self.content,
             metadata=copy.deepcopy(metadata)
@@ -472,6 +497,7 @@ class BlockQuote(Node):
             else copy.deepcopy(self.metadata),
             provenance=self.provenance.with_modification() if self.provenance else None,
             source_span=self.source_span,
+            source_text=None if content_changed else self.source_text,
         )
         new_blockquote.id = NodeId.from_node(new_blockquote) if regenerate_id else self.id
         return new_blockquote
@@ -487,6 +513,89 @@ class BlockQuote(Node):
 
         Returns:
             New BlockQuote with updated metadata but same NodeId
+        """
+        return self._with_updates(metadata=metadata)
+
+
+@dataclass
+class RawBlock(Node):
+    """
+    Verbatim Markdown block preserved exactly as written.
+
+    Represents constructs the parser does not model as first-class nodes
+    (HTML blocks, thematic breaks, reference definitions, ...). Guarantees
+    that no source content is ever silently dropped on round-trip.
+    """
+
+    content: str  # Exact Markdown text of the block (no trailing newline)
+    token_type: str = ""  # Originating markdown-it token type (e.g. "hr", "html_block")
+    metadata: dict[str, Any] = field(default_factory=dict)
+    id: "NodeId | None" = None
+    provenance: "Provenance | None" = None
+    source_span: "SourceSpan | None" = None
+    source_text: str | None = field(default=None, compare=False, repr=False)
+
+    def accept(self, visitor: "NodeVisitor") -> Any:
+        return visitor.visit_raw_block(self)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "type": "raw_block",
+            "content": self.content,
+            "token_type": self.token_type,
+            "metadata": self.metadata,
+        }
+
+    def _with_updates(
+        self,
+        content: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        regenerate_id: bool = False,
+    ) -> "RawBlock":
+        """Create a new RawBlock with updated attributes."""
+        import copy
+
+        from doctk.identity import NodeId
+
+        content_changed = content is not None and content != self.content
+        new_raw_block = RawBlock(
+            content=content if content is not None else self.content,
+            token_type=self.token_type,
+            metadata=copy.deepcopy(metadata)
+            if metadata is not None
+            else copy.deepcopy(self.metadata),
+            provenance=self.provenance.with_modification() if self.provenance else None,
+            source_span=self.source_span,
+            source_text=None if content_changed else self.source_text,
+        )
+        new_raw_block.id = NodeId.from_node(new_raw_block) if regenerate_id else self.id
+        return new_raw_block
+
+    def with_content(self, content: str) -> "RawBlock":
+        """
+        Create new raw block with different content (generates new NodeId).
+
+        Content is part of canonical form, so changing it generates a new ID.
+
+        Args:
+            content: New raw Markdown text
+
+        Returns:
+            New RawBlock with updated content and new NodeId
+        """
+        return self._with_updates(content=content, regenerate_id=True)
+
+    def with_metadata(self, metadata: dict[str, Any]) -> "RawBlock":
+        """
+        Create new raw block with different metadata (preserves NodeId).
+
+        Metadata is NOT part of canonical form, so ID is preserved.
+
+        Args:
+            metadata: New metadata dictionary
+
+        Returns:
+            New RawBlock with updated metadata but same NodeId
         """
         return self._with_updates(metadata=metadata)
 
@@ -516,6 +625,10 @@ class NodeVisitor(ABC):
 
     @abstractmethod
     def visit_block_quote(self, node: BlockQuote) -> Any:
+        pass
+
+    @abstractmethod
+    def visit_raw_block(self, node: RawBlock) -> Any:
         pass
 
 

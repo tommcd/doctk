@@ -70,6 +70,10 @@ Bidirectional synchronization ensures consistency:
 - **External Changes**: Detects and handles external file modifications
 - **Debounced Updates**: Rapid changes are batched to prevent performance issues
 
+> **Running from source?** See [SETUP.md](SETUP.md) for a step-by-step guide
+> to pulling the branch, installing the backend, building, and launching the
+> extension with F5.
+
 ## Requirements
 
 - **VS Code**: Version 1.80.0 or higher

@@ -85,37 +85,63 @@ _OPERATION_METADATA: dict[str, dict[str, Any]] = {
         "parameters": [],
         "examples": ["doc | select heading | demote()"],
     },
-    "lift": {
-        "description": "Lift sections up (alias for promote)",
-        "category": "structure",
-        "parameters": [],
-        "examples": ["doc | select heading | lift()"],
-    },
-    "lower": {
-        "description": "Lower sections down (alias for demote)",
-        "category": "structure",
-        "parameters": [],
-        "examples": ["doc | select heading | lower()"],
-    },
     "nest": {
-        "description": "Nest sections under a target section",
+        "description": "Move a section (with its content) under a parent section",
         "category": "structure",
         "parameters": [
             ParameterInfo(
-                name="under",
-                type="str | None",
-                required=False,
-                description="Target section identifier (default: previous section)",
-                default=None,
-            )
+                name="node_id",
+                type="str",
+                required=True,
+                description="Id of the section to move",
+            ),
+            ParameterInfo(
+                name="parent_id",
+                type="str",
+                required=True,
+                description="Id of the section to nest under",
+            ),
         ],
-        "examples": ["doc | select heading | nest()"],
+        "examples": ["doc | nest <node_id> <parent_id>"],
     },
     "unnest": {
-        "description": "Remove nesting (alias for promote)",
+        "description": "Move a section up one nesting level",
         "category": "structure",
-        "parameters": [],
-        "examples": ["doc | select heading | unnest()"],
+        "parameters": [
+            ParameterInfo(
+                name="node_id",
+                type="str",
+                required=True,
+                description="Id of the section to unnest",
+            ),
+        ],
+        "examples": ["doc | unnest <node_id>"],
+    },
+    "move_up": {
+        "description": "Move a section before its previous sibling",
+        "category": "structure",
+        "parameters": [
+            ParameterInfo(
+                name="node_id",
+                type="str",
+                required=True,
+                description="Id of the section to move",
+            ),
+        ],
+        "examples": ["doc | move_up <node_id>"],
+    },
+    "move_down": {
+        "description": "Move a section after its next sibling",
+        "category": "structure",
+        "parameters": [
+            ParameterInfo(
+                name="node_id",
+                type="str",
+                required=True,
+                description="Id of the section to move",
+            ),
+        ],
+        "examples": ["doc | move_down <node_id>"],
     },
     "heading": {
         "description": "Select all heading nodes",
@@ -334,6 +360,23 @@ class OperationRegistry:
         except ImportError:
             # doctk.operations not available - registry will be empty
             logger.warning("Could not import 'doctk.operations'. Operation registry will be empty.")
+            return
+
+        # Register operations that exist only as static metadata: the
+        # structural operations (nest, unnest, move_up, move_down) are
+        # executed via doctk.integration.StructureOperations rather than
+        # doctk.operations, but are part of the DSL vocabulary.
+        for name, metadata in _OPERATION_METADATA.items():
+            if name in self.operations:
+                continue
+            self.operations[name] = OperationMetadata(
+                name=name,
+                description=metadata.get("description", ""),
+                parameters=metadata.get("parameters", []),
+                return_type=metadata.get("return_type", "Document"),
+                examples=metadata.get("examples", []),
+                category=metadata.get("category", "general"),
+            )
 
     def _extract_description(self, obj: Any) -> str:
         """

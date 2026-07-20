@@ -20,6 +20,7 @@ import {
 
 export class DoctkLanguageClient {
   private client: LanguageClient | null = null;
+  private pythonCommand = 'python3';
   private restartAttempts = 0;
   private maxRestartAttempts = 3;
   private restartDelay = 2000; // 2 seconds
@@ -37,11 +38,14 @@ export class DoctkLanguageClient {
    * Start the language server.
    *
    * Initializes the language server client and connects to the server process.
-   * The server is started using 'uv run python -m doctk.lsp.server'.
+   * The server runs as '<python> -m doctk.lsp.server' using the interpreter
+   * resolved (and health-checked) at extension activation, so the LSP and
+   * the outliner bridge always share one environment.
    *
+   * @param pythonCommand - Resolved Python interpreter command or path
    * @returns Promise that resolves when the server is started
    */
-  async start(): Promise<void> {
+  async start(pythonCommand: string): Promise<void> {
     const config = vscode.workspace.getConfiguration('doctk');
     const enabled = config.get('lsp.enabled', true);
 
@@ -50,20 +54,18 @@ export class DoctkLanguageClient {
       return;
     }
 
-    // Get workspace root
+    this.pythonCommand = pythonCommand;
+
+    // Get workspace root (optional - the server itself is workspace-independent)
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (!workspaceRoot) {
-      console.warn('No workspace folder found, language server not started');
-      return;
-    }
 
     // Get trace level from configuration
     const traceLevel = config.get<string>('lsp.trace', 'off');
 
-    // Configure server options to run the language server via uv
+    // Configure server options to run the language server
     const serverOptions: ServerOptions = {
-      command: 'uv',
-      args: ['run', 'python', '-m', 'doctk.lsp.server'],
+      command: pythonCommand,
+      args: ['-m', 'doctk.lsp.server'],
       options: {
         cwd: workspaceRoot,
         env: process.env,
@@ -192,7 +194,7 @@ export class DoctkLanguageClient {
 
     try {
       await this.stop();
-      await this.start();
+      await this.start(this.pythonCommand);
       vscode.window.showInformationMessage('doctk language server restarted successfully');
     } catch (error) {
       console.error('Failed to restart language server:', error);

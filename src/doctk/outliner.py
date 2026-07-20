@@ -17,6 +17,7 @@ from doctk.core import (
     Node,
     NodeVisitor,
     Paragraph,
+    RawBlock,
 )
 
 
@@ -60,6 +61,14 @@ class OutlinerVisitor(NodeVisitor):
         label = "P Paragraph"
         if self.show_content:
             label += f": [dim]{content}[/dim]"
+        return self.tree.add(label)
+
+    def visit_raw_block(self, node: RawBlock) -> Tree:
+        """Visit raw block and add to tree."""
+        label = f"<> Raw block ({node.token_type or 'raw'})"
+        if self.show_content:
+            first_line = node.content.strip().split("\n")[0][:50]
+            label += f": [dim]{first_line}[/dim]"
         return self.tree.add(label)
 
     def visit_list(self, node: List) -> Tree:

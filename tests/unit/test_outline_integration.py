@@ -20,7 +20,7 @@ class TestOutlineTreeBuilding:
         builder = DocumentTreeBuilder(doc)
 
         # Check node map
-        assert len(builder.node_map) == 3
+        assert len({id(node) for node in builder.node_map.values()}) == 3
         assert "h1-0" in builder.node_map
         assert "h2-0" in builder.node_map
         assert "h2-1" in builder.node_map
@@ -49,7 +49,7 @@ class TestOutlineTreeBuilding:
         builder = DocumentTreeBuilder(doc)
 
         # Check all nodes are mapped
-        assert len(builder.node_map) == 4
+        assert len({id(node) for node in builder.node_map.values()}) == 4
         assert "h1-0" in builder.node_map
         assert "h2-0" in builder.node_map
         assert "h3-0" in builder.node_map
@@ -98,7 +98,7 @@ class TestOutlineTreeBuilding:
         builder = DocumentTreeBuilder(doc)
 
         # Only headings should be in the map
-        assert len(builder.node_map) == 3
+        assert len({id(node) for node in builder.node_map.values()}) == 3
         assert "h1-0" in builder.node_map
         assert "h2-0" in builder.node_map
         assert "h2-1" in builder.node_map
@@ -126,7 +126,7 @@ class TestOutlineTreeBuilding:
         doc = Document(nodes=[])
         builder = DocumentTreeBuilder(doc)
 
-        assert len(builder.node_map) == 0
+        assert len({id(node) for node in builder.node_map.values()}) == 0
         assert builder.find_node("h1-0") is None
 
     def test_document_with_no_headings(self):
@@ -140,7 +140,7 @@ class TestOutlineTreeBuilding:
 
         builder = DocumentTreeBuilder(doc)
 
-        assert len(builder.node_map) == 0
+        assert len({id(node) for node in builder.node_map.values()}) == 0
 
     def test_all_heading_levels(self):
         """Test document with all heading levels 1-6."""
@@ -157,7 +157,7 @@ class TestOutlineTreeBuilding:
 
         builder = DocumentTreeBuilder(doc)
 
-        assert len(builder.node_map) == 6
+        assert len({id(node) for node in builder.node_map.values()}) == 6
         for level in range(1, 7):
             node_id = f"h{level}-0"
             assert node_id in builder.node_map
@@ -343,7 +343,7 @@ class TestOutlineEdgeCases:
 
         builder = DocumentTreeBuilder(doc)
 
-        assert len(builder.node_map) == 3
+        assert len({id(node) for node in builder.node_map.values()}) == 3
         assert "h1-0" in builder.node_map
         assert "h1-1" in builder.node_map
         assert "h1-2" in builder.node_map

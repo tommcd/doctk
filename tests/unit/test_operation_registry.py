@@ -155,10 +155,10 @@ class TestOperationRegistry:
         op_names = {op.name for op in structure_ops}
         assert "promote" in op_names
         assert "demote" in op_names
-        assert "lift" in op_names
-        assert "lower" in op_names
         assert "nest" in op_names
         assert "unnest" in op_names
+        assert "move_up" in op_names
+        assert "move_down" in op_names
 
     def test_get_operations_by_category_empty(self):
         """Test getting operations from nonexistent category."""
@@ -259,10 +259,9 @@ class TestOperationMetadataDetails:
         assert nest_op is not None
         assert nest_op.name == "nest"
         assert nest_op.category == "structure"
-        # Nest has an optional 'under' parameter
-        assert len(nest_op.parameters) >= 1
-        assert nest_op.parameters[0].name == "under"
-        assert nest_op.parameters[0].required is False
+        # Nest moves node_id under parent_id (both required)
+        assert [p.name for p in nest_op.parameters] == ["node_id", "parent_id"]
+        assert all(p.required for p in nest_op.parameters)
 
 
 class TestRegistryIntegration:

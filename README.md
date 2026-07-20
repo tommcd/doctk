@@ -62,22 +62,24 @@ doctk demo                     # Interactive demonstration
 ## Python API
 
 ```python
-from doctk import Document
-from doctk.operations import select, where, promote, demote
-from doctk.integration import StructureOperations
+from doctk import Document, heading, promote, where
+from doctk.integration import DocumentTreeBuilder, StructureOperations
 
 # Load document
 doc = Document.from_file("guide.md")
 
-# Pipe-style transformations
-result = doc | select(heading) | where(level=3) | promote()
+# Query: selectors filter to a subset (the rest of the document is not included)
+level3 = doc | heading | where(level=3)
 
-# Save
-result.to_file("guide_updated.md")
+# Transform the whole document: promote every level-3 heading in place
+promoted = doc.map(lambda n: n.promote() if heading(n) and n.level == 3 else n)
+promoted.to_file("guide_updated.md")  # untouched nodes are written byte-identically
 
-# Structure operations (static methods)
-result = StructureOperations.move_up(doc, node_id="h2-intro")
-result = StructureOperations.nest(doc, node_id="h3-details", under_id="h2-intro")
+# Structure operations move whole sections, addressed by stable node ids
+tree = DocumentTreeBuilder(doc).build_tree_with_ids()
+intro_id = tree.children[0].id  # e.g. "heading:introduction:a3f5b9c2d1e4f6a7"
+result = StructureOperations.move_up(doc, intro_id)
+result = StructureOperations.nest(doc, node_id=tree.children[1].id, parent_id=intro_id)
 ```
 
 ## DSL and Interactive REPL
@@ -86,22 +88,21 @@ doctk includes a Domain-Specific Language (DSL) for document manipulation:
 
 ```bash
 # Start REPL
-$ doctk repl guide.md
+$ doctk repl
 
-# Execute operations
-doctk> promote(1)        # Promote first heading
-doctk> move_up(2)        # Move second section up
-doctk> nest(3, under=1)  # Nest section 3 under section 1
-doctk> save output.md    # Save changes
+# Execute operations (nodes are addressed by stable ids shown in `tree`)
+doctk> load guide.md
+doctk> tree                                          # List sections with their ids
+doctk> promote heading:setup:1a2b3c4d5e6f7a8b        # Promote that section
+doctk> nest heading:details:9f8e7d6c5b4a3f2e heading:setup:1a2b3c4d5e6f7a8b
+doctk> save                                          # Write changes back
 ```
 
 Script files (`.tk` extension):
 
 ```
 # script.tk - Reorganize document structure
-promote(1)
-move_up(2)
-nest(3, under=1)
+doc | promote heading:setup:1a2b3c4d5e6f7a8b
 ```
 
 Execute with: `doctk execute script.tk guide.md`
@@ -128,6 +129,11 @@ doctk includes a VS Code extension with visual document outlining and manipulati
 - Python 3.12+ installed
 - doctk package installed (see [Installation](#installation) above)
 - VS Code 1.80.0 or higher
+
+The extension resolves a Python interpreter automatically (ms-python's
+active interpreter, then a workspace `.venv`, then `python3` on PATH) and
+health-checks that doctk is importable before starting. If resolution
+picks the wrong Python, set `doctk.pythonPath` in your settings.
 
 **Option 1: Build from source** (recommended)
 

@@ -267,9 +267,10 @@ class TestParameterCompletions:
         completions = provider.provide_completions(document, position)
 
         # Should have parameter completions
-        # nest has 'under' parameter
+        # nest moves node_id under parent_id
         labels = {item.label for item in completions.items}
-        assert "under" in labels
+        assert "node_id" in labels
+        assert "parent_id" in labels
 
     def test_parameter_completion_has_type_info(self):
         """Test that parameter completions include type information."""
@@ -280,15 +281,14 @@ class TestParameterCompletions:
 
         completions = provider.provide_completions(document, position)
 
-        # Find under parameter
-        under_item = next(
-            (item for item in completions.items if item.label == "under"),
+        node_id_item = next(
+            (item for item in completions.items if item.label == "node_id"),
             None,
         )
 
-        assert under_item is not None
-        assert under_item.kind == CompletionItemKind.Property
-        assert under_item.detail is not None  # Type info
+        assert node_id_item is not None
+        assert node_id_item.kind == CompletionItemKind.Property
+        assert node_id_item.detail is not None  # Type info
 
     def test_parameter_completion_has_snippet(self):
         """Test that parameter completions have snippet format."""
@@ -299,16 +299,15 @@ class TestParameterCompletions:
 
         completions = provider.provide_completions(document, position)
 
-        # Find under parameter
-        under_item = next(
-            (item for item in completions.items if item.label == "under"),
+        node_id_item = next(
+            (item for item in completions.items if item.label == "node_id"),
             None,
         )
 
-        assert under_item is not None
-        assert under_item.insert_text_format == InsertTextFormat.Snippet
+        assert node_id_item is not None
+        assert node_id_item.insert_text_format == InsertTextFormat.Snippet
         # Should have key=value format with placeholder
-        assert "under=" in under_item.insert_text
+        assert "node_id=" in node_id_item.insert_text
 
     def test_no_parameter_completions_for_operation_without_params(self):
         """Test no parameter completions for operations without parameters."""

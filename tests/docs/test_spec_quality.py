@@ -70,8 +70,8 @@ def test_spec_file_references_exist(project_root, spec_files):
         # Process line by line to check for TODO/PLANNED markers
         lines = content_no_code.split("\n")
         for line in lines:
-            # Skip lines marked with [TODO] or [PLANNED]
-            if "[TODO]" in line or "[PLANNED]" in line:
+            # Skip lines marked with [TODO], [PLANNED], or [REMOVED]
+            if "[TODO]" in line or "[PLANNED]" in line or "[REMOVED]" in line:
                 continue
 
             # Find all file path references in this line

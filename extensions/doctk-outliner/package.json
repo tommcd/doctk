@@ -171,6 +171,11 @@
     "configuration": {
       "title": "doctk Outliner",
       "properties": {
+        "doctk.pythonPath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Path to the Python interpreter with doctk installed. When empty, the extension resolves one automatically: the ms-python extension's active interpreter, then a workspace `.venv`, then `python3` on PATH. The chosen interpreter is health-checked (`import doctk`) before the backend starts, and failures show an actionable error."
+        },
         "doctk.outliner.autoRefresh": {
           "type": "boolean",
           "default": true,
@@ -214,7 +219,8 @@
         "doctk.lsp.pythonCommand": {
           "type": "string",
           "default": "python3",
-          "description": "Python command or path to Python executable (e.g., 'python3', 'python', or '/path/to/python')"
+          "description": "Python command or path to Python executable (e.g., 'python3', 'python', or '/path/to/python')",
+          "deprecationMessage": "Deprecated: use doctk.pythonPath instead."
         },
         "doctk.performance.largeDocumentThreshold": {
           "type": "number",

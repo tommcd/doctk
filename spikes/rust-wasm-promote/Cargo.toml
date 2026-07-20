@@ -1,0 +1,32 @@
+[package]
+name = "doctk-spike"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Exploratory spike: doctk stable-id + promote in Rust, compiled to WASM. Not part of the shipping product."
+
+[lib]
+# rlib for the native binary + tests; cdylib for the wasm build.
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "doctk-spike"
+path = "src/main.rs"
+
+[dependencies]
+sha2 = "0.10"
+unicode-normalization = "0.1"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Only pulled in for the wasm build (`--features wasm`); the native build and
+# tests do not depend on it, so `cargo test` works offline without a wasm target.
+wasm-bindgen = { version = "0.2", optional = true }
+
+[features]
+wasm = ["dep:wasm-bindgen"]
+
+[profile.release]
+opt-level = "z"   # small wasm binaries
+lto = true

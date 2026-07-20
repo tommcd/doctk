@@ -5,6 +5,7 @@ Operations are morphisms in the document category.
 They compose naturally following category theory laws.
 """
 
+import re
 from collections.abc import Callable
 from typing import Any, TypeVar
 
@@ -12,6 +13,40 @@ from doctk.core import CodeBlock, Document, Heading, List, Node, Paragraph
 
 T = TypeVar("T")
 U = TypeVar("U")
+
+
+class Selector:
+    """
+    A named set of nodes, usable both as a predicate and as an operation.
+
+    Set-theoretically, a selector denotes a set S of nodes:
+    - Applied to a node, it is the characteristic function: heading(node) -> bool
+    - Applied to a document (directly or piped), it selects the subset S ∩ Doc:
+      doc | heading
+
+    This duality makes the documented forms equivalent:
+        doc | heading
+        doc | select(heading)
+
+    Example:
+        >>> doc = Document.from_string("# Title\\n\\nText.\\n")
+        >>> len((doc | heading).nodes)
+        1
+        >>> heading(doc.nodes[0])
+        True
+    """
+
+    def __init__(self, predicate: Callable[[Node], bool], name: str = "selector"):
+        self._predicate = predicate
+        self.__name__ = name
+
+    def __call__(self, target: "Document[Node] | Node") -> "Document[Node] | bool":
+        if isinstance(target, Document):
+            return target.filter(self._predicate)
+        return self._predicate(target)
+
+    def __repr__(self) -> str:
+        return f"Selector({self.__name__})"
 
 
 # Composition
@@ -35,27 +70,28 @@ def compose(*operations: Callable) -> Callable:
 
 
 # Selection primitives
-def select(predicate: Callable[[Node], bool]) -> Callable[[Document[Node]], Document[Node]]:
+def select(predicate: "Callable[[Node], bool] | Selector") -> Selector:
     """
     Select nodes matching predicate.
 
     This is set-theoretic filtering: { x ∈ Doc | predicate(x) }
+
+    Accepts a plain predicate or an existing Selector; select is idempotent,
+    so select(heading) is heading.
     """
-
-    def selector(doc: Document[Node]) -> Document[Node]:
-        return doc.filter(predicate)
-
-    return selector
+    if isinstance(predicate, Selector):
+        return predicate
+    return Selector(predicate, getattr(predicate, "__name__", "selector"))
 
 
-def where(**conditions: Any) -> Callable[[Document[Node]], Document[Node]]:
+def where(**conditions: Any) -> Selector:
     """
     Convenient predicate builder for common conditions.
 
     Examples:
-        where(type="heading")
         where(level=2)
         where(ordered=True)
+        where(text="Introduction")
     """
 
     def predicate(node: Node) -> bool:
@@ -66,7 +102,8 @@ def where(**conditions: Any) -> Callable[[Document[Node]], Document[Node]]:
                 return False
         return True
 
-    return select(predicate)
+    condition_str = ", ".join(f"{k}={v!r}" for k, v in conditions.items())
+    return Selector(predicate, f"where({condition_str})")
 
 
 def first() -> Callable[[Document[T]], Document[T]]:
@@ -126,29 +163,35 @@ def is_code_block(node: Node) -> bool:
     return isinstance(node, CodeBlock)
 
 
-def matches(pattern: str) -> Callable[[Node], bool]:
+def matches(pattern: str) -> Selector:
     """
-    Create predicate that matches text content against pattern.
+    Select nodes whose text content matches a regular expression.
 
-    For now, does simple substring matching.
-    TODO: Add regex support.
+    Uses re.search, so plain text patterns match as substrings anywhere in
+    the node's text. Use contains() for literal substring matching without
+    regex semantics.
+
+    Examples:
+        doc | matches(r"^Introduction")   # headings/paragraphs starting with it
+        doc | matches("TODO")             # containing TODO anywhere
     """
+    compiled = re.compile(pattern)
 
     def predicate(node: Node) -> bool:
         if isinstance(node, Heading):
-            return pattern in node.text
+            return compiled.search(node.text) is not None
         elif isinstance(node, Paragraph):
-            return pattern in node.content
+            return compiled.search(node.content) is not None
         elif isinstance(node, CodeBlock):
-            return pattern in node.code
+            return compiled.search(node.code) is not None
         return False
 
-    return predicate
+    return Selector(predicate, f"matches({pattern!r})")
 
 
-def contains(substring: str) -> Callable[[Node], bool]:
-    """Alias for matches (more readable)."""
-    return matches(substring)
+def contains(substring: str) -> Selector:
+    """Select nodes whose text content contains the literal substring."""
+    return matches(re.escape(substring))
 
 
 # Structural transformations
@@ -236,45 +279,13 @@ def extract() -> Callable[[Document[T]], list[T]]:
     return extractor
 
 
-# Structure operations (hierarchy manipulation)
-# Aliases for hierarchical operations
-lift = promote  # Lift sections up (h3 -> h2)
-unnest = promote  # Remove nesting (h4 -> h3)
-lower = demote  # Lower sections down (h2 -> h3)
-
-
-def nest(under: str | None = None) -> Callable[[Document[Node]], Document[Node]]:
-    """
-    Nest sections under a target section.
-
-    Args:
-        under: Target section identifier (default: previous section)
-
-    This operation moves selected sections to be children of a target section
-    by increasing their heading level appropriately.
-
-    Note:
-        Full hierarchical nesting with the `under` parameter is not yet implemented.
-        When called without arguments, performs basic nesting by demoting.
-
-    Example:
-        doc | select(heading) | where(text="Appendix") | nest()
-
-    Raises:
-        NotImplementedError: When `under` parameter is provided
-    """
-    if under is not None:
-        raise NotImplementedError(
-            "Hierarchical nesting with 'under' parameter is not yet implemented. "
-            "Use nest() without arguments for basic nesting (demote operation)."
-        )
-
-    # Default behavior: demote (basic nesting)
-    return demote()
+# Structural moves (nest, unnest, move_up, move_down) relocate one section
+# addressed by node id, so they live in doctk.integration.StructureOperations
+# and the DSL, not in this uniform-transformation pipeline vocabulary.
 
 
 # Convenient type-based selectors
-heading = select(is_heading)
-paragraph = select(is_paragraph)
-list_node = select(is_list)
-code_block = select(is_code_block)
+heading = Selector(is_heading, "heading")
+paragraph = Selector(is_paragraph, "paragraph")
+list_node = Selector(is_list, "list_node")
+code_block = Selector(is_code_block, "code_block")

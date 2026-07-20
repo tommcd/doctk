@@ -9,6 +9,22 @@ import { DocumentSyncManager } from './documentSyncManager';
 import { DoctkLanguageClient } from './languageClient';
 import { OutlineNode } from './types';
 import { getLogger } from './logger';
+import { checkDoctkImportable, resolvePythonInterpreter } from './pythonResolver';
+
+/**
+ * Show an actionable backend-setup error with recovery buttons.
+ */
+function showBackendSetupError(message: string): void {
+  const openSettings = 'Open Settings';
+  const reload = 'Reload Window';
+  vscode.window.showErrorMessage(`doctk: ${message}`, openSettings, reload).then((choice) => {
+    if (choice === openSettings) {
+      vscode.commands.executeCommand('workbench.action.openSettings', 'doctk.pythonPath');
+    } else if (choice === reload) {
+      vscode.commands.executeCommand('workbench.action.reloadWindow');
+    }
+  });
+}
 
 let outlineProvider: DocumentOutlineProvider;
 let pythonBridge: PythonBridge;
@@ -25,29 +41,66 @@ const logger = getLogger();
 export async function activate(context: vscode.ExtensionContext) {
   logger.info('doctk outliner extension is now active');
 
-  // Initialize Language Server Client first
-  languageClient = new DoctkLanguageClient(context);
-  try {
-    await languageClient.start();
-    logger.info('doctk language server started successfully');
-  } catch (error) {
-    logger.error('Failed to start language server:', error);
-    // Non-fatal - continue with extension activation
+  // Resolve and health-check the Python interpreter before spawning anything,
+  // so a broken environment produces one actionable message instead of a
+  // silently dead extension (the pre-2026 failure mode after VS Code restarts).
+  const python = await resolvePythonInterpreter();
+  logger.info(`Resolved Python interpreter: ${python.command} (${python.source})`);
+  const health = await checkDoctkImportable(python.command);
+
+  if (!health.ok) {
+    logger.error(`Backend health check failed: ${health.error}`);
+    showBackendSetupError(health.error ?? 'Unknown backend error');
+  } else {
+    logger.info(`doctk ${health.version} available from ${python.command}`);
+
+    // Language server for .tk files, started lazily on first .tk document
+    // so ordinary Markdown outlining keeps a single Python process (the
+    // bridge). Same health-checked interpreter as the bridge.
+    languageClient = new DoctkLanguageClient(context);
+    let lspStarted = false;
+    const startLspIfNeeded = async (document: vscode.TextDocument) => {
+      if (lspStarted) {
+        return;
+      }
+      const isTk =
+        document.languageId === 'doctk' || document.uri.fsPath.endsWith('.tk');
+      if (!isTk) {
+        return;
+      }
+      lspStarted = true;
+      try {
+        await languageClient.start(python.command);
+        logger.info('doctk language server started (first .tk document opened)');
+      } catch (error) {
+        logger.error('Failed to start language server:', error);
+        // Non-fatal - outlining continues to work without the LSP
+      }
+    };
+    context.subscriptions.push(
+      vscode.workspace.onDidOpenTextDocument(startLspIfNeeded)
+    );
+    for (const document of vscode.workspace.textDocuments) {
+      void startLspIfNeeded(document);
+    }
   }
 
   // Initialize Python bridge for outliner operations
-  const config = vscode.workspace.getConfiguration('doctk');
   pythonBridge = new PythonBridge({
-    pythonCommand: config.get('lsp.pythonCommand', 'python3'),
+    pythonCommand: python.command,
     cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
   });
 
-  try {
-    await pythonBridge.start();
-    logger.info('Python bridge started successfully');
-  } catch (error) {
-    logger.error('Failed to start Python bridge:', error);
-    vscode.window.showErrorMessage('Failed to start doctk backend. Some features may not work.');
+  if (health.ok) {
+    try {
+      await pythonBridge.start();
+      logger.info('Python bridge started successfully');
+    } catch (error) {
+      logger.error('Failed to start Python bridge:', error);
+      showBackendSetupError(
+        `doctk backend failed to start: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
   }
 
   // Initialize outline provider with Python bridge for centralized ID generation

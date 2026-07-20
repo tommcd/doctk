@@ -1,39 +1,42 @@
-"""Tests for structure operations (lift, lower, nest, unnest)."""
+"""Tests for level operations (promote, demote) in the functional pipeline.
 
-import pytest
+Structural moves (nest, unnest, move_up, move_down) relocate sections by
+node id and live in doctk.integration.StructureOperations; they are tested
+in test_lsp_operations.py and test_interface.py.
+"""
 
-from doctk import Document, Heading, Paragraph, lift, lower, nest, unnest, where
+from doctk import Document, Heading, Paragraph, demote, promote, where
 from doctk.operations import heading
 
 
-def test_lift_h3_to_h2():
-    """Test that lift() promotes h3 to h2."""
+def test_promote_h3_to_h2():
+    """Test that promote() lifts h3 to h2."""
     doc = Document(
         nodes=[
             Heading(level=3, text="Section 1.1.1"),
         ]
     )
-    result = doc | heading | lift()
+    result = doc | heading | promote()
     assert len(result.nodes) == 1
     assert result.nodes[0].level == 2
     assert result.nodes[0].text == "Section 1.1.1"
 
 
-def test_lift_h1_stays_h1():
-    """Test that lift() keeps h1 at h1 (identity)."""
+def test_promote_h1_stays_h1():
+    """Test that promote() keeps h1 at h1 (identity)."""
     doc = Document(
         nodes=[
             Heading(level=1, text="Chapter"),
         ]
     )
-    result = doc | heading | lift()
+    result = doc | heading | promote()
     assert len(result.nodes) == 1
     assert result.nodes[0].level == 1
     assert result.nodes[0].text == "Chapter"
 
 
-def test_lift_multiple_headings():
-    """Test that lift() promotes multiple headings."""
+def test_promote_multiple_headings():
+    """Test that promote() lifts multiple headings."""
     doc = Document(
         nodes=[
             Heading(level=3, text="Section 1"),
@@ -41,7 +44,7 @@ def test_lift_multiple_headings():
             Heading(level=4, text="Subsection"),
         ]
     )
-    result = doc | heading | where(level=3) | lift()
+    result = doc | heading | where(level=3) | promote()
     assert len(result.nodes) == 2
     assert result.nodes[0].level == 2
     assert result.nodes[0].text == "Section 1"
@@ -49,34 +52,34 @@ def test_lift_multiple_headings():
     assert result.nodes[1].text == "Section 2"
 
 
-def test_lower_h2_to_h3():
-    """Test that lower() demotes h2 to h3."""
+def test_demote_h2_to_h3():
+    """Test that demote() lowers h2 to h3."""
     doc = Document(
         nodes=[
             Heading(level=2, text="Section 1"),
         ]
     )
-    result = doc | heading | lower()
+    result = doc | heading | demote()
     assert len(result.nodes) == 1
     assert result.nodes[0].level == 3
     assert result.nodes[0].text == "Section 1"
 
 
-def test_lower_h6_stays_h6():
-    """Test that lower() keeps h6 at h6 (identity)."""
+def test_demote_h6_stays_h6():
+    """Test that demote() keeps h6 at h6 (identity)."""
     doc = Document(
         nodes=[
             Heading(level=6, text="Deepest"),
         ]
     )
-    result = doc | heading | lower()
+    result = doc | heading | demote()
     assert len(result.nodes) == 1
     assert result.nodes[0].level == 6
     assert result.nodes[0].text == "Deepest"
 
 
-def test_lower_multiple_headings():
-    """Test that lower() demotes multiple headings."""
+def test_demote_multiple_headings():
+    """Test that demote() lowers multiple headings."""
     doc = Document(
         nodes=[
             Heading(level=2, text="Section 1"),
@@ -84,7 +87,7 @@ def test_lower_multiple_headings():
             Heading(level=3, text="Subsection"),
         ]
     )
-    result = doc | heading | where(level=2) | lower()
+    result = doc | heading | where(level=2) | demote()
     assert len(result.nodes) == 2
     assert result.nodes[0].level == 3
     assert result.nodes[0].text == "Section 1"
@@ -92,110 +95,69 @@ def test_lower_multiple_headings():
     assert result.nodes[1].text == "Section 2"
 
 
-def test_nest_demotes_heading():
-    """Test that nest() demotes headings (basic implementation)."""
-    doc = Document(
-        nodes=[
-            Heading(level=2, text="Section"),
-        ]
-    )
-    result = doc | heading | nest()
-    assert len(result.nodes) == 1
-    assert result.nodes[0].level == 3
-    assert result.nodes[0].text == "Section"
+def test_functional_layer_has_no_structural_moves():
+    """nest/unnest/lift/lower are not part of the functional vocabulary.
+
+    Structural moves are id-addressed and live in StructureOperations;
+    the old aliases (lift=promote, nest()=demote, ...) gave the same
+    names conflicting meanings across layers.
+    """
+    import doctk
+    import doctk.operations as ops
+
+    for name in ("nest", "unnest", "lift", "lower"):
+        assert not hasattr(ops, name), f"operations.{name} should not exist"
+        assert name not in doctk.__all__
 
 
-def test_nest_with_under_parameter():
-    """Test that nest() raises NotImplementedError when under parameter is provided."""
-    doc = Document(
-        nodes=[
-            Heading(level=2, text="Parent"),
-            Heading(level=2, text="Child"),
-        ]
-    )
-    # Hierarchical nesting is not yet implemented
-    with pytest.raises(NotImplementedError) as exc_info:
-        doc | heading | where(text="Child") | nest(under="previous")
-
-    assert "under" in str(exc_info.value).lower()
-    assert "not yet implemented" in str(exc_info.value).lower()
-
-
-def test_unnest_promotes_heading():
-    """Test that unnest() promotes headings."""
-    doc = Document(
-        nodes=[
-            Heading(level=4, text="Deeply Nested"),
-        ]
-    )
-    result = doc | heading | unnest()
-    assert len(result.nodes) == 1
-    assert result.nodes[0].level == 3
-    assert result.nodes[0].text == "Deeply Nested"
-
-
-def test_unnest_h1_stays_h1():
-    """Test that unnest() keeps h1 at h1."""
-    doc = Document(
-        nodes=[
-            Heading(level=1, text="Top Level"),
-        ]
-    )
-    result = doc | heading | unnest()
-    assert len(result.nodes) == 1
-    assert result.nodes[0].level == 1
-
-
-def test_lift_non_heading_unchanged():
-    """Test that lift() doesn't affect non-heading nodes."""
+def test_promote_non_heading_unchanged():
+    """Test that promote() doesn't affect non-heading nodes."""
     doc = Document(
         nodes=[
             Paragraph(content="Some text"),
         ]
     )
-    # Apply lift to all (paragraph should be unchanged)
-    result = doc | lift()
+    result = doc | promote()
     assert len(result.nodes) == 1
     assert isinstance(result.nodes[0], Paragraph)
     assert result.nodes[0].content == "Some text"
 
 
-def test_lower_non_heading_unchanged():
-    """Test that lower() doesn't affect non-heading nodes."""
+def test_demote_non_heading_unchanged():
+    """Test that demote() doesn't affect non-heading nodes."""
     doc = Document(
         nodes=[
             Paragraph(content="Some text"),
         ]
     )
-    result = doc | lower()
+    result = doc | demote()
     assert len(result.nodes) == 1
     assert isinstance(result.nodes[0], Paragraph)
     assert result.nodes[0].content == "Some text"
 
 
 def test_structure_operations_compose():
-    """Test that structure operations compose correctly."""
+    """Test that level operations compose correctly."""
     doc = Document(
         nodes=[
             Heading(level=3, text="Section"),
         ]
     )
-    # Lift then lower should return to original level
-    result = doc | heading | lift() | lower()
+    # Promote then demote should return to original level
+    result = doc | heading | promote() | demote()
     assert len(result.nodes) == 1
     assert result.nodes[0].level == 3
 
 
-def test_lift_lower_roundtrip():
-    """Test that lift and lower are inverses (for most levels)."""
+def test_promote_demote_roundtrip():
+    """Test that promote and demote are inverses (away from the boundaries)."""
     doc = Document(
         nodes=[
             Heading(level=3, text="Section"),
         ]
     )
-    # Apply lift then lower
-    lifted = doc | heading | lift()
-    roundtrip = lifted | heading | lower()
+    promoted = doc | heading | promote()
+    roundtrip = promoted | heading | demote()
 
     assert len(roundtrip.nodes) == 1
     assert roundtrip.nodes[0].level == 3
@@ -203,12 +165,11 @@ def test_lift_lower_roundtrip():
 
 
 def test_operations_immutability():
-    """Test that structure operations don't mutate original document."""
+    """Test that level operations don't mutate the original document."""
     original_heading = Heading(level=3, text="Original")
     doc = Document(nodes=[original_heading])
 
-    # Apply lift
-    _result = doc | heading | lift()
+    _result = doc | heading | promote()
 
     # Original should be unchanged
     assert original_heading.level == 3

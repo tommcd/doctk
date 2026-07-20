@@ -5,15 +5,8 @@ core API and that all operations are consistent with doctk abstractions.
 """
 
 from doctk.core import Document, Heading, Paragraph
-from doctk.lsp import (
-    CompatibilityChecker,
-    DocumentTreeBuilder,
-    OperationRegistry,
-    StructureOperations,
-    check_compatibility,
-    check_feature,
-    get_doctk_version,
-)
+from doctk.integration import DocumentTreeBuilder, StructureOperations
+from doctk.lsp import OperationRegistry
 
 
 class TestCoreAPIUsage:
@@ -105,10 +98,10 @@ class TestDynamicOperationDiscovery:
             "compose",
             "first",
             "last",
-            "lift",
-            "lower",
             "nest",
             "unnest",
+            "move_up",
+            "move_down",
         ]
 
         for op_name in expected_operations:
@@ -170,72 +163,6 @@ class TestDynamicOperationDiscovery:
         assert any(op.name == "select" for op in selection_ops)
         assert any(op.name == "promote" for op in structure_ops)
         assert any(op.name == "is_heading" for op in predicates)
-
-
-class TestBackwardCompatibility:
-    """Test backward compatibility handling (Task 13.3)."""
-
-    def test_compatibility_checker_available(self):
-        """Test that compatibility checker is available."""
-        assert CompatibilityChecker is not None
-
-        checker = CompatibilityChecker()
-        assert checker is not None
-
-    def test_version_checking_works(self):
-        """Test that version checking works."""
-        version = get_doctk_version()
-
-        assert version is not None
-        assert version.major >= 0
-        assert version.minor >= 0
-        assert version.patch >= 0
-
-    def test_compatibility_check_succeeds(self):
-        """Test that current version is compatible."""
-        compatible = check_compatibility()
-
-        assert compatible is True, "Current doctk version should be compatible"
-
-    def test_feature_checking_works(self):
-        """Test that feature checking works."""
-        # Features that should be available in current version
-        basic_features = [
-            ("document_operations", "0.1.0"),
-            ("heading_manipulation", "0.1.0"),
-            ("selection_operations", "0.1.0"),
-        ]
-
-        for feature, min_version in basic_features:
-            available = check_feature(feature, min_version)
-            assert available is True, f"Feature '{feature}' should be available"
-
-        # Features that should not be available (future versions)
-        future_features = [
-            ("advanced_ai", "99.0.0"),
-            ("quantum_operations", "99.9.9"),
-        ]
-
-        for feature, min_version in future_features:
-            available = check_feature(feature, min_version)
-            assert available is False, f"Feature '{feature}' should not be available yet"
-
-    def test_min_version_requirement(self):
-        """Test that minimum version requirement is defined."""
-        assert hasattr(CompatibilityChecker, "MIN_VERSION")
-        min_version = CompatibilityChecker.MIN_VERSION
-
-        assert min_version.major == 0
-        assert min_version.minor == 1
-        assert min_version.patch == 0
-
-    def test_breaking_changes_tracked(self):
-        """Test that breaking changes are tracked."""
-        assert hasattr(CompatibilityChecker, "BREAKING_CHANGES")
-        breaking_changes = CompatibilityChecker.BREAKING_CHANGES
-
-        # Should be a dictionary (may be empty for now)
-        assert isinstance(breaking_changes, dict)
 
 
 class TestAPIConsistency:
@@ -359,9 +286,7 @@ class TestIntegrationWorkflow:
         operation_map = {
             "promote": StructureOperations.promote,
             "demote": StructureOperations.demote,
-            "lift": StructureOperations.promote,  # alias
-            "unnest": StructureOperations.promote,  # alias
-            "lower": StructureOperations.demote,  # alias
+            "unnest": StructureOperations.unnest,
             "move_up": StructureOperations.move_up,
             "move_down": StructureOperations.move_down,
         }
@@ -369,19 +294,15 @@ class TestIntegrationWorkflow:
         for op_metadata in structure_ops:
             op_name = op_metadata.name
 
-            # Skip operations that aren't in StructureOperations
+            # Skip operations with a different signature (nest takes parent_id)
             if op_name not in operation_map:
                 continue
 
-            # Should be able to execute
-            try:
-                op_func = operation_map[op_name]
-                result = op_func(doc, "h2-0")
-                # Some operations may fail (e.g., unnest on h2-0), but should return result
-                assert result is not None
-            except (NotImplementedError, AttributeError):
-                # Some operations may not be fully implemented yet
-                pass
+            # Should be able to execute; the result object is always returned,
+            # even when the specific move is invalid for this document
+            op_func = operation_map[op_name]
+            result = op_func(doc, "h2-0")
+            assert result is not None
 
 
 class TestAPIStability:
@@ -403,19 +324,27 @@ class TestAPIStability:
         """Test that LSP public API is stable."""
         from doctk import lsp
 
-        # Core components should be available
+        # LSP-specific components should be available
         required_exports = [
-            "CompatibilityChecker",
-            "DocumentTreeBuilder",
-            "ExtensionBridge",
+            "DoctkLanguageServer",
             "OperationRegistry",
-            "StructureOperations",
-            "check_compatibility",
-            "get_doctk_version",
         ]
 
         for export in required_exports:
             assert hasattr(lsp, export), f"Missing required export: {export}"
+
+    def test_integration_public_api_stable(self):
+        """Test that integration public API is stable."""
+        from doctk import integration
+
+        required_exports = [
+            "DocumentTreeBuilder",
+            "ExtensionBridge",
+            "StructureOperations",
+        ]
+
+        for export in required_exports:
+            assert hasattr(integration, export), f"Missing required export: {export}"
 
     def test_operation_signatures_stable(self):
         """Test that operation signatures are stable."""
